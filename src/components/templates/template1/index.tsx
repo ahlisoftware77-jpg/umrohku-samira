@@ -66,37 +66,22 @@ export default function Template1({ agent, sectionsData = {} }: Template1Props) 
         {/* 5. Financial Solution */}
         <FinancialSolution agent={agent} />
 
-        {/* 6. Emotional CTA */}
-        <EmotionalCta agent={agent} />
-
-        {/* 7. Why Samira */}
-        <WhySamira />
-
-        {/* 8. Featured Packages (With Cloudinary Package Card Images) */}
+        {/* 6. Featured Packages (With Cloudinary Package Card Images) */}
         <FeaturedPackages agent={agent} data={serviceData} />
 
-        {/* 9. Hotel Explanation (With Cloudinary Hotel Room Images) */}
-        <HotelExplanation data={hotelData} />
-
-        {/* 10. Product Knowledge & E-Katalog (With Cloudinary PDF/Image Viewer) */}
+        {/* 7. Product Knowledge & E-Katalog (With Cloudinary PDF/Image Viewer) */}
         <ProductKnowledgeSection agent={agent} data={catalogData} />
 
-        {/* 11. Gallery Section (With Cloudinary Media Gallery Uploads) */}
+        {/* 8. Gallery Section (With Cloudinary Media Gallery Uploads) */}
         <GallerySection agent={agent} data={galleryData} />
 
-        {/* 12. MURI Awards */}
+        {/* 9. MURI Awards */}
         <MuriAwards />
 
-        {/* 13. Testimonials (With Cloudinary Avatar Photos) */}
+        {/* 10. Testimonials (With Cloudinary Avatar Photos) */}
         <Testimonials agent={agent} data={testimonialData} />
 
-        {/* 14. Registration Flow */}
-        <RegistrationFlow />
-
-        {/* 15. Builder Promo Banner */}
-        <BuilderPromoBanner />
-
-        {/* 16. Final CTA */}
+        {/* 11. Final CTA */}
         <FinalCta agent={agent} data={ctaData} />
       </main>
 

@@ -168,8 +168,6 @@ export default function DynamicHomeTemplate({
       <Header agent={agentCompat} />
       <main className="flex-1">
         {sections.map(sec => renderSection(sec))}
-        <BuilderPromoBanner />
-        <FinalCta agent={agentCompat} />
       </main>
       <Footer agent={agentCompat} />
       
