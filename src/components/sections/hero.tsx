@@ -1,0 +1,130 @@
+
+"use client";
+
+import * as React from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { cn } from '@/lib/utils';
+import SplitText from '@/components/ui/split-text';
+
+export default function HeroSection({ data }: { data?: Record<string, any> }) {
+  const [activeImageIndex, setActiveImageIndex] = React.useState(0);
+  
+  const badgeText = data?.badgeText || "Biro Perjalanan Haji & Umrah Terpercaya";
+  const titleText = data?.title || "Mulailah Perjalanan Suci Anda Bersama SAMIRA";
+  const descriptionText = data?.description || "Rasakan pengalaman ibadah yang lancar dan memperkaya spiritual dengan bimbingan ustadz ahli, akomodasi bintang 5, dan pelayanan sepenuh hati.";
+  const primaryBtnText = data?.primaryBtnText || "Jelajahi Paket";
+  const primaryBtnUrl = data?.primaryBtnUrl || "#paket";
+  const secondaryBtnText = data?.secondaryBtnText || "Tentang Kami";
+  const secondaryBtnUrl = data?.secondaryBtnUrl || "#tentang";
+
+  const heroImage1 = PlaceHolderImages.find(p => p.id === 'hero-masjidil-haram-1');
+  const heroImage2 = PlaceHolderImages.find(p => p.id === 'hero-masjidil-haram-2');
+  
+  const defaultImages = [heroImage1, heroImage2].filter((img): img is NonNullable<typeof img> => img !== undefined);
+  const images = data?.bgImage
+    ? [{ id: 'custom-bg', imageUrl: data.bgImage, description: 'Hero background', imageHint: 'hero-image' }]
+    : (data?.images && Array.isArray(data.images) && data.images.length > 0
+        ? data.images.map((url: string, idx: number) => ({ id: String(idx), imageUrl: url, description: 'Hero image', imageHint: 'hero-image' }))
+        : defaultImages);
+
+  React.useEffect(() => {
+    if (images.length < 2) return;
+    const interval = setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % images.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  return (
+    <section className="relative min-h-[100dvh] w-full flex items-center justify-center text-white overflow-hidden bg-primary/20 pt-20 pb-10">
+      <div className="absolute inset-0 z-0">
+        {images.length > 0 ? (
+          images.map((img, idx) => (
+            <div 
+              key={img.id}
+              className={cn(
+                "absolute inset-0 transition-opacity duration-1500 ease-in-out bg-primary/10",
+                activeImageIndex === idx ? "opacity-100" : "opacity-0"
+              )}
+            >
+              <Image
+                src={img.imageUrl}
+                alt={img.description}
+                fill
+                className="object-cover animate-zoom-slow"
+                priority={idx === 0}
+                data-ai-hint={img.imageHint}
+                sizes="100vw"
+              />
+            </div>
+          ))
+        ) : (
+          <div className="absolute inset-0 bg-primary/40 flex items-center justify-center">
+            <p className="text-white/50">Memuat Keindahan Masjidil Haram...</p>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/30 to-background/20 z-10"></div>
+      </div>
+      
+      <div className="relative z-20 container mx-auto text-center flex flex-col justify-center items-center px-4 md:px-6">
+        <div className="bg-accent/90 border border-white/20 text-accent-foreground font-bold rounded-full px-4 py-1.5 md:px-6 md:py-2 inline-block mx-auto text-xs md:text-sm mb-4 md:mb-6 shadow-2xl backdrop-blur-sm animate-in fade-in slide-in-from-top-4 duration-1000">
+          {badgeText}
+        </div>
+        
+        <SplitText
+          tag="h1"
+          text={titleText}
+          className="font-headline text-3xl sm:text-4xl md:text-6xl lg:text-8xl font-bold !leading-tight tracking-tight drop-shadow-2xl text-white"
+          delay={40}
+          duration={1.5}
+          ease="power4.out"
+          splitType="chars"
+          from={{ opacity: 0, y: 50, rotateX: -90 }}
+          to={{ opacity: 1, y: 0, rotateX: 0 }}
+          textAlign="center"
+        />
+        
+        <div className="mt-4 md:mt-8 max-w-3xl mx-auto px-2">
+          <SplitText
+            text={descriptionText}
+            className="text-sm sm:text-base md:text-xl text-white/90 drop-shadow-lg font-medium"
+            delay={30}
+            duration={1}
+            splitType="words"
+            from={{ opacity: 0, y: 20 }}
+            to={{ opacity: 1, y: 0 }}
+            textAlign="center"
+          />
+        </div>
+
+        <div className="mt-8 md:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-700 w-full sm:w-auto">
+            <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-white hover:text-primary h-12 md:h-14 px-8 md:px-10 text-base md:text-lg font-bold rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95 border-none w-full sm:w-auto">
+                <Link href={primaryBtnUrl}>{primaryBtnText}</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="bg-transparent border-white text-white hover:bg-white/10 h-12 md:h-14 px-8 md:px-10 text-base md:text-lg font-bold rounded-full backdrop-blur-md transition-all hover:border-accent hover:text-accent border-2 w-full sm:w-auto">
+                <Link href={secondaryBtnUrl}>{secondaryBtnText}</Link>
+            </Button>
+        </div>
+      </div>
+
+      {images.length > 1 && (
+        <div className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+          {images.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveImageIndex(idx)}
+              className={cn(
+                "h-1 md:h-1.5 rounded-full transition-all duration-300",
+                activeImageIndex === idx ? "w-6 md:w-8 bg-accent" : "w-1.5 md:w-2 bg-white/50 hover:bg-white"
+              )}
+              aria-label={`Buka slide ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}

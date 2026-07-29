@@ -1,0 +1,232 @@
+{
+  "placeholderImages": [
+    {
+      "id": "gallery-1",
+      "description": "Dokumentasi jamaah Samira Travel.",
+      "imageUrl": "/images/b1.jpeg",
+      "imageHint": "gallery documentation"
+    },
+    {
+      "id": "gallery-2",
+      "description": "Dokumentasi kebersamaan jamaah.",
+      "imageUrl": "/images/b2.jpeg",
+      "imageHint": "gallery documentation"
+    },
+    {
+      "id": "gallery-3",
+      "description": "Dokumentasi perjalanan ibadah.",
+      "imageUrl": "/images/b3.jpeg",
+      "imageHint": "gallery documentation"
+    },
+    {
+      "id": "hero-masjidil-haram-1",
+      "description": "Pemandangan megah kota suci Makkah.",
+      "imageUrl": "/images/Makkah.jpg",
+      "imageHint": "makkah city"
+    },
+    {
+      "id": "hero-masjidil-haram-2",
+      "description": "Pemandangan indah kota suci Madinah.",
+      "imageUrl": "/images/madinah.jpg",
+      "imageHint": "madinah city"
+    },
+    {
+      "id": "owner-photo",
+      "description": "Foto resmi Mitra Samira Karawang.",
+      "imageUrl": "/images/pp1.jpg",
+      "imageHint": "professional man"
+    },
+    {
+      "id": "package-reguler",
+      "description": "Jamaah sedang beribadah di dalam Masjidil Haram.",
+      "imageUrl": "/images/b1.jpeg",
+      "imageHint": "mecca pilgrimage"
+    },
+    {
+      "id": "package-plus",
+      "description": "Detail arsitektur Islam yang indah di kompleks Masjidil Haram.",
+      "imageUrl": "/images/b5.jpeg",
+      "imageHint": "islamic detail"
+    },
+    {
+      "id": "package-ramadan",
+      "description": "Suasana ibadah Umrah di bulan Ramadan.",
+      "imageUrl": "/images/br1.jpeg",
+      "imageHint": "ramadan makkah"
+    },
+    {
+      "id": "package-haji",
+      "description": "Ibadah haji yang diatur sempurna untuk pengalaman spiritual mendalam.",
+      "imageUrl": "/images/haji-lands.jpeg",
+      "imageHint": "hajj pilgrimage"
+    },
+    {
+      "id": "about-us-accordion",
+      "description": "Foto kantor atau tim SAMIRA Travel.",
+      "imageUrl": "/images/b1.jpeg",
+      "imageHint": "office building"
+    },
+    {
+      "id": "cta-bg",
+      "description": "Pemandangan Makkah untuk latar belakang ajakan daftar.",
+      "imageUrl": "/images/Makkah.jpg",
+      "imageHint": "makkah background"
+    },
+    {
+      "id": "testimonial-ahmad",
+      "description": "Potret seorang jamaah pria.",
+      "imageUrl": "https://images.unsplash.com/photo-1610414163351-f76e3312b919?q=80&w=1080",
+      "imageHint": "man face"
+    },
+    {
+      "id": "testimonial-siti",
+      "description": "Potret seorang jamaah wanita berhijab.",
+      "imageUrl": "https://images.unsplash.com/photo-1617369793012-ff8870415127?q=80&w=1080",
+      "imageHint": "woman hijab"
+    },
+    {
+      "id": "testimonial-budi",
+      "description": "Potret seorang bapak-bapak ramah.",
+      "imageUrl": "https://images.unsplash.com/photo-1564564321837-a57b7070ac5c?q=80&w=1080",
+      "imageHint": "smiling man"
+    },
+    {
+      "id": "avatar-1",
+      "description": "Potret seorang jamaah.",
+      "imageUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1080",
+      "imageHint": "man face"
+    },
+    {
+      "id": "avatar-2",
+      "description": "Potret seorang jamaah pria.",
+      "imageUrl": "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "avatar-3",
+      "description": "Potret seorang jamaah wanita.",
+      "imageUrl": "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "why-choose-us-1",
+      "description": "Interior Masjidil Haram yang bercahaya.",
+      "imageUrl": "https://images.unsplash.com/photo-1569448834428-94c6574a4a58?q=80&w=1080",
+      "imageHint": "mosque interior"
+    },
+    {
+      "id": "why-choose-us-2",
+      "description": "Jamaah sedang berjalan di area Masjidil Haram.",
+      "imageUrl": "https://images.unsplash.com/photo-1558223933-aff3f458117c?q=80&w=1080",
+      "imageHint": "masjidil haram"
+    },
+    {
+      "id": "gallery-1",
+      "description": "Dokumentasi Samira 1",
+      "imageUrl": "/images/g1.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-2",
+      "description": "Dokumentasi Samira 2",
+      "imageUrl": "/images/g2.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-3",
+      "description": "Dokumentasi Samira 3",
+      "imageUrl": "/images/g3.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-4",
+      "description": "Dokumentasi Samira 4",
+      "imageUrl": "/images/g4.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-5",
+      "description": "Dokumentasi Samira 5",
+      "imageUrl": "/images/g5.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-6",
+      "description": "Dokumentasi Samira 6",
+      "imageUrl": "/images/g6.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-7",
+      "description": "Dokumentasi Samira 7",
+      "imageUrl": "/images/g7.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-8",
+      "description": "Dokumentasi Samira 8",
+      "imageUrl": "/images/g8.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-9",
+      "description": "Dokumentasi Samira 9",
+      "imageUrl": "/images/g9.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-10",
+      "description": "Dokumentasi Samira 10",
+      "imageUrl": "/images/g10.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-11",
+      "description": "Dokumentasi Samira 11",
+      "imageUrl": "/images/g11.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-12",
+      "description": "Dokumentasi Samira 12",
+      "imageUrl": "/images/g12.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-13",
+      "description": "Dokumentasi Samira 13",
+      "imageUrl": "/images/g13.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-14",
+      "description": "Dokumentasi Samira 14",
+      "imageUrl": "/images/g14.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "gallery-15",
+      "description": "Dokumentasi Samira 15",
+      "imageUrl": "/images/g15.jpeg",
+      "imageHint": "mecca"
+    },
+    {
+      "id": "muri-1",
+      "description": "Anugerah Rekor Muri Jamaah Terbanyak 2024",
+      "imageUrl": "/images/MURI/ANUGERAH REKOR MURI JAMAAH TERBANYAK SEPANJANG TAHUN 2024.png",
+      "imageHint": "muri award 2024"
+    },
+    {
+      "id": "muri-2",
+      "description": "Anugerah Rekor Muri NEW 22",
+      "imageUrl": "/images/MURI/Anugerah Rekor Muri NEW 22.png",
+      "imageHint": "muri award ceremony"
+    },
+    {
+      "id": "muri-3",
+      "description": "Anugerah Rekor Muri Talbiyah",
+      "imageUrl": "/images/MURI/Anugerah Rekor Muri Talbiyah.png",
+      "imageHint": "muri award talbiyah"
+    }
+  ]
+}
