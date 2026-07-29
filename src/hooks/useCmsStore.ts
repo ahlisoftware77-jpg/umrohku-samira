@@ -188,16 +188,15 @@ export const useCmsStore = create<CmsState>((set, get) => {
       if (!page) return;
 
       let sectionTypes: SectionType[] = [];
-
       switch (presetKey) {
         case 'lengkap':
-          sectionTypes = ['hero', 'about', 'pricing', 'feature', 'testimonial', 'gallery', 'cta', 'contact'];
+          sectionTypes = ['hero', 'about', 'why_umrah', 'finance', 'why_samira', 'pricing', 'faq', 'gallery', 'muri', 'testimonial', 'cta', 'contact'];
           break;
         case 'promo':
-          sectionTypes = ['hero', 'pricing', 'feature', 'cta', 'contact'];
+          sectionTypes = ['hero', 'pricing', 'feature', 'cta', 'contact', 'finance'];
           break;
         case 'dokumentasi':
-          sectionTypes = ['hero', 'about', 'feature', 'gallery', 'testimonial', 'contact'];
+          sectionTypes = ['hero', 'about', 'feature', 'gallery', 'testimonial', 'contact', 'muri'];
           break;
         case 'minimal':
           sectionTypes = ['hero', 'about', 'pricing', 'contact'];

@@ -75,6 +75,10 @@ export default function EditorSidebar() {
     katalog: 'E-Katalog Product Knowledge',
     cta: 'Panggilan (CTA)',
     contact: 'Kontak & WA',
+    why_umrah: 'Alasan Harus Umroh',
+    why_samira: 'Mengapa Samira Travel',
+    finance: 'Solusi Pembiayaan',
+    muri: 'Anugrah Rekor MURI',
   };
 
   const getSectionLabel = (type?: string) => {
@@ -135,9 +139,12 @@ export default function EditorSidebar() {
   const sectionTypesList: { type: SectionType; label: string }[] = [
     { type: 'hero', label: 'Hero Banner' },
     { type: 'about', label: 'Tentang Kami' },
-    { type: 'feature', label: 'Keunggulan' },
+    { type: 'why_umrah', label: 'Alasan Harus Umroh' },
+    { type: 'finance', label: 'Solusi Pembiayaan' },
+    { type: 'why_samira', label: 'Mengapa Samira Travel' },
     { type: 'service', label: 'Paket & Layanan' },
     { type: 'gallery', label: 'Galeri Media' },
+    { type: 'muri', label: 'Anugrah Rekor MURI' },
     { type: 'portfolio', label: 'E-Katalog Product Knowledge' },
     { type: 'testimonial', label: 'Testimoni' },
     { type: 'cta', label: 'Ajakan Daftar' },
@@ -1004,6 +1011,54 @@ export default function EditorSidebar() {
                 onChange={(e) => handleFieldChange('mapUrl', e.target.value)}
                 placeholder="https://www.google.com/maps/embed?pb=..."
               />
+            </div>
+          </div>
+        );
+
+      case 'why_umrah':
+        return (
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-primary">Alasan Harus Umroh</h3>
+            <p className="text-xs text-muted-foreground">Seksi ini menampilkan 12 alasan utama mengapa umat muslim merindukan ibadah Umroh (statis, resmi dari Samira).</p>
+            <div className="p-3 bg-muted/30 border rounded-2xl">
+              <p className="text-xs font-semibold text-muted-foreground">Status Seksi:</p>
+              <p className="text-sm font-bold text-green-600 mt-1">Aktif & Tampil di Website</p>
+            </div>
+          </div>
+        );
+
+      case 'why_samira':
+        return (
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-primary">Mengapa Samira Travel</h3>
+            <p className="text-xs text-muted-foreground">Seksi ini menampilkan profil keunggulan travel Samira: Izin resmi Kemenag RI, kepastian booking pesawat sebelum promo, bus eksekutif nyaman, dan keberangkatan kota besar.</p>
+            <div className="p-3 bg-muted/30 border rounded-2xl">
+              <p className="text-xs font-semibold text-muted-foreground">Status Seksi:</p>
+              <p className="text-sm font-bold text-green-600 mt-1">Aktif & Tampil di Website</p>
+            </div>
+          </div>
+        );
+
+      case 'finance':
+        return (
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-primary">Solusi Pembiayaan</h3>
+            <p className="text-xs text-muted-foreground">Seksi ini memuat penjelasan skema keuangan DP 7 Juta bisa langsung berangkat (kerjasama lembaga syariah berizin OJK/MUI).</p>
+            <div className="p-3 bg-muted/30 border rounded-2xl">
+              <p className="text-xs font-semibold text-muted-foreground">Status Seksi:</p>
+              <p className="text-sm font-bold text-green-600 mt-1">Aktif & Tampil di Website</p>
+            </div>
+          </div>
+        );
+
+      case 'muri':
+        return (
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-primary">Anugrah Rekor MURI</h3>
+            <p className="text-xs text-muted-foreground">Seksi ini menampilkan lencana & dokumentasi sertifikasi Rekor MURI sebagai Penyelenggara Umrah Terbanyak.</p>
+            <div className="p-3 bg-muted/30 border rounded-2xl">
+              <p className="text-xs font-semibold text-muted-foreground">Status Seksi:</p>
+              <p className="text-sm font-bold text-green-600 mt-1">Aktif & Tampil di Website</p>
             </div>
           </div>
         );

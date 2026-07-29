@@ -128,6 +128,14 @@ export default function DynamicHomeTemplate({
         return <EmotionalCta key={section.sectionId} agent={agentCompat} data={data} />;
       case 'contact':
         return <ContactSection key={section.sectionId} agent={agentCompat} data={data} />; // Flow pendaftaran
+      case 'why_umrah':
+        return <WhyUmrah key={section.sectionId} />;
+      case 'why_samira':
+        return <WhySamira key={section.sectionId} />;
+      case 'finance':
+        return <FinancialSolution key={section.sectionId} agent={agentCompat} data={data} />;
+      case 'muri':
+        return <MuriAwards key={section.sectionId} />;
       default:
         return null;
     }
