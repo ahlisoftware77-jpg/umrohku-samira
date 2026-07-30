@@ -46,12 +46,12 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
     pusat: {
       name: 'Kantor Pusat Samira Travel',
       address: rawPusatAddress,
-      embedUrl: data?.officePusatMapUrl || (pusatQueryText ? `https://maps.google.com/maps?q=${encodeURIComponent(pusatQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
+      embedUrl: data?.officePusatMapUrl || (pusatQueryText ? `https://www.google.com/maps?q=${encodeURIComponent(pusatQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
     },
     mitra: {
       name: agent?.displayName || 'Kantor Cabang Mitra',
       address: address,
-      embedUrl: mapEmbedUrl || (partnerQueryText ? `https://maps.google.com/maps?q=${encodeURIComponent(partnerQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
+      embedUrl: mapEmbedUrl || (partnerQueryText ? `https://www.google.com/maps?q=${encodeURIComponent(partnerQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
     }
   };
 

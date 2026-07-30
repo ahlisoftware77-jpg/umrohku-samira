@@ -73,7 +73,7 @@ export default function EditorSidebar() {
   const openMapPicker = (targetField: 'mapUrl' | 'officePusatMapUrl', initialQuery: string) => {
     setMapTargetField(targetField);
     setMapSearchQuery(initialQuery);
-    setMapPreviewUrl(initialQuery ? `https://maps.google.com/maps?q=${encodeURIComponent(initialQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '');
+    setMapPreviewUrl(initialQuery ? `https://www.google.com/maps?q=${encodeURIComponent(initialQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '');
     setIsMapPickerOpen(true);
   };
 
@@ -1759,13 +1759,13 @@ export default function EditorSidebar() {
                 className="rounded-xl flex-grow text-sm"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    setMapPreviewUrl(`https://maps.google.com/maps?q=${encodeURIComponent(mapSearchQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`);
+                    setMapPreviewUrl(`https://www.google.com/maps?q=${encodeURIComponent(mapSearchQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`);
                   }
                 }}
               />
               <Button
                 type="button"
-                onClick={() => setMapPreviewUrl(`https://maps.google.com/maps?q=${encodeURIComponent(mapSearchQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`)}
+                onClick={() => setMapPreviewUrl(`https://www.google.com/maps?q=${encodeURIComponent(mapSearchQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`)}
                 className="bg-primary text-white rounded-xl text-xs font-bold px-4"
               >
                 Cari Peta
