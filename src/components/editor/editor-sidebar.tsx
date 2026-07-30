@@ -1278,19 +1278,19 @@ export default function EditorSidebar() {
               />
             </div>
              <div className="space-y-2">
-              <Label>Alamat Lengkap Kantor</Label>
+              <Label>Alamat Lengkap Kantor / Nama Bisnis di Maps</Label>
               <Textarea 
                 value={activeSectionContent.address || ''} 
                 onChange={(e) => handleFieldChange('address', e.target.value)}
-                placeholder="Jl. Malaka Merah No.7/6, Duren Sawit, Jakarta Timur"
+                placeholder="cth: Samira Travel Karawang, Jl. Tarumanagara No. 10 (atau alamat lengkap)"
               />
             </div>
             <div className="space-y-2">
-              <Label>Link Embed Google Maps</Label>
+              <Label>Link Embed Google Maps (Opsional)</Label>
               <Input 
                 value={activeSectionContent.mapUrl || ''} 
                 onChange={(e) => handleFieldChange('mapUrl', e.target.value)}
-                placeholder="https://www.google.com/maps/embed?pb=..."
+                placeholder="Hanya isi jika ingin menyematkan link iframe Google Maps manual"
               />
             </div>
 
@@ -1298,11 +1298,11 @@ export default function EditorSidebar() {
               <h4 className="font-bold text-xs uppercase tracking-wider text-primary">Kantor Pusat Samira</h4>
             </div>
             <div className="space-y-2">
-              <Label>Alamat Kantor Pusat</Label>
+              <Label>Alamat Kantor Pusat / Nama Bisnis di Maps</Label>
               <Textarea 
                 value={activeSectionContent.officePusatAddress || ''} 
                 onChange={(e) => handleFieldChange('officePusatAddress', e.target.value)}
-                placeholder="Alamat Kantor Pusat..."
+                placeholder="cth: Samira Travel Jakarta Duren Sawit..."
               />
             </div>
             <div className="space-y-2">

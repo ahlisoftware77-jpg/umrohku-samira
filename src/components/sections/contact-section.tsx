@@ -31,16 +31,27 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
 
   const [activeMapTab, setActiveMapTab] = useState<'mitra' | 'pusat'>(isDefault ? 'pusat' : 'mitra');
 
+  const partnerBusinessName = agent?.displayName && agent.displayName !== 'Kantor Cabang Mitra' ? agent.displayName : '';
+  const partnerQueryText = partnerBusinessName && !address.toLowerCase().includes(partnerBusinessName.toLowerCase())
+    ? `${partnerBusinessName}, ${address}`
+    : address;
+
+  const pusatBusinessName = 'Samira Travel Pusat';
+  const rawPusatAddress = data?.officePusatAddress || 'Jl. Malaka Merah No.7/6, Pd. Kopi, Kec. Duren Sawit, Kota Jakarta Timur 13460';
+  const pusatQueryText = rawPusatAddress.toLowerCase().includes('samira')
+    ? rawPusatAddress
+    : `${pusatBusinessName}, ${rawPusatAddress}`;
+
   const maps = {
     pusat: {
       name: 'Kantor Pusat Samira Travel',
-      address: data?.officePusatAddress || 'Jl. Malaka Merah No.7/6, Pd. Kopi, Kec. Duren Sawit, Kota Jakarta Timur 13460',
-      embedUrl: data?.officePusatMapUrl || `https://maps.google.com/maps?q=${encodeURIComponent(data?.officePusatAddress || 'Jl. Malaka Merah No.7/6, Pd. Kopi, Kec. Duren Sawit, Kota Jakarta Timur 13460')}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+      address: rawPusatAddress,
+      embedUrl: data?.officePusatMapUrl || (pusatQueryText ? `https://maps.google.com/maps?q=${encodeURIComponent(pusatQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
     },
     mitra: {
       name: agent?.displayName || 'Kantor Cabang Mitra',
       address: address,
-      embedUrl: mapEmbedUrl || (address ? `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
+      embedUrl: mapEmbedUrl || (partnerQueryText ? `https://maps.google.com/maps?q=${encodeURIComponent(partnerQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
     }
   };
 
