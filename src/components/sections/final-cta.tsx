@@ -20,7 +20,7 @@ export default function FinalCta({ agent, data }: FinalCtaProps) {
   const descriptionText = data?.description || "Biarkan kami membantu mewujudkan impian Anda mengunjungi tanah suci dengan bimbingan terbaik, aman, dan penuh keberkahan.";
   const primaryBtnText = data?.primaryBtnText || "Lihat Semua Paket";
   
-  const isDefault = agent?.slug?.toLowerCase() === 'default' || agent?.slug?.toLowerCase() === 'triyadi';
+  const isDefault = agent?.slug?.toLowerCase() === 'default';
   const whatsappNumber = agent?.whatsapp || (isDefault ? '6283815862300' : '');
   const prefix = agent?.slug === 'default' ? '' : `/agent/${agent?.slug}`;
 

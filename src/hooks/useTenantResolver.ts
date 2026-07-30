@@ -63,7 +63,7 @@ export function useTenantResolver(tenantSlug: string) {
         setTenant(foundTenant);
         activeTenantId = foundTenant.tenantId;
         
-        const isDefaultTenant = tenantSlug.toLowerCase() === 'default' || tenantSlug.toLowerCase() === 'triyadi';
+        const isDefaultTenant = tenantSlug.toLowerCase() === 'default';
         
         // Try to fetch custom contact information from contents collection
         let phone = '';

@@ -20,7 +20,7 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
   const title = data?.title || 'Konsultasi Perjalanan Umrah & Haji Anda';
   const description = data?.description || 'Tim konsultan profesional kami siap melayani pertanyaan, konsultasi jadwal, dan bantuan pendaftaran ibadah keluarga Anda 24/7.';
   
-  const isDefault = agent?.slug?.toLowerCase() === 'default' || agent?.slug?.toLowerCase() === 'triyadi';
+  const isDefault = agent?.slug?.toLowerCase() === 'default';
   
   const rawPhone = data?.phone || agent?.whatsapp || agent?.phone || (isDefault ? '6283815862300' : '');
   const cleanPhone = rawPhone.replace(/[^0-9]/g, '');

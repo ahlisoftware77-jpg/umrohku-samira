@@ -29,7 +29,7 @@ const features = [
 ];
 
 export default function EmotionalCta({ agent }: EmotionalCtaProps) {
-  const isDefault = agent?.slug?.toLowerCase() === 'default' || agent?.slug?.toLowerCase() === 'triyadi';
+  const isDefault = agent?.slug?.toLowerCase() === 'default';
   const whatsappNumber = agent?.whatsapp || (isDefault ? '6283815862300' : '');
 
   return (

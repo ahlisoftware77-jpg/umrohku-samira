@@ -38,7 +38,7 @@ export default function DynamicHomeTemplate({
   contents 
 }: DynamicHomeTemplateProps) {
   
-  const isDefaultTenant = tenant.subdomain.toLowerCase() === 'default' || tenant.subdomain.toLowerCase() === 'triyadi';
+  const isDefaultTenant = tenant.subdomain.toLowerCase() === 'default';
 
   // Find custom contact details if edited in contact section
   const contactSection = sections.find(s => s.type === 'contact');
