@@ -64,6 +64,41 @@ export default function EditorSidebar() {
   const [onSelectImageCallback, setOnSelectImageCallback] = useState<((url: string | string[]) => void) | null>(null);
   const { toast } = useToast();
 
+  const [mapSuggestions, setMapSuggestions] = useState<any[]>([]);
+  const [activeSuggestionField, setActiveSuggestionField] = useState<'mitra' | 'pusat' | null>(null);
+  const [isSearchingMap, setIsSearchingMap] = useState(false);
+
+  const handleMapSearch = async (query: string, field: 'mitra' | 'pusat') => {
+    if (!query || query.trim().length < 3) {
+      setMapSuggestions([]);
+      setActiveSuggestionField(null);
+      return;
+    }
+    
+    setIsSearchingMap(true);
+    setActiveSuggestionField(field);
+    
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=id`;
+      const res = await fetch(url, {
+        headers: {
+          'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7'
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMapSuggestions(data || []);
+      } else {
+        setMapSuggestions([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch map suggestions:', err);
+      setMapSuggestions([]);
+    } finally {
+      setIsSearchingMap(false);
+    }
+  };
+
   const SECTION_NAMES: Record<string, string> = {
     hero: 'Banner Utama',
     about: 'Tentang Kami',
@@ -1277,7 +1312,7 @@ export default function EditorSidebar() {
                 placeholder="Senin - Sabtu: 08.30 - 17.30 WIB"
               />
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
               <Label>Alamat Lengkap Kantor / Nama Bisnis di Maps</Label>
               <Textarea 
                 value={activeSectionContent.address || ''} 
@@ -1285,12 +1320,76 @@ export default function EditorSidebar() {
                 placeholder="cth: Samira Travel Karawang, Jl. Tarumanagara No. 10 (atau alamat lengkap)"
               />
             </div>
+            
+            {/* Grab/Gojek style Search Map Pin Widget for Mitra */}
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/60 space-y-2">
+              <span className="text-[11px] font-bold text-primary flex items-center gap-1.5">
+                🔍 Cari Titik Lokasi Mitra Otomatis (Grab/Gojek)
+              </span>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ketik nama toko, bisnis, atau jalan..."
+                  className="flex-grow text-xs px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none"
+                  id="mitra-map-search-input"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const val = (document.getElementById('mitra-map-search-input') as HTMLInputElement)?.value;
+                      handleMapSearch(val, 'mitra');
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="bg-primary hover:bg-accent text-white hover:text-accent-foreground text-xs font-bold px-3 rounded-xl h-8 shrink-0"
+                  onClick={() => {
+                    const val = (document.getElementById('mitra-map-search-input') as HTMLInputElement)?.value;
+                    handleMapSearch(val, 'mitra');
+                  }}
+                >
+                  Cari
+                </Button>
+              </div>
+              
+              {isSearchingMap && activeSuggestionField === 'mitra' && (
+                <p className="text-[10px] text-slate-500 animate-pulse">Sedang mencari titik lokasi...</p>
+              )}
+              
+              {activeSuggestionField === 'mitra' && mapSuggestions.length > 0 && (
+                <div className="space-y-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm max-h-40 overflow-y-auto">
+                  {mapSuggestions.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        handleFieldChange('address', item.display_name);
+                        handleFieldChange('mapUrl', `https://maps.google.com/maps?q=${item.lat},${item.lon}&t=&z=15&ie=UTF8&iwloc=&output=embed`);
+                        setMapSuggestions([]);
+                        setActiveSuggestionField(null);
+                        const inputEl = document.getElementById('mitra-map-search-input') as HTMLInputElement;
+                        if (inputEl) inputEl.value = '';
+                        toast({
+                          title: "📍 Lokasi Mitra Dipin",
+                          description: "Peta lokasi berhasil disinkronkan dengan koordinat terpilih.",
+                        });
+                      }}
+                      className="w-full text-left text-[10px] p-2 hover:bg-slate-50 rounded-lg border-b border-slate-100 last:border-b-0 leading-normal block"
+                    >
+                      📍 <span className="font-semibold text-slate-700">{item.display_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label>Link Embed Google Maps (Opsional)</Label>
               <Input 
                 value={activeSectionContent.mapUrl || ''} 
                 onChange={(e) => handleFieldChange('mapUrl', e.target.value)}
-                placeholder="Hanya isi jika ingin menyematkan link iframe Google Maps manual"
+                placeholder="Biarkan kosong untuk menggunakan pencarian otomatis di atas"
               />
             </div>
 
@@ -1305,12 +1404,76 @@ export default function EditorSidebar() {
                 placeholder="cth: Samira Travel Jakarta Duren Sawit..."
               />
             </div>
+
+            {/* Grab/Gojek style Search Map Pin Widget for Pusat */}
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/60 space-y-2">
+              <span className="text-[11px] font-bold text-primary flex items-center gap-1.5">
+                🔍 Cari Titik Lokasi Pusat Otomatis
+              </span>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ketik nama kantor pusat atau jalan..."
+                  className="flex-grow text-xs px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none"
+                  id="pusat-map-search-input"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const val = (document.getElementById('pusat-map-search-input') as HTMLInputElement)?.value;
+                      handleMapSearch(val, 'pusat');
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="bg-primary hover:bg-accent text-white hover:text-accent-foreground text-xs font-bold px-3 rounded-xl h-8 shrink-0"
+                  onClick={() => {
+                    const val = (document.getElementById('pusat-map-search-input') as HTMLInputElement)?.value;
+                    handleMapSearch(val, 'pusat');
+                  }}
+                >
+                  Cari
+                </Button>
+              </div>
+              
+              {isSearchingMap && activeSuggestionField === 'pusat' && (
+                <p className="text-[10px] text-slate-500 animate-pulse">Sedang mencari titik lokasi...</p>
+              )}
+              
+              {activeSuggestionField === 'pusat' && mapSuggestions.length > 0 && (
+                <div className="space-y-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm max-h-40 overflow-y-auto">
+                  {mapSuggestions.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        handleFieldChange('officePusatAddress', item.display_name);
+                        handleFieldChange('officePusatMapUrl', `https://maps.google.com/maps?q=${item.lat},${item.lon}&t=&z=15&ie=UTF8&iwloc=&output=embed`);
+                        setMapSuggestions([]);
+                        setActiveSuggestionField(null);
+                        const inputEl = document.getElementById('pusat-map-search-input') as HTMLInputElement;
+                        if (inputEl) inputEl.value = '';
+                        toast({
+                          title: "📍 Lokasi Pusat Dipin",
+                          description: "Peta lokasi kantor pusat berhasil disinkronkan dengan koordinat terpilih.",
+                        });
+                      }}
+                      className="w-full text-left text-[10px] p-2 hover:bg-slate-50 rounded-lg border-b border-slate-100 last:border-b-0 leading-normal block"
+                    >
+                      📍 <span className="font-semibold text-slate-700">{item.display_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label>Link Embed Google Maps Kantor Pusat</Label>
               <Input 
                 value={activeSectionContent.officePusatMapUrl || ''} 
                 onChange={(e) => handleFieldChange('officePusatMapUrl', e.target.value)}
-                placeholder="https://www.google.com/maps/embed?pb=..."
+                placeholder="Biarkan kosong untuk menggunakan pencarian otomatis di atas"
               />
             </div>
           </div>
