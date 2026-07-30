@@ -19,6 +19,14 @@ interface FeaturedPackagesProps {
 export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps) {
   const agentSlug = agent?.slug || 'default';
   const prefix = agentSlug === 'default' ? '' : `/${agentSlug}`;
+  const getPackageLink = (id: string) => {
+    const pkgId = id.toLowerCase();
+    if (pkgId === 'pkg1' || pkgId === 'reguler') return `${prefix}/paket/reguler`;
+    if (pkgId === 'pkg2' || pkgId === 'plus') return `${prefix}/paket/plus`;
+    if (pkgId === 'pkg3' || pkgId === 'ramadan') return `${prefix}/paket/ramadan`;
+    if (pkgId === 'haji') return `${prefix}/paket/haji`;
+    return `${prefix}/paket/reguler`;
+  };
 
   const badgeText = data?.badgeText || 'Paket';
   const title = data?.title || 'Paket Umrah Unggulan';
@@ -133,7 +141,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
                     <div className="mt-6 pt-3 border-t">
                       <p className="text-xl font-black text-primary mb-3 text-left">{pkg.price}</p>
                       <Button asChild className="w-full rounded-full h-10 text-xs font-bold bg-primary hover:bg-accent text-white">
-                        <Link href={`${prefix}/kontak`}>{pkg.btnText || 'Pesan Sekarang'}</Link>
+                        <Link href={getPackageLink(pkg.id)}>{pkg.btnText || 'Pesan Sekarang'}</Link>
                       </Button>
                     </div>
                   </CardContent>
