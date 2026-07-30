@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Mail, Clock, MapPin, Send, MessageSquare, Sparkles, Building2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,23 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
   const address = data?.address || agent?.address || (isDefault ? 'Jl. Malaka Merah No.7/6, Pd. Kopi, Kec. Duren Sawit, Kota Jakarta Timur 13460' : (agent?.displayName || 'Kantor Cabang Mitra'));
   const hours = data?.hours || 'Senin - Sabtu: 08.30 - 17.30 WIB';
   const mapEmbedUrl = data?.mapUrl || agent?.mapEmbedUrl || (isDefault ? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.335553198888!2d106.941916!3d-6.2194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698ca30e181fdf%3A0x6a1529124239860b!2sJl.%20Malaka%20Merah%20No.7%2F6%2C%20RT.7%2FRW.6%2C%20Pd.%20Kopi%2C%20Kec.%20Duren%20Sawit%2C%20Kota%20Jakarta%20Timur%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2013460!5e0!3m2!1sid!2sid!4v1710000000000!5m2!1sid!2sid' : '');
+
+  const [activeMapTab, setActiveMapTab] = useState<'mitra' | 'pusat'>(isDefault ? 'pusat' : 'mitra');
+
+  const maps = {
+    pusat: {
+      name: 'Kantor Pusat Samira Travel',
+      address: 'Jl. Malaka Merah No.7/6, Pd. Kopi, Kec. Duren Sawit, Kota Jakarta Timur 13460',
+      embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.335553198888!2d106.941916!3d-6.2194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698ca30e181fdf%3A0x6a1529124239860b!2sJl.%20Malaka%20Merah%20No.7%2F6%2C%20RT.7%2FRW.6%2C%20Pd.%20Kopi%2C%20Kec.%20Duren%20Sawit%2C%20Kota%20Jakarta%20Timur%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2013460!5e0!3m2!1sid!2sid!4v1710000000000!5m2!1sid!2sid'
+    },
+    mitra: {
+      name: agent?.displayName || 'Kantor Cabang Mitra',
+      address: address,
+      embedUrl: mapEmbedUrl
+    }
+  };
+
+  const currentMap = activeMapTab === 'pusat' ? maps.pusat : maps.mitra;
 
   // Form State for "Tanya Kami"
   const [formData, setFormData] = useState({
@@ -149,45 +166,89 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
                 <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 mb-4 group-hover:scale-110 transition-transform">
                   <Building2 className="w-6 h-6" />
                 </div>
-                <h4 className="font-bold text-primary text-base mb-1">Alamat Kantor</h4>
-                <p className="text-xs font-medium text-slate-600 leading-relaxed line-clamp-2">{address}</p>
+                <h4 className="font-bold text-primary text-base mb-1">
+                  {isDefault ? 'Alamat Kantor Pusat' : (activeMapTab === 'pusat' ? 'Alamat Kantor Pusat' : 'Alamat Kantor Mitra / Cabang')}
+                </h4>
+                <p className="text-xs font-medium text-slate-600 leading-relaxed line-clamp-3">
+                  {isDefault ? maps.pusat.address : (activeMapTab === 'pusat' ? maps.pusat.address : maps.mitra.address)}
+                </p>
               </div>
 
             </div>
 
             {/* Google Maps Embed Card */}
             <Card className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm">
-              <div className="p-3 bg-slate-900 text-white flex items-center justify-between text-xs font-bold px-4">
-                <span className="flex items-center gap-1.5 text-amber-300">
-                  <MapPin className="w-4 h-4" /> Peta Lokasi Kantor Resmi
-                </span>
+              <div className="p-3 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-4">
+                {isDefault ? (
+                  <span className="flex items-center gap-1.5 text-amber-300 text-xs font-bold">
+                    <MapPin className="w-4 h-4" /> Peta Lokasi Kantor Pusat
+                  </span>
+                ) : (
+                  <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => setActiveMapTab('mitra')}
+                      className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        activeMapTab === 'mitra'
+                          ? 'bg-amber-500 text-slate-950 shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      📍 Peta Mitra
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveMapTab('pusat')}
+                      className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        activeMapTab === 'pusat'
+                          ? 'bg-amber-500 text-slate-950 shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      🏢 Peta Pusat
+                    </button>
+                  </div>
+                )}
                 <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentMap.address)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-white hover:text-amber-300 underline text-[11px]"
+                  className="text-white hover:text-amber-300 underline text-[11px] self-end sm:self-auto"
                 >
                   Buka di Google Maps ↗
                 </a>
               </div>
-              <div className="h-64 w-full bg-slate-100 flex items-center justify-center">
-                {mapEmbedUrl ? (
-                  <iframe
-                    src={mapEmbedUrl}
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    allowFullScreen={false}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Peta Lokasi Samira Travel"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-4 text-center text-muted-foreground gap-1 bg-slate-50 w-full h-full border border-dashed border-slate-200">
-                    <MapPin className="w-6 h-6 text-slate-300" />
-                    <span className="text-xs font-bold text-slate-400">Peta Belum Dikonfigurasi</span>
-                  </div>
-                )}
+              <div className="h-64 w-full bg-slate-100 flex items-center justify-center relative">
+                <AnimatePresence mode="wait">
+                  {currentMap.embedUrl ? (
+                    <motion.iframe
+                      key={activeMapTab}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      src={currentMap.embedUrl}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen={false}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title={currentMap.name}
+                    />
+                  ) : (
+                    <motion.div
+                      key="empty-map"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center p-4 text-center text-muted-foreground gap-1 bg-slate-50 w-full h-full border border-dashed border-slate-200"
+                    >
+                      <MapPin className="w-6 h-6 text-slate-300" />
+                      <span className="text-xs font-bold text-slate-400">Peta Mitra Belum Dikonfigurasi</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </Card>
 
