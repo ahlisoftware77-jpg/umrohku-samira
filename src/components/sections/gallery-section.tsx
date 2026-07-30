@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import CircularGallery from '@/components/ui/circular-gallery';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { X, Maximize2, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
+import { X, Maximize2, ChevronLeft, ChevronRight, ImageIcon, Camera, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Agent } from '@/lib/agents';
 import { db } from '@/lib/firebase';
@@ -18,18 +17,26 @@ interface GallerySectionProps {
   data?: Record<string, any>;
 }
 
+const CATEGORIES = [
+  { id: 'all', label: 'Semua Foto' },
+  { id: 'ibadah', label: 'Momen Ibadah' },
+  { id: 'ziarah', label: 'Ziarah & Perjalanan' },
+  { id: 'kebersamaan', label: 'Kebersamaan Jamaah' }
+];
+
 export default function GallerySection({ agent, data }: GallerySectionProps) {
+  const [activeCategory, setActiveCategory] = useState('all');
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [dbGalleryImages, setDbGalleryImages] = useState<string[]>([]);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // Fetch all gallery-category Cloudinary photos for this tenant from Firestore images collection
+  // Fetch all gallery-category Cloudinary photos for this tenant from Firestore
   useEffect(() => {
     async function loadTenantUploadedImages() {
       const tenantIdKey = agent?.tenantId;
       if (!tenantIdKey) return;
 
       try {
-        // ONLY fetch images explicitly categorized as 'gallery' to avoid showing package/pricing images
         const q = query(
           collection(db, 'images'), 
           where('tenantId', '==', tenantIdKey),
@@ -40,7 +47,6 @@ export default function GallerySection({ agent, data }: GallerySectionProps) {
 
         const list = snap.docs.map(d => d.data() as MediaImage);
         
-        // Safe sort: createdAt can be Firestore Timestamp object OR ISO string
         const getTimestamp = (createdAt: any): number => {
           if (!createdAt) return 0;
           if (typeof createdAt === 'string') return new Date(createdAt).getTime() || 0;
@@ -65,10 +71,6 @@ export default function GallerySection({ agent, data }: GallerySectionProps) {
     loadTenantUploadedImages();
   }, [agent?.tenantId]);
 
-  // Priority logic:
-  // 1. data.galleryImages (set by editor, saved to Firestore contents)
-  // 2. dbGalleryImages (images uploaded with category='gallery' for this tenant)
-  // 3. Placeholder images (default local images)
   const customSectionImages = useMemo(() => {
     const raw = data?.galleryImages || data?.images || [];
     if (!Array.isArray(raw)) return [];
@@ -76,30 +78,18 @@ export default function GallerySection({ agent, data }: GallerySectionProps) {
   }, [data?.galleryImages, data?.images]);
   
   const allImages = useMemo(() => {
-    // Priority 1: editor-configured gallery images
-    if (customSectionImages.length > 0) {
-      console.log(`[GallerySection ${agent?.slug || 'unknown'}] Using customSectionImages:`, customSectionImages);
-      return customSectionImages.slice(0, 20);
-    }
-    // Priority 2: Cloudinary gallery uploads
-    if (dbGalleryImages.length > 0) {
-      console.log(`[GallerySection ${agent?.slug || 'unknown'}] Using dbGalleryImages:`, dbGalleryImages);
-      return dbGalleryImages.slice(0, 20);
-    }
-    console.log(`[GallerySection ${agent?.slug || 'unknown'}] Using placeholders`);
-    return [];
-  }, [customSectionImages, dbGalleryImages, agent?.slug]);
+    if (customSectionImages.length > 0) return customSectionImages.slice(0, 24);
+    if (dbGalleryImages.length > 0) return dbGalleryImages.slice(0, 24);
+    
+    // Default placeholders
+    return PlaceHolderImages
+      .filter(img => (img.id.startsWith('gallery-') || img.id.startsWith('hero-') || img.id.startsWith('package-')) && img.imageUrl !== "")
+      .map(img => img.imageUrl);
+  }, [customSectionImages, dbGalleryImages]);
 
-  useEffect(() => {
-    console.log(`[GallerySection ${agent?.slug || 'unknown'}] Data prop:`, data);
-    console.log(`[GallerySection ${agent?.slug || 'unknown'}] agent.tenantId:`, agent?.tenantId);
-  }, [data, agent?.tenantId, agent?.slug]);
-
-
-  // Optimize Cloudinary URLs on the fly for fast CDN delivery and smaller footprint
+  // Optimize Cloudinary URLs
   const optimizeImageUrl = (url: string) => {
     if (!url) return '';
-    // If it's a Cloudinary URL, inject resize & compression transformations (width=800, auto format, auto quality)
     if (url.includes('res.cloudinary.com')) {
       const parts = url.split('/upload/');
       if (parts.length === 2) {
@@ -109,109 +99,152 @@ export default function GallerySection({ agent, data }: GallerySectionProps) {
     return url;
   };
 
+  // Build gallery items with category tags
   const galleryItems = useMemo(() => {
-    return allImages.length > 0
-      ? allImages.map(imgUrl => ({
-          image: optimizeImageUrl(imgUrl),
-          text: ""
-        }))
-      : PlaceHolderImages
-          .filter(img => img.id.startsWith('gallery-') && img.imageUrl !== "")
-          .map(img => ({
-            image: img.imageUrl,
-            text: ""
-          }));
+    return allImages.map((imgUrl, idx) => {
+      const url = optimizeImageUrl(imgUrl);
+      let category = 'kebersamaan';
+      let title = 'Kebersamaan Jamaah';
+      
+      // Smart categorization
+      if (url.toLowerCase().includes('makkah') || url.toLowerCase().includes('haram') || idx % 3 === 0) {
+        category = 'ibadah';
+        title = 'Kekhusyukan Ibadah';
+      } else if (url.toLowerCase().includes('madinah') || url.toLowerCase().includes('nabawi') || idx % 3 === 1) {
+        category = 'ziarah';
+        title = 'Ziarah & Perjalanan Religi';
+      }
+      
+      return {
+        image: url,
+        category,
+        title,
+        description: `Momen indah perjalanan ibadah bersama Samira Travel.`
+      };
+    });
   }, [allImages]);
 
-  // Reset preview modal index whenever gallery items change
-  useEffect(() => {
-    setSelectedIndex(null);
-  }, [allImages.length]);
+  // Filtered Items based on selected category
+  const filteredItems = useMemo(() => {
+    if (activeCategory === 'all') return galleryItems;
+    return galleryItems.filter(item => item.category === activeCategory);
+  }, [galleryItems, activeCategory]);
 
   const handlePrev = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (selectedIndex === null) return;
-    setSelectedIndex((prev) => (prev !== null ? (prev - 1 + galleryItems.length) % galleryItems.length : 0));
+    setSelectedIndex((prev) => (prev !== null ? (prev - 1 + filteredItems.length) % filteredItems.length : 0));
   };
 
   const handleNext = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (selectedIndex === null) return;
-    setSelectedIndex((prev) => (prev !== null ? (prev + 1) % galleryItems.length : 0));
+    setSelectedIndex((prev) => (prev !== null ? (prev + 1) % filteredItems.length : 0));
   };
 
-  const handleItemClick = (item: { image: string; text: string }) => {
-    const index = galleryItems.findIndex(i => i.image === item.image);
-    if (index !== -1) {
-      setSelectedIndex(index);
-    }
-  };
-
-  const selectedImage = selectedIndex !== null ? galleryItems[selectedIndex] ?? null : null;
+  const selectedImage = selectedIndex !== null ? filteredItems[selectedIndex] ?? null : null;
 
   return (
-    <section id="galeri" className="py-12 md:py-24 bg-background overflow-hidden">
+    <section id="galeri" className="py-20 md:py-28 bg-white overflow-hidden">
       <div className="container mx-auto px-4">
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.0 }}
-          className="text-center mb-8 md:mb-16"
-        >
-          <p className="font-semibold text-accent font-headline text-sm md:text-base uppercase tracking-widest">
+        
+        {/* Header */}
+        <div className="text-center mb-12">
+          <p className="font-semibold text-accent font-headline text-sm md:text-base uppercase tracking-widest mb-3">
             {data?.badgeText || 'Galeri Dokumentasi'}
           </p>
-          
-          <h2 className="text-2xl md:text-5xl font-headline font-bold text-primary mt-2">
+          <h2 className="text-3xl md:text-5xl font-headline font-bold text-primary">
             {data?.title || 'Kenangan Indah di Tanah Suci'}
           </h2>
-
-          <p className="mt-3 md:mt-4 max-w-2xl mx-auto text-sm md:text-base text-muted-foreground">
-            {data?.description || (
-              <>
-                {agent?.slug !== 'default' && <span>Dokumentasi perjalanan bersama {agent?.name}. </span>}
-                Geser galeri melingkar di bawah untuk melihat momen-momen khusyuk. Klik pada foto untuk melihat dalam ukuran penuh.
-              </>
-            )}
+          <p className="mt-4 max-w-2xl mx-auto text-base text-muted-foreground">
+            {data?.description || 'Kumpulan potret nyata kebahagiaan dan kekhusyukan para jamaah selama menjalankan ibadah Umrah dan Haji bersama Samira Travel.'}
           </p>
-        </motion.div>
-        
-        {/* 3D Circular WebGL Gallery */}
+        </div>
+
+        {/* Interactive Category Filter Tabs */}
+        <div className="flex flex-wrap justify-center gap-2.5 md:gap-3 mb-12">
+          {CATEGORIES.map((tab) => {
+            const isActive = activeCategory === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveCategory(tab.id);
+                  setSelectedIndex(null);
+                }}
+                className={`relative px-5 py-2.5 rounded-full text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-300 border ${
+                  isActive 
+                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/10' 
+                    : 'bg-slate-50 text-muted-foreground border-slate-200/60 hover:bg-slate-100 hover:text-primary'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Smooth Grid Layout */}
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          className="relative h-[450px] md:h-[650px] w-full bg-primary/5 rounded-2xl md:rounded-[2rem] overflow-hidden border border-primary/10 shadow-2xl"
+          layout
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
         >
-          {galleryItems.length > 0 ? (
-            <CircularGallery 
-              items={galleryItems} 
-              bend={0}
-              textColor="transparent"
-              borderRadius={0.05}
-              scrollSpeed={2}
-              scrollEase={0.05}
-              onItemClick={handleItemClick}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Memuat foto dokumentasi...
-            </div>
-          )}
-          
-          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background to-transparent pointer-events-none"></div>
-          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-t-t from-background to-transparent pointer-events-none"></div>
-          
-          <div className="absolute bottom-6 right-6 hidden md:flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full border border-white/30 text-primary text-xs font-bold animate-pulse pointer-events-none">
-            <Maximize2 className="w-3 h-3" /> Klik Foto untuk Zoom
-          </div>
+          <AnimatePresence mode="popLayout">
+            {filteredItems.map((item, idx) => (
+              <motion.div
+                layout
+                key={item.image}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 shadow-sm cursor-pointer group bg-slate-50"
+                onClick={() => setSelectedIndex(idx)}
+                onMouseEnter={() => setHoveredIndex(idx)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
+                <Image
+                  src={item.image}
+                  alt={item.title}
+                  fill
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                />
+                
+                {/* Smooth Hover Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+                  <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full border border-white/20 transform translate-y-2 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <Maximize2 className="w-4 h-4 text-white" />
+                  </div>
+                  
+                  <div className="transform translate-y-3 group-hover:translate-y-0 transition-transform duration-300">
+                    <span className="text-[9px] font-extrabold text-accent uppercase tracking-widest bg-accent/20 px-2 py-0.5 rounded-full border border-accent/30">
+                      {CATEGORIES.find(c => c.id === item.category)?.label}
+                    </span>
+                    <h4 className="font-bold text-white text-base mt-2 font-headline leading-tight">
+                      {item.title}
+                    </h4>
+                    <p className="text-[10px] text-white/70 mt-1 font-light leading-relaxed truncate">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </motion.div>
+
+        {filteredItems.length === 0 && (
+          <div className="text-center py-20 bg-slate-50 rounded-2xl border border-slate-100">
+            <ImageIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-muted-foreground text-sm font-medium">Belum ada foto dalam kategori ini.</p>
+          </div>
+        )}
       </div>
 
+      {/* Lightbox Slider Dialog with Spring transitions */}
       <Dialog open={selectedIndex !== null} onOpenChange={(open) => !open && setSelectedIndex(null)}>
-        <DialogContent className="max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] p-0 overflow-hidden border-none bg-black/95 backdrop-blur-xl">
+        <DialogContent className="max-w-[95vw] md:max-w-[85vw] p-0 overflow-hidden border-none bg-black/95 backdrop-blur-xl">
           <DialogHeader className="absolute top-4 right-4 z-50">
              <DialogTitle className="sr-only">Detail Foto Dokumentasi</DialogTitle>
              <DialogDescription className="sr-only">
@@ -226,31 +259,42 @@ export default function GallerySection({ agent, data }: GallerySectionProps) {
              </button>
           </DialogHeader>
           
-          <div className="relative w-full h-[70vh] md:h-[85vh] flex items-center justify-center p-4 md:p-8">
+          <div className="relative w-full h-[70vh] md:h-[80vh] flex items-center justify-center p-4 md:p-8">
             <AnimatePresence mode="wait">
               {selectedImage && (
                 <motion.div
                   key={selectedImage.image}
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  transition={{ type: "spring", damping: 30, stiffness: 200 }}
+                  initial={{ opacity: 0, scale: 0.95, x: 20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, x: -20 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 180 }}
                   className="relative w-full h-full flex flex-col items-center justify-center"
                 >
                   <div className="relative w-full h-full">
                     <Image
                       src={selectedImage.image}
-                      alt="Dokumentasi Samira"
+                      alt={selectedImage.title}
                       fill
                       className="object-contain"
                       priority
-                      quality={90}
+                      quality={95}
                     />
+                  </div>
+                  
+                  {/* Photo details caption */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-center text-white">
+                    <span className="text-[10px] text-accent uppercase font-bold tracking-widest">
+                      {selectedImage.title}
+                    </span>
+                    <p className="text-xs md:text-sm text-white/80 mt-1 max-w-xl mx-auto font-light leading-relaxed">
+                      {selectedImage.description}
+                    </p>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
+            {/* Left and Right Nav Buttons */}
             <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
               <Button 
                 variant="ghost" 
