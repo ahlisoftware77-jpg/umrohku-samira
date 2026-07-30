@@ -131,7 +131,7 @@ export default function DynamicHomeTemplate({
       case 'why_umrah':
         return <WhyUmrah key={section.sectionId} />;
       case 'why_samira':
-        return <WhySamira key={section.sectionId} />;
+        return <WhySamira key={section.sectionId} agent={agentCompat} />;
       case 'finance':
         return <FinancialSolution key={section.sectionId} agent={agentCompat} data={data} />;
       case 'muri':

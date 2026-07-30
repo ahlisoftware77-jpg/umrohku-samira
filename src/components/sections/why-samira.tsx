@@ -25,7 +25,7 @@ const features = [
   }
 ];
 
-export default function WhySamira() {
+export default function WhySamira({ agent }: { agent?: { slug: string } }) {
   return (
     <section className="py-16 md:py-24 bg-white overflow-hidden">
       <div className="container mx-auto px-4">
@@ -66,7 +66,7 @@ export default function WhySamira() {
 
             <div className="mt-12 text-center lg:text-left">
               <Link 
-                href="/tentang" 
+                href={agent?.slug && agent.slug !== 'default' ? `/${agent.slug}/tentang` : "/tentang"} 
                 className="text-primary font-bold hover:text-accent transition-colors border-b-2 border-accent pb-1 inline-flex items-center gap-2"
               >
                 Selengkapnya Tentang Kami
