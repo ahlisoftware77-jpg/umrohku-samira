@@ -453,11 +453,12 @@ export default function TenantDashboardPage() {
             { sectionId: 'sec_why_samira', tenantId: tenantIdString, landingPageId: pageId, type: 'why_samira', order: 4, isHidden: false },
             { sectionId: 'sec_service', tenantId: tenantIdString, landingPageId: pageId, type: 'service', order: 5, isHidden: false },
             { sectionId: 'sec_faq', tenantId: tenantIdString, landingPageId: pageId, type: 'faq', order: 6, isHidden: false },
-            { sectionId: 'sec_gallery', tenantId: tenantIdString, landingPageId: pageId, type: 'gallery', order: 7, isHidden: false },
-            { sectionId: 'sec_muri', tenantId: tenantIdString, landingPageId: pageId, type: 'muri', order: 8, isHidden: false },
-            { sectionId: 'sec_testimonial', tenantId: tenantIdString, landingPageId: pageId, type: 'testimonial', order: 9, isHidden: false },
-            { sectionId: 'sec_cta', tenantId: tenantIdString, landingPageId: pageId, type: 'cta', order: 10, isHidden: false },
-            { sectionId: 'sec_contact', tenantId: tenantIdString, landingPageId: pageId, type: 'contact', order: 11, isHidden: false }
+            { sectionId: 'sec_flow', tenantId: tenantIdString, landingPageId: pageId, type: 'flow', order: 7, isHidden: false },
+            { sectionId: 'sec_gallery', tenantId: tenantIdString, landingPageId: pageId, type: 'gallery', order: 8, isHidden: false },
+            { sectionId: 'sec_muri', tenantId: tenantIdString, landingPageId: pageId, type: 'muri', order: 9, isHidden: false },
+            { sectionId: 'sec_testimonial', tenantId: tenantIdString, landingPageId: pageId, type: 'testimonial', order: 10, isHidden: false },
+            { sectionId: 'sec_cta', tenantId: tenantIdString, landingPageId: pageId, type: 'cta', order: 11, isHidden: false },
+            { sectionId: 'sec_contact', tenantId: tenantIdString, landingPageId: pageId, type: 'contact', order: 12, isHidden: false }
           ];
 
           // Seed default contents
@@ -485,6 +486,10 @@ export default function TenantDashboardPage() {
 
             { contentId: `${tenantIdString}_sec_faq_title`, tenantId: tenantIdString, sectionId: 'sec_faq', key: 'title', value: 'PENJELASAN PAKET UMROH SAMIRA' },
             { contentId: `${tenantIdString}_sec_faq_badgeText`, tenantId: tenantIdString, sectionId: 'sec_faq', key: 'badgeText', value: 'Informasi Akomodasi' },
+
+            { contentId: `${tenantIdString}_sec_flow_title`, tenantId: tenantIdString, sectionId: 'sec_flow', key: 'title', value: 'Proses Pendaftaran Mudah' },
+            { contentId: `${tenantIdString}_sec_flow_badgeText`, tenantId: tenantIdString, sectionId: 'sec_flow', key: 'badgeText', value: 'Cara Kerja' },
+            { contentId: `${tenantIdString}_sec_flow_description`, tenantId: tenantIdString, sectionId: 'sec_flow', key: 'description', value: 'Sederhana, cepat, dan transparan dalam 4 langkah mudah.' },
 
             { contentId: `${tenantIdString}_sec_gallery_title`, tenantId: tenantIdString, sectionId: 'sec_gallery', key: 'title', value: 'Momen Indah Ibadah Jamaah' },
             { contentId: `${tenantIdString}_sec_gallery_badgeText`, tenantId: tenantIdString, sectionId: 'sec_gallery', key: 'badgeText', value: 'Dokumentasi Kegiatan' },
@@ -520,6 +525,7 @@ export default function TenantDashboardPage() {
             sec_why_samira: { title: 'Mengapa Umroh Bersama Samira Travel', badgeText: 'Keunggulan Mitra' },
             sec_service: { title: 'Paket Umrah & Haji Terpopuler 2026', badgeText: 'Pilihan Paket Utama', description: 'Temukan pilihan paket ibadah umrah yang dirancang khusus untuk kenyamanan dan kekhusyukan ibadah keluarga Anda.' },
             sec_faq: { title: 'PENJELASAN PAKET UMROH SAMIRA', badgeText: 'Informasi Akomodasi' },
+            sec_flow: { title: 'Proses Pendaftaran Mudah', badgeText: 'Cara Kerja', description: 'Sederhana, cepat, dan transparan dalam 4 langkah mudah.' },
             sec_gallery: { title: 'Momen Indah Ibadah Jamaah', badgeText: 'Dokumentasi Kegiatan' },
             sec_muri: { title: 'Anugrah Rekor MURI', badgeText: 'Rekor MURI' },
             sec_testimonial: { title: 'Apa Kata Jamaah Yang Telah Beribadah Bersama Kami', badgeText: 'Kisah Jamaah' },

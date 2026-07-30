@@ -80,6 +80,7 @@ export default function EditorSidebar() {
     finance: 'Solusi Pembiayaan',
     muri: 'Anugrah Rekor MURI',
     faq: 'Informasi Akomodasi',
+    flow: 'Cara Kerja / Alur',
   };
 
   const getSectionLabel = (type?: string) => {
@@ -145,6 +146,7 @@ export default function EditorSidebar() {
     { type: 'why_samira', label: 'Mengapa Samira Travel' },
     { type: 'service', label: 'Paket & Layanan' },
     { type: 'faq', label: 'Informasi Akomodasi' },
+    { type: 'flow', label: 'Cara Kerja / Alur' },
     { type: 'gallery', label: 'Galeri Media' },
     { type: 'muri', label: 'Anugrah Rekor MURI' },
     { type: 'portfolio', label: 'E-Katalog Product Knowledge' },
@@ -929,6 +931,40 @@ export default function EditorSidebar() {
               >
                 <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Foto
               </Button>
+            </div>
+          </div>
+        );
+
+      case 'flow':
+        return (
+          <div className="space-y-4">
+            <div className="border-b pb-3">
+              <h3 className="font-bold text-base text-primary">Penyuntingan Seksi Cara Kerja / Alur</h3>
+              <p className="text-xs text-muted-foreground">Seksi ini menampilkan alur pendaftaran mudah dalam 4 langkah terstruktur.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Teks Lencana (Badge)</Label>
+              <Input 
+                value={activeSectionContent.badgeText || ''} 
+                onChange={(e) => handleFieldChange('badgeText', e.target.value)}
+                placeholder="Cara Kerja"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Judul Utama Seksi</Label>
+              <Input 
+                value={activeSectionContent.title || ''} 
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                placeholder="Proses Pendaftaran Mudah"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Deskripsi Subtitle</Label>
+              <Textarea 
+                value={activeSectionContent.description || ''} 
+                onChange={(e) => handleFieldChange('description', e.target.value)}
+                placeholder="Sederhana, cepat, dan transparan dalam 4 langkah mudah."
+              />
             </div>
           </div>
         );

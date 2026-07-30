@@ -136,6 +136,8 @@ export default function DynamicHomeTemplate({
         return <FinancialSolution key={section.sectionId} agent={agentCompat} data={data} />;
       case 'muri':
         return <MuriAwards key={section.sectionId} />;
+      case 'flow':
+        return <RegistrationFlow key={section.sectionId} data={data} />;
       default:
         return null;
     }

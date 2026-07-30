@@ -38,14 +38,14 @@ export default function RegistrationFlow({ data }: { data?: Record<string, any> 
           transition={{ duration: 1.0 }}
           className="text-center mb-10 md:mb-12"
         >
-          <p className="font-semibold text-accent font-headline text-sm md:text-base">Cara Kerja</p>
+          <p className="font-semibold text-accent font-headline text-sm md:text-base">{data?.badgeText || 'Cara Kerja'}</p>
           
           <h2 className="text-2xl md:text-4xl font-headline font-bold text-primary mt-2">
-            Proses Pendaftaran Mudah
+            {data?.title || 'Proses Pendaftaran Mudah'}
           </h2>
 
           <p className="mt-3 max-w-2xl mx-auto text-sm md:text-base text-muted-foreground">
-            Sederhana, cepat, dan transparan dalam 4 langkah mudah.
+            {data?.description || 'Sederhana, cepat, dan transparan dalam 4 langkah mudah.'}
           </p>
         </motion.div>
         
