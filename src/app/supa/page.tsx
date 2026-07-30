@@ -609,18 +609,69 @@ service cloud.firestore {
     alert(`Tautan reset sandi akun ${tenant.email} telah diproses (Wrappers Auth).`);
   };
 
-  // Handle Delete
-  const handleDeleteTenant = async (tenantId: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus Tenant ini secara permanen dari sistem? Tindakan ini tidak dapat dibatalkan.')) return;
+  // Handle Delete Thoroughly (by tenantId, subdomain, and email)
+  const handleDeleteTenant = async (tenant: Tenant) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus Tenant "${tenant.company || tenant.name || tenant.subdomain}" (${tenant.email}) secara permanen dari sistem? Tindakan ini tidak dapat dibatalkan.`)) return;
     try {
-      await deleteDoc(doc(db, 'tenants', tenantId));
-      try { await deleteDoc(doc(db, 'users', tenantId)); } catch (uErr) {}
+      // 1. Delete from tenants collection by tenantId doc reference
+      if (tenant.tenantId) {
+        try { await deleteDoc(doc(db, 'tenants', tenant.tenantId)); } catch (e) {}
+      }
+
+      // 2. Query & delete any tenant docs matching subdomain, email, or tenantId
+      const tenantsRef = collection(db, 'tenants');
+      const qTenantsSub = query(tenantsRef, where('subdomain', '==', tenant.subdomain));
+      const snapSub = await getDocs(qTenantsSub);
+      for (const d of snapSub.docs) {
+        try { await deleteDoc(doc(db, 'tenants', d.id)); } catch (e) {}
+      }
+
+      if (tenant.email) {
+        const qTenantsEmail = query(tenantsRef, where('email', '==', tenant.email));
+        const snapEmail = await getDocs(qTenantsEmail);
+        for (const d of snapEmail.docs) {
+          try { await deleteDoc(doc(db, 'tenants', d.id)); } catch (e) {}
+        }
+      }
+
+      // 3. Delete from users collection by doc reference & query
+      if (tenant.tenantId) {
+        try { await deleteDoc(doc(db, 'users', tenant.tenantId)); } catch (e) {}
+      }
       
-      setTenants(prev => prev.filter(t => t.tenantId !== tenantId));
-      alert('Tenant dan data user terkait berhasil dihapus secara permanen.');
+      const usersRef = collection(db, 'users');
+      if (tenant.email) {
+        const qUsersEmail = query(usersRef, where('email', '==', tenant.email));
+        const snapUserEmail = await getDocs(qUsersEmail);
+        for (const d of snapUserEmail.docs) {
+          try { await deleteDoc(doc(db, 'users', d.id)); } catch (e) {}
+        }
+      }
+
+      if (tenant.subdomain) {
+        const qUsersSub = query(usersRef, where('subdomain', '==', tenant.subdomain));
+        const snapUserSub = await getDocs(qUsersSub);
+        for (const d of snapUserSub.docs) {
+          try { await deleteDoc(doc(db, 'users', d.id)); } catch (e) {}
+        }
+      }
+
+      // 4. Delete landing pages associated with this tenant
+      try {
+        const pagesRef = collection(db, 'landingPages');
+        const qPages = query(pagesRef, where('tenantId', '==', tenant.tenantId));
+        const snapPages = await getDocs(qPages);
+        for (const d of snapPages.docs) {
+          try { await deleteDoc(doc(db, 'landingPages', d.id)); } catch (e) {}
+        }
+      } catch (ePages) {}
+
+      // Update local state
+      setTenants(prev => prev.filter(t => t.tenantId !== tenant.tenantId && t.email !== tenant.email && t.subdomain !== tenant.subdomain));
+      alert(`Tenant "${tenant.company || tenant.subdomain}" beserta seluruh dokumen terkait berhasil dihapus secara permanen.`);
     } catch (err) {
-      console.error(err);
-      alert('Gagal menghapus tenant.');
+      console.error('Failed to delete tenant:', err);
+      alert('Gagal menghapus tenant. Silakan coba lagi.');
     }
   };
 
@@ -1217,7 +1268,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleResetPassword(t)} title="Reset Password">
                             <Key className="h-4 w-4 text-yellow-600" />
                           </Button>
-                          <Button size="icon" variant="outline" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteTenant(t.tenantId)} title="Hapus Permanen">
+                          <Button size="icon" variant="outline" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteTenant(t)} title="Hapus Permanen">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
