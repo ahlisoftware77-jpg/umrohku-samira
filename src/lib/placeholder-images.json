@@ -110,14 +110,14 @@
     },
     {
       "id": "why-choose-us-1",
-      "description": "Interior Masjidil Haram yang bercahaya.",
-      "imageUrl": "https://images.unsplash.com/photo-1569448834428-94c6574a4a58?q=80&w=1080",
+      "description": "Background Keunggulan Samira Travel.",
+      "imageUrl": "/images/bg-unggulan.jpeg",
       "imageHint": "mosque interior"
     },
     {
       "id": "why-choose-us-2",
-      "description": "Jamaah sedang berjalan di area Masjidil Haram.",
-      "imageUrl": "https://images.unsplash.com/photo-1558223933-aff3f458117c?q=80&w=1080",
+      "description": "Background Keunggulan Samira Travel.",
+      "imageUrl": "/images/bg-unggulan.jpeg",
       "imageHint": "masjidil haram"
     },
     {

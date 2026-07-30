@@ -122,10 +122,10 @@ export default function WhyChooseUs({ data }: { data?: Record<string, any> }) {
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
 
   const fallbackBg = PlaceHolderImages.find(p => p.id === 'why-choose-us-2');
-  const bgImageUrl = data?.imageUrl || fallbackBg?.imageUrl;
+  const bgImageUrl = data?.imageUrl || fallbackBg?.imageUrl || '/images/bg-unggulan.jpeg';
   
   const sideImageFallback = PlaceHolderImages.find(p => p.id === 'hero-masjidil-haram-1');
-  const sideImageUrl = data?.sideImageUrl || sideImageFallback?.imageUrl;
+  const sideImageUrl = data?.sideImageUrl || sideImageFallback?.imageUrl || '/images/Makkah.jpg';
 
   const badgeText = data?.badgeText || 'Keunggulan Kami';
   const title = data?.title || 'Mengapa Ribuan Jamaah Memilih Samira Travel?';
