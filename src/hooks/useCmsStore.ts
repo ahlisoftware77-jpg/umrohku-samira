@@ -266,6 +266,31 @@ export const useCmsStore = create<CmsState>((set, get) => {
               title: 'Konsultasi Perjalanan Umrah Anda',
               description: 'Tim konsultan kami siap melayani pertanyaan dan bantuan pendaftaran 24/7.',
             };
+          case 'why_umrah':
+            return {
+              badgeText: 'Keutamaan',
+              title: '12 Alasan Harus Umroh',
+            };
+          case 'why_samira':
+            return {
+              badgeText: 'Keunggulan Mitra',
+              title: 'Mengapa Umroh Bersama Samira Travel',
+            };
+          case 'finance':
+            return {
+              badgeText: 'Solusi Pembiayaan',
+              title: 'Mau Umroh Tapi Terkendala Biaya?',
+            };
+          case 'muri':
+            return {
+              badgeText: 'Rekor MURI',
+              title: 'Anugrah Rekor MURI',
+            };
+          case 'faq':
+            return {
+              badgeText: 'Informasi Akomodasi',
+              title: 'PENJELASAN PAKET UMROH SAMIRA',
+            };
           default:
             return {};
         }

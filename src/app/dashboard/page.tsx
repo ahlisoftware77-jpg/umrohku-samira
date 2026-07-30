@@ -447,7 +447,17 @@ export default function TenantDashboardPage() {
           // Seed default sections
           const seedSections: Section[] = [
             { sectionId: 'sec_hero', tenantId: tenantIdString, landingPageId: pageId, type: 'hero', order: 0, isHidden: false },
-            { sectionId: 'sec_about', tenantId: tenantIdString, landingPageId: pageId, type: 'about', order: 1, isHidden: false }
+            { sectionId: 'sec_about', tenantId: tenantIdString, landingPageId: pageId, type: 'about', order: 1, isHidden: false },
+            { sectionId: 'sec_why_umrah', tenantId: tenantIdString, landingPageId: pageId, type: 'why_umrah', order: 2, isHidden: false },
+            { sectionId: 'sec_finance', tenantId: tenantIdString, landingPageId: pageId, type: 'finance', order: 3, isHidden: false },
+            { sectionId: 'sec_why_samira', tenantId: tenantIdString, landingPageId: pageId, type: 'why_samira', order: 4, isHidden: false },
+            { sectionId: 'sec_service', tenantId: tenantIdString, landingPageId: pageId, type: 'service', order: 5, isHidden: false },
+            { sectionId: 'sec_faq', tenantId: tenantIdString, landingPageId: pageId, type: 'faq', order: 6, isHidden: false },
+            { sectionId: 'sec_gallery', tenantId: tenantIdString, landingPageId: pageId, type: 'gallery', order: 7, isHidden: false },
+            { sectionId: 'sec_muri', tenantId: tenantIdString, landingPageId: pageId, type: 'muri', order: 8, isHidden: false },
+            { sectionId: 'sec_testimonial', tenantId: tenantIdString, landingPageId: pageId, type: 'testimonial', order: 9, isHidden: false },
+            { sectionId: 'sec_cta', tenantId: tenantIdString, landingPageId: pageId, type: 'cta', order: 10, isHidden: false },
+            { sectionId: 'sec_contact', tenantId: tenantIdString, landingPageId: pageId, type: 'contact', order: 11, isHidden: false }
           ];
 
           // Seed default contents
@@ -455,9 +465,41 @@ export default function TenantDashboardPage() {
             { contentId: `${tenantIdString}_sec_hero_title`, tenantId: tenantIdString, sectionId: 'sec_hero', key: 'title', value: 'Mulailah Perjalanan Suci Anda Bersama SAMIRA' },
             { contentId: `${tenantIdString}_sec_hero_badgeText`, tenantId: tenantIdString, sectionId: 'sec_hero', key: 'badgeText', value: 'Biro Perjalanan Terpercaya' },
             { contentId: `${tenantIdString}_sec_hero_description`, tenantId: tenantIdString, sectionId: 'sec_hero', key: 'description', value: 'Rasakan pengalaman ibadah yang nyaman dengan bimbingan terbaik.' },
+            
             { contentId: `${tenantIdString}_sec_about_title`, tenantId: tenantIdString, sectionId: 'sec_about', key: 'title', value: 'Pilihan Terbaik untuk Perjalanan Spiritual Anda' },
             { contentId: `${tenantIdString}_sec_about_badgeText`, tenantId: tenantIdString, sectionId: 'sec_about', key: 'badgeText', value: 'Tentang Kami' },
-            { contentId: `${tenantIdString}_sec_about_description`, tenantId: tenantIdString, sectionId: 'sec_about', key: 'description', value: 'Kami menyediakan akomodasi hotel dekat dengan masjid dan pemandu mutawwif ahli.' }
+            { contentId: `${tenantIdString}_sec_about_description`, tenantId: tenantIdString, sectionId: 'sec_about', key: 'description', value: 'Kami menyediakan akomodasi hotel dekat dengan masjid dan pemandu mutawwif ahli.' },
+
+            { contentId: `${tenantIdString}_sec_why_umrah_title`, tenantId: tenantIdString, sectionId: 'sec_why_umrah', key: 'title', value: '12 Alasan Mengapa Harus Umroh' },
+            { contentId: `${tenantIdString}_sec_why_umrah_badgeText`, tenantId: tenantIdString, sectionId: 'sec_why_umrah', key: 'badgeText', value: 'Keutamaan' },
+
+            { contentId: `${tenantIdString}_sec_finance_title`, tenantId: tenantIdString, sectionId: 'sec_finance', key: 'title', value: 'Mau Umroh Tapi Terkendala Biaya?' },
+            { contentId: `${tenantIdString}_sec_finance_badgeText`, tenantId: tenantIdString, sectionId: 'sec_finance', key: 'badgeText', value: 'Solusi Pembiayaan' },
+
+            { contentId: `${tenantIdString}_sec_why_samira_title`, tenantId: tenantIdString, sectionId: 'sec_why_samira', key: 'title', value: 'Mengapa Umroh Bersama Samira Travel' },
+            { contentId: `${tenantIdString}_sec_why_samira_badgeText`, tenantId: tenantIdString, sectionId: 'sec_why_samira', key: 'badgeText', value: 'Keunggulan Mitra' },
+
+            { contentId: `${tenantIdString}_sec_service_title`, tenantId: tenantIdString, sectionId: 'sec_service', key: 'title', value: 'Paket Umrah & Haji Terpopuler 2026' },
+            { contentId: `${tenantIdString}_sec_service_badgeText`, tenantId: tenantIdString, sectionId: 'sec_service', key: 'badgeText', value: 'Pilihan Paket Utama' },
+            { contentId: `${tenantIdString}_sec_service_description`, tenantId: tenantIdString, sectionId: 'sec_service', key: 'description', value: 'Temukan pilihan paket ibadah umrah yang dirancang khusus untuk kenyamanan dan kekhusyukan ibadah keluarga Anda.' },
+
+            { contentId: `${tenantIdString}_sec_faq_title`, tenantId: tenantIdString, sectionId: 'sec_faq', key: 'title', value: 'PENJELASAN PAKET UMROH SAMIRA' },
+            { contentId: `${tenantIdString}_sec_faq_badgeText`, tenantId: tenantIdString, sectionId: 'sec_faq', key: 'badgeText', value: 'Informasi Akomodasi' },
+
+            { contentId: `${tenantIdString}_sec_gallery_title`, tenantId: tenantIdString, sectionId: 'sec_gallery', key: 'title', value: 'Momen Indah Ibadah Jamaah' },
+            { contentId: `${tenantIdString}_sec_gallery_badgeText`, tenantId: tenantIdString, sectionId: 'sec_gallery', key: 'badgeText', value: 'Dokumentasi Kegiatan' },
+
+            { contentId: `${tenantIdString}_sec_muri_title`, tenantId: tenantIdString, sectionId: 'sec_muri', key: 'title', value: 'Anugrah Rekor MURI' },
+            { contentId: `${tenantIdString}_sec_muri_badgeText`, tenantId: tenantIdString, sectionId: 'sec_muri', key: 'badgeText', value: 'Rekor MURI' },
+
+            { contentId: `${tenantIdString}_sec_testimonial_title`, tenantId: tenantIdString, sectionId: 'sec_testimonial', key: 'title', value: 'Apa Kata Jamaah Yang Telah Beribadah Bersama Kami' },
+            { contentId: `${tenantIdString}_sec_testimonial_badgeText`, tenantId: tenantIdString, sectionId: 'sec_testimonial', key: 'badgeText', value: 'Kisah Jamaah' },
+
+            { contentId: `${tenantIdString}_sec_cta_title`, tenantId: tenantIdString, sectionId: 'sec_cta', key: 'title', value: 'Siap Menunaikan Ibadah Umrah Tahun Ini?' },
+            { contentId: `${tenantIdString}_sec_cta_description`, tenantId: tenantIdString, sectionId: 'sec_cta', key: 'description', value: 'Dapatkan diskon khusus pendaftaran awal dan konsultasi gratis dengan konsultan ibadah kami.' },
+
+            { contentId: `${tenantIdString}_sec_contact_title`, tenantId: tenantIdString, sectionId: 'sec_contact', key: 'title', value: 'Konsultasi Perjalanan Umrah Anda' },
+            { contentId: `${tenantIdString}_sec_contact_badgeText`, tenantId: tenantIdString, sectionId: 'sec_contact', key: 'badgeText', value: 'Hubungi Kami' }
           ];
 
           // Save batch to Firestore (Fail-Safe)
@@ -472,7 +514,17 @@ export default function TenantDashboardPage() {
           // Load local state
           const contentsMap: Record<string, Record<string, any>> = {
             sec_hero: { title: 'Mulailah Perjalanan Suci Anda Bersama SAMIRA', badgeText: 'Biro Perjalanan Terpercaya', description: 'Rasakan pengalaman ibadah yang nyaman dengan bimbingan terbaik.' },
-            sec_about: { title: 'Pilihan Terbaik untuk Perjalanan Spiritual Anda', badgeText: 'Tentang Kami', description: 'Kami menyediakan akomodasi hotel dekat dengan masjid dan pemandu mutawwif ahli.' }
+            sec_about: { title: 'Pilihan Terbaik untuk Perjalanan Spiritual Anda', badgeText: 'Tentang Kami', description: 'Kami menyediakan akomodasi hotel dekat dengan masjid dan pemandu mutawwif ahli.' },
+            sec_why_umrah: { title: '12 Alasan Mengapa Harus Umroh', badgeText: 'Keutamaan' },
+            sec_finance: { title: 'Mau Umroh Tapi Terkendala Biaya?', badgeText: 'Solusi Pembiayaan' },
+            sec_why_samira: { title: 'Mengapa Umroh Bersama Samira Travel', badgeText: 'Keunggulan Mitra' },
+            sec_service: { title: 'Paket Umrah & Haji Terpopuler 2026', badgeText: 'Pilihan Paket Utama', description: 'Temukan pilihan paket ibadah umrah yang dirancang khusus untuk kenyamanan dan kekhusyukan ibadah keluarga Anda.' },
+            sec_faq: { title: 'PENJELASAN PAKET UMROH SAMIRA', badgeText: 'Informasi Akomodasi' },
+            sec_gallery: { title: 'Momen Indah Ibadah Jamaah', badgeText: 'Dokumentasi Kegiatan' },
+            sec_muri: { title: 'Anugrah Rekor MURI', badgeText: 'Rekor MURI' },
+            sec_testimonial: { title: 'Apa Kata Jamaah Yang Telah Beribadah Bersama Kami', badgeText: 'Kisah Jamaah' },
+            sec_cta: { title: 'Siap Menunaikan Ibadah Umrah Tahun Ini?', description: 'Dapatkan diskon khusus pendaftaran awal dan konsultasi gratis dengan konsultan ibadah kami.' },
+            sec_contact: { title: 'Konsultasi Perjalanan Umrah Anda', badgeText: 'Hubungi Kami' }
           };
           setInitialData(defaultPage, seedSections, contentsMap);
         }
