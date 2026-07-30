@@ -163,19 +163,34 @@ export default function DynamicTenantPage({ params }: PageProps) {
           }
         } catch (sErr) {}
 
-        // Auto-Onboard All 8 Core Sections if missing
-        const CORE_TYPES: SectionType[] = ['hero', 'about', 'pricing', 'feature', 'testimonial', 'gallery', 'cta', 'contact'];
+        // Auto-Onboard All Core Sections if missing
+        const CORE_TYPES: SectionType[] = [
+          'hero',
+          'about',
+          'why_umrah',
+          'finance',
+          'why_samira',
+          'pricing',
+          'faq',
+          'flow',
+          'gallery',
+          'muri',
+          'testimonial',
+          'cta',
+          'contact'
+        ];
         const existingTypes = new Set(sectionsList.map(s => s.type));
 
-        CORE_TYPES.forEach((type, idx) => {
+        CORE_TYPES.forEach((type) => {
           if (!existingTypes.has(type)) {
             const secId = `sec_${activeTenantId}_${type}`;
+            const defaultIdx = CORE_TYPES.indexOf(type);
             sectionsList.push({
               sectionId: secId,
               tenantId: activeTenantId,
               landingPageId: validPage.pageId,
               type,
-              order: sectionsList.length + idx,
+              order: defaultIdx,
               isHidden: false,
             });
           }

@@ -380,18 +380,33 @@ export default function TenantDashboardPage() {
           } catch (sErr) {}
 
           // Auto-Onboard Missing Core Sections so no section (like galeri or pricing) is ever missing on reload
-          const CORE_TYPES: SectionType[] = ['hero', 'about', 'pricing', 'feature', 'testimonial', 'gallery', 'cta', 'contact'];
+          const CORE_TYPES: SectionType[] = [
+            'hero',
+            'about',
+            'why_umrah',
+            'finance',
+            'why_samira',
+            'pricing',
+            'faq',
+            'flow',
+            'gallery',
+            'muri',
+            'testimonial',
+            'cta',
+            'contact'
+          ];
           const existingTypes = new Set(sectionsList.map(s => s.type));
           
-          CORE_TYPES.forEach((type, idx) => {
+          CORE_TYPES.forEach((type) => {
             if (!existingTypes.has(type)) {
               const secId = `sec_${tenantIdString}_${type}`;
+              const defaultIdx = CORE_TYPES.indexOf(type);
               sectionsList.push({
                 sectionId: secId,
                 tenantId: tenantIdString,
                 landingPageId: foundPage.pageId,
                 type,
-                order: sectionsList.length + idx,
+                order: defaultIdx,
                 isHidden: false,
               });
             }
