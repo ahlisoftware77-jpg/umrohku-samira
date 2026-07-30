@@ -15,6 +15,7 @@ import { MediaImage } from '@/types/cms';
 interface GallerySectionProps {
   agent?: Agent;
   data?: Record<string, any>;
+  isFullPage?: boolean;
 }
 
 const CATEGORIES = [
@@ -24,7 +25,7 @@ const CATEGORIES = [
   { id: 'kebersamaan', label: 'Kebersamaan Jamaah' }
 ];
 
-export default function GallerySection({ agent, data }: GallerySectionProps) {
+export default function GallerySection({ agent, data, isFullPage = false }: GallerySectionProps) {
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [dbGalleryImages, setDbGalleryImages] = useState<string[]>([]);
@@ -86,8 +87,9 @@ export default function GallerySection({ agent, data }: GallerySectionProps) {
   }, [data?.galleryImages, data?.images]);
   
   const allImages = useMemo(() => {
-    if (customSectionImages.length > 0) return customSectionImages.slice(0, 24);
-    if (dbGalleryImages.length > 0) return dbGalleryImages.slice(0, 24);
+    const limit = isFullPage ? 100 : 24;
+    if (customSectionImages.length > 0) return customSectionImages.slice(0, limit);
+    if (dbGalleryImages.length > 0) return dbGalleryImages.slice(0, limit);
     
     // Default placeholders
     return PlaceHolderImages
