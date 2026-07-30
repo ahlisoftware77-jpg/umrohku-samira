@@ -69,6 +69,7 @@ export function useTenantResolver(tenantSlug: string) {
         let address = '';
         let mapEmbedUrl = '';
         let pdfUrl = '';
+        let email = '';
 
         try {
           const contentsRef = collection(db, 'contents');
@@ -82,6 +83,7 @@ export function useTenantResolver(tenantSlug: string) {
             if (c.key === 'address' && c.value) address = c.value;
             if (c.key === 'mapUrl' && c.value) mapEmbedUrl = c.value;
             if (c.key === 'pdfUrl' && c.value) pdfUrl = c.value;
+            if (c.key === 'email' && c.value) email = c.value;
           });
         } catch (err) {
           console.error('Failed to fetch tenant contents:', err);
@@ -105,9 +107,9 @@ export function useTenantResolver(tenantSlug: string) {
           tenantId: foundTenant.tenantId,
           name: foundTenant.name,
           displayName: foundTenant.company || foundTenant.name,
-          email: foundTenant.email,
+          email: email || foundTenant.email,
           phone: phone || '',
-          whatsapp: phone || '', 
+          whatsapp: (phone || '').replace(/[^0-9]/g, ''), 
           address: displayAddress,
           photoUrl: '/images/pp1.jpg',
           mapEmbedUrl: mapEmbedUrl || '',

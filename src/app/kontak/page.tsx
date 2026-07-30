@@ -1,8 +1,19 @@
 
+"use client";
+
 import ContactTemplate from '@/components/templates/contact-template';
-import { getAgent } from '@/lib/agents';
+import { useTenantResolver } from '@/hooks/useTenantResolver';
 
 export default function KontakPage() {
-  const agent = getAgent('default');
+  const { loading, agent } = useTenantResolver('default');
+
+  if (loading || !agent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+      </div>
+    );
+  }
+
   return <ContactTemplate agent={agent} />;
 }
