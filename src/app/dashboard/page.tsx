@@ -33,7 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX } from 'lucide-react';
+import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode } from 'lucide-react';
 import { Tenant, LandingPage, Section, Content, SectionType, SYSTEM_PLANS } from '@/types/cms';
 
 function getReadableIdFromEmail(emailAddress: string): string {
@@ -88,6 +88,10 @@ export default function TenantDashboardPage() {
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+
+  // Share Subdomain Modal State
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
 
   // Tenant Profile state for displaying dashboard info
   const [tenantProfile, setTenantProfile] = useState<Tenant | null>(null);
@@ -698,6 +702,16 @@ export default function TenantDashboardPage() {
             </Link>
           )}
 
+          {tenantProfile && (
+            <Button
+              onClick={() => setShowShareModal(true)}
+              variant="outline"
+              className="rounded-full text-xs font-bold border-primary/30 text-primary hover:bg-primary hover:text-white flex items-center gap-1.5 h-10 px-4 shadow-sm"
+            >
+              <Share2 className="h-4 w-4" /> Bagikan Subdomain
+            </Button>
+          )}
+
           <Button 
             onClick={handlePublish}
             className="bg-primary text-white hover:bg-accent hover:text-accent-foreground font-bold px-6 h-10 rounded-full flex gap-1.5"
@@ -817,6 +831,116 @@ export default function TenantDashboardPage() {
                   </Button>
                 </div>
               </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      {/* Modal Dialog Bagikan Subdomain */}
+      {showShareModal && tenantProfile && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg shadow-2xl rounded-3xl bg-white border-none overflow-hidden">
+            <CardHeader className="bg-primary text-white p-6 relative">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/10 rounded-2xl">
+                  <Share2 className="h-6 w-6 text-accent" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-headline font-bold">Bagikan Landing Page</CardTitle>
+                  <CardDescription className="text-white/80 text-xs mt-0.5">
+                    Sebarkan tautan website resmi Anda kepada calon jamaah & pelanggan
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-6">
+              {/* Tautan URL Subdomain Card */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-700">Tautan Subdomain Resmi Anda</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    readOnly
+                    value={`https://umrohku-samira.my.id/${tenantProfile.subdomain}`}
+                    className="font-mono text-xs bg-slate-50 font-semibold text-primary rounded-2xl h-11 border-slate-200"
+                  />
+                  <Button 
+                    onClick={() => {
+                      const shareUrl = `https://umrohku-samira.my.id/${tenantProfile.subdomain}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      setCopiedShare(true);
+                      setTimeout(() => setCopiedShare(false), 2500);
+                    }}
+                    className="rounded-2xl h-11 px-4 bg-primary text-white hover:bg-accent hover:text-accent-foreground font-bold text-xs shrink-0 flex gap-1.5"
+                  >
+                    {copiedShare ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                    {copiedShare ? 'Tersalin!' : 'Salin Link'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Quick Share Buttons */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-700">Bagikan Langsung ke Media Sosial</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {/* WhatsApp */}
+                  <a 
+                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Assalamu'alaikum, buka landing page resmi Umroh & Haji kami di:\nhttps://umrohku-samira.my.id/${tenantProfile.subdomain}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold gap-1.5"
+                  >
+                    <span className="text-lg">💬</span>
+                    <span>WhatsApp</span>
+                  </a>
+
+                  {/* Facebook */}
+                  <a 
+                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`https://umrohku-samira.my.id/${tenantProfile.subdomain}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center justify-center p-3 rounded-2xl bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold gap-1.5"
+                  >
+                    <span className="text-lg">📘</span>
+                    <span>Facebook</span>
+                  </a>
+
+                  {/* Buka Web */}
+                  <a 
+                    href={`/${tenantProfile.subdomain}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center justify-center p-3 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 hover:bg-primary hover:text-white transition-all text-xs font-bold gap-1.5"
+                  >
+                    <ExternalLink className="h-5 w-5" />
+                    <span>Buka Web</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* QR Code Container */}
+              <div className="pt-4 border-t border-slate-100 text-center">
+                <div className="inline-flex items-center gap-2 p-3 bg-slate-50 border rounded-2xl mb-2">
+                  <QrCode className="h-6 w-6 text-primary" />
+                  <span className="text-xs font-bold text-slate-700">QR Code Halaman Website</span>
+                </div>
+                <div className="flex justify-center p-3 bg-white border border-slate-200 rounded-2xl w-fit mx-auto shadow-sm">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://umrohku-samira.my.id/${tenantProfile.subdomain}`)}`} 
+                    alt="QR Code Subdomain" 
+                    className="w-36 h-36"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">Scan QR Code ini untuk membuka website langsung di HP</p>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <Button 
+                  onClick={() => setShowShareModal(false)}
+                  className="rounded-full px-6 font-bold text-xs bg-slate-200 text-slate-700 hover:bg-slate-300"
+                >
+                  Tutup
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
