@@ -1,265 +1,370 @@
-
 "use client";
 
-import Image from 'next/image';
-import { Star, Info, Users2, MapPin, Bed, BedDouble, Users } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  HelpCircle, 
+  Wallet, 
+  FileText, 
+  ShieldCheck, 
+  BadgeCheck, 
+  ChevronDown, 
+  Search, 
+  Sparkles, 
+  MessageSquare,
+  ArrowRight,
+  CheckCircle2
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
-const packageTiers = [
-  {
-    name: 'Safara',
-    stars: 3,
-    makkah: 'Hotel bintang 3, jarak 900m (±13 menit jalan kaki)',
-    madinah: 'Hotel bintang 3, jarak 500m (±10 menit jalan kaki)',
-    gradient: 'from-blue-50 to-sky-100/50 dark:from-blue-950/20 dark:to-sky-950/10',
-    border: 'border-blue-200/60 dark:border-blue-900/40',
-    shadow: 'rgba(59,130,246,0.18)',
-    iconColor: 'text-blue-600 dark:text-blue-400'
-  },
-  {
-    name: 'Safawi',
-    stars: 4,
-    makkah: 'Hotel bintang 4, jarak 750m (±10 menit jalan kaki)',
-    madinah: 'Hotel bintang 4, jarak 250m (±5 menit jalan kaki)',
-    gradient: 'from-emerald-50 to-teal-100/50 dark:from-emerald-950/20 dark:to-teal-950/10',
-    border: 'border-emerald-200/60 dark:border-emerald-900/40',
-    shadow: 'rgba(16,185,129,0.18)',
-    iconColor: 'text-emerald-600 dark:text-emerald-400'
-  },
-  {
-    name: 'Sukari',
-    stars: 5,
-    makkah: 'Hotel bintang 5, jarak 300m (±10 menit jalan kaki)',
-    madinah: 'Hotel bintang 4, jarak 150m (±5 menit jalan kaki)',
-    gradient: 'from-violet-50 to-purple-100/50 dark:from-violet-950/20 dark:to-purple-950/10',
-    border: 'border-violet-200/60 dark:border-violet-900/40',
-    shadow: 'rgba(139,92,246,0.18)',
-    iconColor: 'text-violet-600 dark:text-violet-400'
-  },
-  {
-    name: 'Majol',
-    stars: 5,
-    makkah: 'Hotel bintang 5, Depan pelataran (Zamzam Tower)',
-    madinah: 'Hotel bintang 5, Depan pelataran Masjid Nabawi',
-    gradient: 'from-amber-50 to-orange-100/50 dark:from-amber-950/20 dark:to-orange-950/10',
-    border: 'border-amber-200/60 dark:border-amber-900/40',
-    shadow: 'rgba(245,158,11,0.18)',
-    iconColor: 'text-amber-600 dark:text-amber-400'
-  }
-];
+interface FaqSectionProps {
+  data?: Record<string, any>;
+  agent?: any;
+}
 
-const roomNotes = [
-  { 
-    type: 'Quad Room', 
-    title: 'Sekamar Berempat',
-    desc: 'Satu kamar hotel dengan kapasitas 4 tempat tidur single. Solusi paling praktis dan hemat bersama keluarga besar.', 
-    bestFor: 'Sangat Cocok Rombongan Keluarga',
-    gradient: 'from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-950/50',
-    border: 'border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50',
-    shadow: 'rgba(16,185,129,0.20)',
-    iconBg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    tagColor: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/40',
-    icon: <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />,
-    capacity: 4
-  },
-  { 
-    type: 'Triple Room', 
-    title: 'Sekamar Bertiga',
-    desc: 'Satu kamar hotel dengan kapasitas 3 tempat tidur single. Menyeimbangkan kenyamanan privasi dengan anggaran seimbang.', 
-    bestFor: 'Ideal Untuk Keluarga & Sahabat',
-    gradient: 'from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-950/50',
-    border: 'border-slate-200/80 dark:border-slate-800 hover:border-blue-500/50',
-    shadow: 'rgba(59,130,246,0.20)',
-    iconBg: 'bg-blue-50 dark:bg-blue-950/30',
-    tagColor: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40',
-    icon: <Bed className="w-5 h-5 text-blue-600 dark:text-blue-400" />,
-    capacity: 3
-  },
-  { 
-    type: 'Double Room', 
-    title: 'Sekamar Berdua',
-    desc: 'Satu kamar hotel dengan kapasitas 2 tempat tidur single / 1 double bed. Memberikan keleluasaan istirahat penuh.', 
-    bestFor: 'Rekomendasi Utama Pasutri (VIP Privacy)',
-    gradient: 'from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-950/50',
-    border: 'border-slate-200/80 dark:border-slate-800 hover:border-amber-500/50',
-    shadow: 'rgba(212,175,55,0.20)',
-    iconBg: 'bg-amber-50 dark:bg-amber-950/30',
-    tagColor: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/40',
-    icon: <BedDouble className="w-5 h-5 text-amber-600 dark:text-amber-400" />,
-    capacity: 2
-  }
-];
+export default function HotelExplanation({ data, agent }: FaqSectionProps) {
+  const [activeCategory, setActiveCategory] = useState<number>(0);
+  const [openItem, setOpenItem] = useState<string | null>("0-0");
+  const [searchQuery, setSearchQuery] = useState("");
 
-export default function HotelExplanation({ data }: { data?: Record<string, any> }) {
+  const badgeText = data?.badgeText || 'Pusat Bantuan & FAQ';
+  const title = data?.title || 'HAL YANG SERING DITANYAKAN';
+  const description = data?.description || 'Temukan jawaban cepat & transparan atas pertanyaan Anda seputar paket umroh, skema pembiayaan Amitra Syariah, alur pendaftaran, dan persyaratan dokumen.';
+
+  const faqCategories = [
+    {
+      name: "Pembiayaan & Syariah",
+      badge: "Skema Syariah",
+      icon: <Wallet className="w-5 h-5" />,
+      color: "from-amber-500 to-amber-600",
+      items: [
+        {
+          q: "Kalau yang Umroh orang tua tapi yang bayar anak/keluarga bisa tidak?",
+          a: "Bisa sekali Bapak/Ibu. Pengajuan pembiayaan ke AMITRA SYARIAH dapat dilakukan atas nama Anda/penanggung jawab, dan peserta yang diberangkatkan adalah orang tua atau anggota keluarga Anda."
+        },
+        {
+          q: "Bagaimana simulasi cicilan pembiayaan Umroh?",
+          a: "Cukup membayar DP (Down Payment) awal sebesar 20% dari harga paket Umroh. Anda sudah bisa langsung berangkat Umroh! Pelunasan sisanya diangsur tiap bulan setelah Anda pulang dari Tanah Suci."
+        },
+        {
+          q: "Apakah pembiayaan ini terbebas dari Riba?",
+          a: "Insya Allah 100% AMAN dari RIBA. Pembiayaan bekerjasama dengan Amitra Syariah yang menggunakan akad Jual Beli / Ijaroh Multijasa resmi. Seluruh proses diawasi langsung oleh Dewan Syariah Nasional (DSN-MUI) & OJK."
+        },
+        {
+          q: "Apa hukum Syariah dari (Berangkat Umroh Dulu Bayar Belakangan)?",
+          a: "Sesuai Fatwa Dewan Syariah Nasional MUI No.44/DSN-MUI/VIII/2004 tentang Pembiayaan Multijasa. Yang ditransaksikan adalah FASILITAS JASA (Transportasi, Akomodasi, Bimbingan), bukan ibadahnya. Hal ini sah dan sesuai tuntunan syariat."
+        }
+      ]
+    },
+    {
+      name: "Teknis Pendaftaran",
+      badge: "Alur Pendaftaran",
+      icon: <BadgeCheck className="w-5 h-5" />,
+      color: "from-blue-500 to-blue-600",
+      items: [
+        {
+          q: "Bagaimana cara pendaftaran sistem Tunai / Cash?",
+          a: "1. Pilih tanggal keberangkatan & paket yang diinginkan.\n2. Lakukan DP/Booking Seat Rp 7.000.000 & biaya perlengkapan.\n3. Pelunasan dilakukan maksimal 30 hari sebelum jadwal keberangkatan.\n4. Siap berangkat!"
+        },
+        {
+          q: "Bagaimana cara pendaftaran sistem Angsuran / Pembiayaan Amitra?",
+          a: "1. Hubungi konsultan kami & serahkan berkas (FC KTP, KK, Bukti Penghasilan/Usaha).\n2. Proses survei kilat oleh tim Amitra (kurang dari 7 hari kerja).\n3. Akad pembiayaan & pembayaran DP.\n4. Tentukan jadwal dan siap berangkat!"
+        },
+        {
+          q: "Bagaimana jika alamat KTP berbeda dengan domisili sekarang?",
+          a: "Tidak masalah. Anda cukup melampirkan Surat Keterangan Domisili dari RT/RW/Kelurahan setempat sebagai kelengkapan dokumen."
+        }
+      ]
+    },
+    {
+      name: "Persyaratan & Dokumen",
+      badge: "Dokumen Persyaratan",
+      icon: <FileText className="w-5 h-5" />,
+      color: "from-emerald-500 to-emerald-600",
+      items: [
+        {
+          q: "Apa saja dokumen yang wajib disiapkan jamaah?",
+          a: "1. PASPOR aktif minimal 8 bulan sebelum keberangkatan (nama minimal 2 kata).\n2. FC KTP & Kartu Keluarga (KK).\n3. Buku Nikah (bagi pasutri).\n4. Pasfoto 3x4 & 4x6 latar belakang putih 80% muka.\n5. Bukti Vaksin Covid-19 & Suntik Meningitis."
+        },
+        {
+          q: "Berapa lama proses pembuatan visa dan kelengkapan dokumen?",
+          a: "Dokumen jamaah diserahkan paling lambat 30-45 hari sebelum keberangkatan agar tim pengurusan visa dan manifes penerbangan dapat memprosesnya dengan tepat waktu."
+        }
+      ]
+    },
+    {
+      name: "Fasilitas & Layanan",
+      badge: "Standar Layanan",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      color: "from-purple-500 to-purple-600",
+      items: [
+        {
+          q: "Apa saja fasilitas yang sudah didapatkan jamaah?",
+          a: "Tiket pesawat PP, Hotel bintang 3/4/5 di Makkah & Madinah (sesuai pilihan paket), Konsumsi 3x sehari masakan Indonesia, Bus AC Eksekutif, Perlengkapan Umrah premium, Tour Leader & Muthawwif berpengalaman, serta Air Zamzam (jika diizinkan KSA)."
+        },
+        {
+          q: "Apakah dibimbing oleh Ustadz / Pembimbing berpengalaman?",
+          a: "Ya! Setiap grup jamaah didampingi oleh Muthawwif (pembimbing ibadah) bersertifikat dan berilmu syar'i dari tanah air hingga selama di Tanah Suci."
+        }
+      ]
+    }
+  ];
+
+  // Filtering for search
+  const filteredCategories = faqCategories.map(cat => ({
+    ...cat,
+    items: cat.items.filter(item => 
+      item.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.a.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })).filter(cat => cat.items.length > 0);
+
+  const toggleAccordion = (val: string) => {
+    setOpenItem(openItem === val ? null : val);
+  };
+
   return (
-    <section id="penjelasan" className="py-16 md:py-24 bg-background overflow-hidden">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <p className="font-semibold text-accent font-headline text-sm md:text-base uppercase tracking-widest">{data?.badgeText || 'Informasi Akomodasi'}</p>
-          <h2 className="text-2xl md:text-4xl font-headline font-bold text-primary mt-2">
-            {data?.title || 'PENJELASAN PAKET UMROH SAMIRA'}
-          </h2>
+    <section id="faq" className="py-20 md:py-28 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
+      
+      {/* Background Decorative Blur */}
+      <div className="absolute top-1/4 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+      <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+
+      <div className="container mx-auto px-4 relative z-10 max-w-6xl">
+        
+        {/* Header Section */}
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <motion.span 
+            initial={{ opacity: 0, y: -10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 bg-accent/10 border border-accent/30 text-primary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 shadow-sm"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-accent" /> {badgeText}
+          </motion.span>
+
+          <motion.h2 
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-3xl md:text-5xl font-headline font-extrabold text-primary mb-4 leading-tight"
+          >
+            {title}
+          </motion.h2>
+
+          <motion.p 
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="text-muted-foreground text-sm md:text-base leading-relaxed"
+          >
+            {description}
+          </motion.p>
+
+          {/* Interactive Search Bar */}
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="relative max-w-xl mx-auto mt-8"
+          >
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input 
+              type="text" 
+              placeholder="Cari pertanyaan... (misal: cicilan, syarat, paspor)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 pr-4 h-13 rounded-2xl border-primary/20 bg-white shadow-lg shadow-primary/5 focus-visible:ring-primary font-medium text-sm"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")} 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground hover:text-primary"
+              >
+                Bersihkan
+              </button>
+            )}
+          </motion.div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3] group"
-          >
-            <Image
-              src={data?.imageUrl || "/images/penjelasan hotel.jpeg"}
-              alt="Penjelasan Hotel Samira"
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent"></div>
-            <div className="absolute bottom-6 left-6 right-6">
-              <div className="flex items-center gap-2 bg-accent text-accent-foreground w-fit px-4 py-1 rounded-full text-xs font-bold mb-2">
-                <Info className="w-3 h-3" /> Standar Pelayanan
-              </div>
-              <p className="text-white text-sm font-medium">Kami memastikan kenyamanan ibadah Anda dengan pilihan hotel terbaik yang strategis.</p>
-            </div>
-          </motion.div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            {packageTiers.map((tier, idx) => (
-              <motion.div
-                key={tier.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1, duration: 0.8 }}
-                whileHover={{ 
-                  y: -6, 
-                  scale: 1.02,
-                  boxShadow: `0 20px 25px -5px ${tier.shadow}, 0 8px 10px -6px ${tier.shadow}`
-                }}
-                className={`relative h-full flex flex-col p-5 bg-gradient-to-br ${tier.gradient} border ${tier.border} rounded-2xl transition-all duration-300 shadow-[4px_4px_0px_0px_rgba(10,30,59,0.05)] cursor-pointer group`}
+        {/* Category Filter Tabs (only when not searching) */}
+        {!searchQuery && (
+          <div className="flex justify-center items-center gap-2 md:gap-3 flex-wrap mb-10">
+            {faqCategories.map((cat, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveCategory(idx)}
+                className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs md:text-sm font-bold transition-all duration-300 ${
+                  activeCategory === idx
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105'
+                    : 'bg-white text-muted-foreground hover:bg-slate-100 border border-slate-200/80'
+                }`}
               >
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-headline font-bold text-xl text-primary group-hover:text-accent transition-colors duration-300">{tier.name}</h4>
-                  <div className="flex gap-0.5">
-                    {[...Array(tier.stars)].map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-accent text-accent" />
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-3.5 flex-grow">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-primary/5 p-1.5 rounded-md shrink-0">
-                      <MapPin className={`w-4 h-4 ${tier.iconColor}`} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider mb-0.5">Mekkah</p>
-                      <p className="text-xs md:text-sm text-primary/80 font-semibold leading-relaxed">{tier.makkah}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="bg-primary/5 p-1.5 rounded-md shrink-0">
-                      <MapPin className={`w-4 h-4 ${tier.iconColor}`} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider mb-0.5">Madinah</p>
-                      <p className="text-xs md:text-sm text-primary/80 font-semibold leading-relaxed">{tier.madinah}</p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+                <span className={activeCategory === idx ? 'text-accent' : 'text-primary'}>
+                  {cat.icon}
+                </span>
+                {cat.name}
+              </button>
             ))}
           </div>
+        )}
+
+        {/* Accordion List */}
+        <div className="max-w-4xl mx-auto">
+          {searchQuery ? (
+            /* Search Results View */
+            filteredCategories.length > 0 ? (
+              <div className="space-y-6">
+                {filteredCategories.map((cat, catIdx) => (
+                  <div key={catIdx} className="space-y-4">
+                    <span className="text-xs font-bold text-accent uppercase tracking-wider block mb-2">{cat.name}</span>
+                    {cat.items.map((item, itemIdx) => {
+                      const itemVal = `search-${catIdx}-${itemIdx}`;
+                      const isOpen = openItem === itemVal;
+                      return (
+                        <div key={itemIdx} className="border border-slate-200/90 rounded-2xl bg-white shadow-sm overflow-hidden transition-all">
+                          <button
+                            onClick={() => toggleAccordion(itemVal)}
+                            className="w-full text-left p-5 md:p-6 flex items-center justify-between gap-4 font-bold text-primary hover:text-accent transition-colors"
+                          >
+                            <span className="text-sm md:text-base leading-snug">{item.q}</span>
+                            <ChevronDown className={`w-5 h-5 shrink-0 text-accent transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <AnimatePresence>
+                            {isOpen && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="px-5 md:px-6 pb-6 text-xs md:text-sm text-muted-foreground leading-relaxed border-t border-slate-100 pt-4 whitespace-pre-line bg-slate-50/50"
+                              >
+                                {item.a}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-slate-300">
+                <HelpCircle className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="font-bold text-primary text-base">Pertanyaan tidak ditemukan</p>
+                <p className="text-xs text-muted-foreground mt-1">Coba kata kunci lain atau langsung hubungi tim konsultan kami.</p>
+              </div>
+            )
+          ) : (
+            /* Categorized Active Tab View */
+            <div className="space-y-4">
+              {faqCategories[activeCategory].items.map((item, itemIdx) => {
+                const itemVal = `${activeCategory}-${itemIdx}`;
+                const isOpen = openItem === itemVal;
+                return (
+                  <motion.div
+                    key={itemIdx}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: itemIdx * 0.05 }}
+                    className={`border rounded-2xl transition-all duration-300 overflow-hidden ${
+                      isOpen 
+                        ? 'border-primary/30 bg-white shadow-xl shadow-primary/5 ring-1 ring-primary/20' 
+                        : 'border-slate-200/80 bg-white hover:border-primary/20 hover:shadow-md'
+                    }`}
+                  >
+                    <button
+                      onClick={() => toggleAccordion(itemVal)}
+                      className="w-full text-left p-5 md:p-6 flex items-center justify-between gap-4 font-bold text-primary group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-extrabold shrink-0 transition-colors ${
+                          isOpen ? 'bg-accent text-accent-foreground' : 'bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white'
+                        }`}>
+                          {itemIdx + 1}
+                        </span>
+                        <span className="text-sm md:text-base leading-snug group-hover:text-accent transition-colors">
+                          {item.q}
+                        </span>
+                      </div>
+                      <div className={`p-2 rounded-xl transition-all duration-300 ${isOpen ? 'bg-primary/10 text-primary rotate-180' : 'bg-slate-100 text-slate-500'}`}>
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                    </button>
+
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-6 pb-6 text-xs md:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-4 whitespace-pre-line bg-gradient-to-b from-slate-50/80 to-white">
+                            <div className="flex gap-3">
+                              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                              <div className="space-y-2">
+                                {item.a.split('\n').map((line, lIdx) => (
+                                  <p key={lIdx} className={line.startsWith('1.') || line.startsWith('2.') || line.startsWith('3.') || line.startsWith('4.') ? 'font-semibold text-primary' : ''}>
+                                    {line}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        <motion.div
+        {/* Floating Consultation Banner */}
+        <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 1.0, delay: 0.4 }}
-          className="mt-16 p-8 md:p-12 bg-primary/5 rounded-[2.5rem] border border-primary/10 shadow-sm relative overflow-hidden"
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="mt-16 bg-gradient-to-r from-primary via-primary/95 to-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border border-white/10"
         >
-          {/* Subtle background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -z-10"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10"></div>
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10 border-b border-primary/10 pb-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-primary text-white p-3 rounded-2xl shadow-lg">
-                <Users2 className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-bold text-primary dark:text-white font-headline text-2xl tracking-wide uppercase">
-                  Pilihan Kapasitas Kamar <span className="bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent">(Room Occupancy)</span>
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Sesuaikan kenyamanan akomodasi hotel untuk Anda dan keluarga</p>
-              </div>
-            </div>
-            <div className="hidden lg:flex items-center gap-1.5 bg-accent/10 border border-accent/20 px-4.5 py-1.5 rounded-full text-[10px] font-bold text-accent uppercase tracking-widest">
-              ★ VIP Standard Services
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            {roomNotes.map((note, index) => (
-              <motion.div
-                key={note.type}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.8 }}
-                whileHover={{ 
-                  y: -8, 
-                  scale: 1.02,
-                  boxShadow: `0 25px 35px -10px ${note.shadow}`
-                }}
-                className={`relative flex flex-col p-6 bg-gradient-to-br ${note.gradient} border ${note.border} rounded-2xl transition-all duration-300 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.03)] cursor-pointer group`}
-              >
-                <div className="flex items-center justify-between mb-5">
-                  <div className={`w-11 h-11 flex items-center justify-center rounded-xl ${note.iconBg} transform group-hover:rotate-12 transition-transform duration-300 shadow-sm`}>
-                    {note.icon}
-                  </div>
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${note.tagColor} shadow-sm`}>
-                    {note.type}
-                  </span>
-                </div>
-                
-                <h4 className="font-bold text-lg text-primary dark:text-white group-hover:text-accent transition-colors duration-300 font-headline">
-                  {note.title}
-                </h4>
-                
-                {/* Visual Capacity Indicator */}
-                <div className="flex gap-1.5 mt-3">
-                  {[...Array(note.capacity)].map((_, i) => (
-                    <span key={i} className={`w-4 h-1.5 rounded-full ${
-                      note.type === 'Double Room' ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.4)]' :
-                      note.type === 'Triple Room' ? 'bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.4)]' :
-                      'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]'
-                    }`}></span>
-                  ))}
-                </div>
-                
-                <p className="text-xs md:text-sm text-muted-foreground dark:text-white/70 mt-4 flex-grow leading-relaxed">
-                  {note.desc}
-                </p>
-                
-                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-white/10 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0"></span>
-                  <p className="text-[11px] font-bold text-accent tracking-wide">{note.bestFor}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-          
-          <div className="mt-8 pt-6 border-t border-primary/10">
-            <p className="text-[11px] md:text-xs text-muted-foreground/60 dark:text-white/40 italic text-center">
-              * Catatan: Penempatan kamar diatur berdasarkan manifest ketersediaan kamar hotel resmi dari pihak manajemen hotel.
+          <div className="relative z-10 max-w-xl text-center md:text-left">
+            <span className="inline-flex items-center gap-1.5 bg-accent/20 border border-accent/30 text-accent px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+              <Sparkles className="w-3.5 h-3.5" /> Pelayanan 24/7
+            </span>
+            <h3 className="text-2xl md:text-3xl font-headline font-bold mb-2">
+              Masih Ada Pertanyaan Lain?
+            </h3>
+            <p className="text-white/80 text-xs md:text-sm leading-relaxed">
+              Tim konsultan profesional Samira Travel siap membantu menjawab & membimbing proses pendaftaran ibadah Anda.
             </p>
           </div>
+
+          <div className="relative z-10 shrink-0">
+            {agent?.whatsapp ? (
+              <Button asChild className="bg-accent text-accent-foreground hover:bg-white hover:text-primary rounded-2xl h-14 px-8 font-bold text-base shadow-lg transition-all">
+                <a href={`https://wa.me/${agent.whatsapp}?text=Assalamu'alaikum,%20saya%20ingin%20bertanya%20seputar%20paket%20umroh`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" /> Konsultasi via WhatsApp <ArrowRight className="w-4 h-4" />
+                </a>
+              </Button>
+            ) : (
+              <Button asChild className="bg-accent text-accent-foreground hover:bg-white hover:text-primary rounded-2xl h-14 px-8 font-bold text-base shadow-lg transition-all">
+                <a href="#kontak" className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" /> Hubungi Kami <ArrowRight className="w-4 h-4" />
+                </a>
+              </Button>
+            )}
+          </div>
         </motion.div>
+
       </div>
     </section>
   );
