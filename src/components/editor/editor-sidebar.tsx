@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import MediaManager from '@/components/editor/media-manager';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
   Eye, 
   EyeOff, 
@@ -64,39 +65,16 @@ export default function EditorSidebar() {
   const [onSelectImageCallback, setOnSelectImageCallback] = useState<((url: string | string[]) => void) | null>(null);
   const { toast } = useToast();
 
-  const [mapSuggestions, setMapSuggestions] = useState<any[]>([]);
-  const [activeSuggestionField, setActiveSuggestionField] = useState<'mitra' | 'pusat' | null>(null);
-  const [isSearchingMap, setIsSearchingMap] = useState(false);
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
+  const [mapSearchQuery, setMapSearchQuery] = useState('');
+  const [mapPreviewUrl, setMapPreviewUrl] = useState('');
+  const [mapTargetField, setMapTargetField] = useState<'mapUrl' | 'officePusatMapUrl'>('mapUrl');
 
-  const handleMapSearch = async (query: string, field: 'mitra' | 'pusat') => {
-    if (!query || query.trim().length < 3) {
-      setMapSuggestions([]);
-      setActiveSuggestionField(null);
-      return;
-    }
-    
-    setIsSearchingMap(true);
-    setActiveSuggestionField(field);
-    
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=id`;
-      const res = await fetch(url, {
-        headers: {
-          'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7'
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setMapSuggestions(data || []);
-      } else {
-        setMapSuggestions([]);
-      }
-    } catch (err) {
-      console.error('Failed to fetch map suggestions:', err);
-      setMapSuggestions([]);
-    } finally {
-      setIsSearchingMap(false);
-    }
+  const openMapPicker = (targetField: 'mapUrl' | 'officePusatMapUrl', initialQuery: string) => {
+    setMapTargetField(targetField);
+    setMapSearchQuery(initialQuery);
+    setMapPreviewUrl(initialQuery ? `https://maps.google.com/maps?q=${encodeURIComponent(initialQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '');
+    setIsMapPickerOpen(true);
   };
 
   const SECTION_NAMES: Record<string, string> = {
@@ -1312,7 +1290,7 @@ export default function EditorSidebar() {
                 placeholder="Senin - Sabtu: 08.30 - 17.30 WIB"
               />
             </div>
-            <div className="space-y-2">
+             <div className="space-y-2">
               <Label>Alamat Lengkap Kantor / Nama Bisnis di Maps</Label>
               <Textarea 
                 value={activeSectionContent.address || ''} 
@@ -1320,76 +1298,23 @@ export default function EditorSidebar() {
                 placeholder="cth: Samira Travel Karawang, Jl. Tarumanagara No. 10 (atau alamat lengkap)"
               />
             </div>
-            
-            {/* Grab/Gojek style Search Map Pin Widget for Mitra */}
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/60 space-y-2">
-              <span className="text-[11px] font-bold text-primary flex items-center gap-1.5">
-                🔍 Cari Titik Lokasi Mitra Otomatis (Grab/Gojek)
-              </span>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ketik nama toko, bisnis, atau jalan..."
-                  className="flex-grow text-xs px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none"
-                  id="mitra-map-search-input"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const val = (document.getElementById('mitra-map-search-input') as HTMLInputElement)?.value;
-                      handleMapSearch(val, 'mitra');
-                    }
-                  }}
-                />
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Link Embed Google Maps (Opsional)</Label>
                 <Button
                   type="button"
+                  variant="link"
                   size="sm"
-                  className="bg-primary hover:bg-accent text-white hover:text-accent-foreground text-xs font-bold px-3 rounded-xl h-8 shrink-0"
-                  onClick={() => {
-                    const val = (document.getElementById('mitra-map-search-input') as HTMLInputElement)?.value;
-                    handleMapSearch(val, 'mitra');
-                  }}
+                  onClick={() => openMapPicker('mapUrl', activeSectionContent.address || '')}
+                  className="h-auto p-0 text-xs text-primary font-bold hover:underline"
                 >
-                  Cari
+                  🔍 Asisten Peta
                 </Button>
               </div>
-              
-              {isSearchingMap && activeSuggestionField === 'mitra' && (
-                <p className="text-[10px] text-slate-500 animate-pulse">Sedang mencari titik lokasi...</p>
-              )}
-              
-              {activeSuggestionField === 'mitra' && mapSuggestions.length > 0 && (
-                <div className="space-y-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm max-h-40 overflow-y-auto">
-                  {mapSuggestions.map((item, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        handleFieldChange('address', item.display_name);
-                        handleFieldChange('mapUrl', `https://maps.google.com/maps?q=${item.lat},${item.lon}&t=&z=15&ie=UTF8&iwloc=&output=embed`);
-                        setMapSuggestions([]);
-                        setActiveSuggestionField(null);
-                        const inputEl = document.getElementById('mitra-map-search-input') as HTMLInputElement;
-                        if (inputEl) inputEl.value = '';
-                        toast({
-                          title: "📍 Lokasi Mitra Dipin",
-                          description: "Peta lokasi berhasil disinkronkan dengan koordinat terpilih.",
-                        });
-                      }}
-                      className="w-full text-left text-[10px] p-2 hover:bg-slate-50 rounded-lg border-b border-slate-100 last:border-b-0 leading-normal block"
-                    >
-                      📍 <span className="font-semibold text-slate-700">{item.display_name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Link Embed Google Maps (Opsional)</Label>
               <Input 
                 value={activeSectionContent.mapUrl || ''} 
                 onChange={(e) => handleFieldChange('mapUrl', e.target.value)}
-                placeholder="Biarkan kosong untuk menggunakan pencarian otomatis di atas"
+                placeholder="Tautan peta otomatis atau link embed"
               />
             </div>
 
@@ -1404,76 +1329,23 @@ export default function EditorSidebar() {
                 placeholder="cth: Samira Travel Jakarta Duren Sawit..."
               />
             </div>
-
-            {/* Grab/Gojek style Search Map Pin Widget for Pusat */}
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/60 space-y-2">
-              <span className="text-[11px] font-bold text-primary flex items-center gap-1.5">
-                🔍 Cari Titik Lokasi Pusat Otomatis
-              </span>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ketik nama kantor pusat atau jalan..."
-                  className="flex-grow text-xs px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none"
-                  id="pusat-map-search-input"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const val = (document.getElementById('pusat-map-search-input') as HTMLInputElement)?.value;
-                      handleMapSearch(val, 'pusat');
-                    }
-                  }}
-                />
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Link Embed Google Maps Kantor Pusat</Label>
                 <Button
                   type="button"
+                  variant="link"
                   size="sm"
-                  className="bg-primary hover:bg-accent text-white hover:text-accent-foreground text-xs font-bold px-3 rounded-xl h-8 shrink-0"
-                  onClick={() => {
-                    const val = (document.getElementById('pusat-map-search-input') as HTMLInputElement)?.value;
-                    handleMapSearch(val, 'pusat');
-                  }}
+                  onClick={() => openMapPicker('officePusatMapUrl', activeSectionContent.officePusatAddress || '')}
+                  className="h-auto p-0 text-xs text-primary font-bold hover:underline"
                 >
-                  Cari
+                  🔍 Asisten Peta
                 </Button>
               </div>
-              
-              {isSearchingMap && activeSuggestionField === 'pusat' && (
-                <p className="text-[10px] text-slate-500 animate-pulse">Sedang mencari titik lokasi...</p>
-              )}
-              
-              {activeSuggestionField === 'pusat' && mapSuggestions.length > 0 && (
-                <div className="space-y-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm max-h-40 overflow-y-auto">
-                  {mapSuggestions.map((item, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        handleFieldChange('officePusatAddress', item.display_name);
-                        handleFieldChange('officePusatMapUrl', `https://maps.google.com/maps?q=${item.lat},${item.lon}&t=&z=15&ie=UTF8&iwloc=&output=embed`);
-                        setMapSuggestions([]);
-                        setActiveSuggestionField(null);
-                        const inputEl = document.getElementById('pusat-map-search-input') as HTMLInputElement;
-                        if (inputEl) inputEl.value = '';
-                        toast({
-                          title: "📍 Lokasi Pusat Dipin",
-                          description: "Peta lokasi kantor pusat berhasil disinkronkan dengan koordinat terpilih.",
-                        });
-                      }}
-                      className="w-full text-left text-[10px] p-2 hover:bg-slate-50 rounded-lg border-b border-slate-100 last:border-b-0 leading-normal block"
-                    >
-                      📍 <span className="font-semibold text-slate-700">{item.display_name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Link Embed Google Maps Kantor Pusat</Label>
               <Input 
                 value={activeSectionContent.officePusatMapUrl || ''} 
                 onChange={(e) => handleFieldChange('officePusatMapUrl', e.target.value)}
-                placeholder="Biarkan kosong untuk menggunakan pencarian otomatis di atas"
+                placeholder="Tautan peta otomatis atau link embed"
               />
             </div>
           </div>
@@ -1867,6 +1739,83 @@ export default function EditorSidebar() {
         }}
         activeSectionType={activeMediaSectionType}
       />
+
+      {/* Google Maps Picker Dialog */}
+      <Dialog open={isMapPickerOpen} onOpenChange={setIsMapPickerOpen}>
+        <DialogContent className="max-w-[90vw] sm:max-w-lg rounded-2xl border-none bg-white p-6 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-primary font-headline">Asisten Google Maps</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Masukkan nama bisnis, nama jalan, atau titik lokasi Anda. Klik cari untuk mempratinjau peta, kemudian klik tombol "Gunakan Lokasi Ini".
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 my-2">
+            <div className="flex gap-2">
+              <Input
+                value={mapSearchQuery}
+                onChange={(e) => setMapSearchQuery(e.target.value)}
+                placeholder="cth: Samira Travel Karawang, Ruko Grand Taruma"
+                className="rounded-xl flex-grow text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setMapPreviewUrl(`https://maps.google.com/maps?q=${encodeURIComponent(mapSearchQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`);
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                onClick={() => setMapPreviewUrl(`https://maps.google.com/maps?q=${encodeURIComponent(mapSearchQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`)}
+                className="bg-primary text-white rounded-xl text-xs font-bold px-4"
+              >
+                Cari Peta
+              </Button>
+            </div>
+
+            <div className="h-64 w-full border rounded-xl overflow-hidden bg-slate-50 relative flex items-center justify-center">
+              {mapPreviewUrl ? (
+                <iframe
+                  src={mapPreviewUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  title="Pratinjau Peta Pemilih"
+                />
+              ) : (
+                <div className="text-center text-xs text-muted-foreground p-4">
+                  Silakan masukkan lokasi di atas dan klik "Cari Peta".
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsMapPickerOpen(false)}
+              className="rounded-xl text-xs font-bold"
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              disabled={!mapPreviewUrl}
+              onClick={() => {
+                handleFieldChange(mapTargetField, mapPreviewUrl);
+                setIsMapPickerOpen(false);
+                toast({
+                  title: "Berhasil Menyematkan Peta",
+                  description: "Lokasi hasil pencarian telah dimasukkan ke kolom input peta.",
+                });
+              }}
+              className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl text-xs font-bold"
+            >
+              Gunakan Lokasi Ini
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 }
