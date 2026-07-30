@@ -173,8 +173,8 @@ export default function DynamicTenantPage({ params }: PageProps) {
           'pricing',
           'faq',
           'flow',
-          'gallery',
           'muri',
+          'gallery',
           'testimonial',
           'cta',
           'contact'
