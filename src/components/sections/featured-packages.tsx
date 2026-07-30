@@ -41,7 +41,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
       description: 'Program perjalanan ibadah Umrah dengan pelayanan terbaik dan bimbingan muthawwif terpercaya.',
       features: (data.package1_features || '• Tiket Pesawat PP\n• Hotel Bintang 4\n• Bus AC Eksekutif').split('\n').filter(Boolean),
       btnText: data.package1_btnText || 'Pesan Paket Reguler',
-      imageUrl: PlaceHolderImages[0]?.imageUrl || '',
+      imageUrl: data.package1_imageUrl || PlaceHolderImages[0]?.imageUrl || '',
     });
   }
   if (data?.package2_name) {
@@ -52,7 +52,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
       description: 'Layanan ibadah VIP dengan akomodasi hotel di pelataran Masjidil Haram & penerbangan direct.',
       features: (data.package2_features || '• Hotel Pelataran Haram\n• Penerbangan Direct Saudia\n• Pembimbing Ustaz Kondang').split('\n').filter(Boolean),
       btnText: data.package2_btnText || 'Pesan Paket VIP',
-      imageUrl: PlaceHolderImages[1]?.imageUrl || '',
+      imageUrl: data.package2_imageUrl || PlaceHolderImages[1]?.imageUrl || '',
     });
   }
   if (data?.package3_name) {
@@ -63,7 +63,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
       description: 'Paket spesial ibadah Ramadhan & awal tahun dengan fasilitas lengkap dan kenyamanan keluarga.',
       features: (data.package3_features || '• Layanan Itikaf Full Ramadhan\n• Kereta Cepat Haramain\n• Asuransi Perjalanan').split('\n').filter(Boolean),
       btnText: data.package3_btnText || 'Pesan Paket Eksklusif',
-      imageUrl: PlaceHolderImages[2]?.imageUrl || '',
+      imageUrl: data.package3_imageUrl || PlaceHolderImages[2]?.imageUrl || '',
     });
   }
   if (data?.package4_name) {
@@ -74,7 +74,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
       description: 'Ibadah Haji tanpa antri dengan fasilitas premium dan bimbingan eksklusif untuk memastikan rukun haji tertunaikan.',
       features: (data.package4_features || '• Visa Haji Furoda Resmi\n• Tenda Maktab Premium\n• Apartemen Transit').split('\n').filter(Boolean),
       btnText: data.package4_btnText || 'Pesan Paket Haji',
-      imageUrl: PlaceHolderImages[3]?.imageUrl || PlaceHolderImages[0]?.imageUrl || '',
+      imageUrl: data.package4_imageUrl || PlaceHolderImages[3]?.imageUrl || PlaceHolderImages[0]?.imageUrl || '',
     });
   }
 

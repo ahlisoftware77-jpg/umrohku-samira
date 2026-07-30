@@ -345,6 +345,25 @@ export default function EditorSidebar() {
                   placeholder="Pesan Paket Reguler"
                 />
               </div>
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                  <span>Foto Sampul Paket 1</span>
+                  <ImageIcon className="h-3.5 w-3.5 text-accent" />
+                </Label>
+                {activeSectionContent.package1_imageUrl && (
+                  <div className="relative aspect-video w-full rounded-xl overflow-hidden border bg-muted mb-2">
+                    <img src={activeSectionContent.package1_imageUrl} alt="Sampul Paket 1" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => openMediaPicker((url) => handleFieldChange('package1_imageUrl', url))}
+                  className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-9"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar Paket 1
+                </Button>
+              </div>
             </div>
 
             {/* Paket 2 */}
@@ -384,6 +403,25 @@ export default function EditorSidebar() {
                   onChange={(e) => handleFieldChange('package2_btnText', e.target.value)}
                   placeholder="Pesan Paket VIP"
                 />
+              </div>
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                  <span>Foto Sampul Paket 2</span>
+                  <ImageIcon className="h-3.5 w-3.5 text-accent" />
+                </Label>
+                {activeSectionContent.package2_imageUrl && (
+                  <div className="relative aspect-video w-full rounded-xl overflow-hidden border bg-muted mb-2">
+                    <img src={activeSectionContent.package2_imageUrl} alt="Sampul Paket 2" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => openMediaPicker((url) => handleFieldChange('package2_imageUrl', url))}
+                  className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-9"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar Paket 2
+                </Button>
               </div>
             </div>
 
@@ -425,6 +463,25 @@ export default function EditorSidebar() {
                   placeholder="Pesan Paket Eksklusif"
                 />
               </div>
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                  <span>Foto Sampul Paket 3</span>
+                  <ImageIcon className="h-3.5 w-3.5 text-accent" />
+                </Label>
+                {activeSectionContent.package3_imageUrl && (
+                  <div className="relative aspect-video w-full rounded-xl overflow-hidden border bg-muted mb-2">
+                    <img src={activeSectionContent.package3_imageUrl} alt="Sampul Paket 3" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => openMediaPicker((url) => handleFieldChange('package3_imageUrl', url))}
+                  className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-9"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar Paket 3
+                </Button>
+              </div>
             </div>
 
             {/* Paket 4 */}
@@ -464,6 +521,25 @@ export default function EditorSidebar() {
                   onChange={(e) => handleFieldChange('package4_btnText', e.target.value)}
                   placeholder="Pesan Paket Haji"
                 />
+              </div>
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                  <span>Foto Sampul Paket 4</span>
+                  <ImageIcon className="h-3.5 w-3.5 text-accent" />
+                </Label>
+                {activeSectionContent.package4_imageUrl && (
+                  <div className="relative aspect-video w-full rounded-xl overflow-hidden border bg-muted mb-2">
+                    <img src={activeSectionContent.package4_imageUrl} alt="Sampul Paket 4" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => openMediaPicker((url) => handleFieldChange('package4_imageUrl', url))}
+                  className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-9"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar Paket 4
+                </Button>
               </div>
             </div>
           </div>
