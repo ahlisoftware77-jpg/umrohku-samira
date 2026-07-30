@@ -25,7 +25,9 @@ export default function Header({ agent: providedAgent }: HeaderProps) {
   const agentSlug = agent?.slug || 'default';
   
   // Prefix untuk folder fisik (tanpa /agent/)
-  const prefix = agentSlug === 'default' ? '' : `/${agentSlug}`;
+  const prefix = agentSlug === 'default' 
+    ? (pathname?.startsWith('/triyadi') ? '/triyadi' : '') 
+    : `/${agentSlug}`;
   const isHomePage = pathname === '/' || pathname === prefix || pathname === `${prefix}/`;
 
   const navLinks = [

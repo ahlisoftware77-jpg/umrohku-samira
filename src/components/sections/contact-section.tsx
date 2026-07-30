@@ -115,22 +115,22 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
             className="lg:col-span-6 space-y-6"
           >
             {/* Contact Info Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               
               {/* WhatsApp Card */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all group">
                 <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-4 group-hover:scale-110 transition-transform">
                   <Phone className="w-6 h-6" />
                 </div>
-                <h4 className="font-bold text-primary text-base mb-1">Telepon & WhatsApp</h4>
-                <p className="text-sm font-semibold text-slate-800 mb-2">+{cleanPhone}</p>
+                <h4 className="font-bold text-primary text-sm mb-1">WhatsApp CS</h4>
+                <p className="text-xs font-semibold text-slate-800 mb-2">+{cleanPhone}</p>
                 <a
                   href={`https://wa.me/${cleanPhone}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 underline"
                 >
-                  <MessageSquare className="w-3.5 h-3.5" /> Chat WhatsApp Langsung
+                  <MessageSquare className="w-3 h-3" /> Chat WhatsApp
                 </a>
               </div>
 
@@ -139,13 +139,13 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
                 <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 mb-4 group-hover:scale-110 transition-transform">
                   <Mail className="w-6 h-6" />
                 </div>
-                <h4 className="font-bold text-primary text-base mb-1">Email Resmi</h4>
-                <p className="text-sm font-medium text-slate-600 mb-2 truncate">{email}</p>
+                <h4 className="font-bold text-primary text-sm mb-1">Email Resmi</h4>
+                <p className="text-xs font-medium text-slate-600 mb-2 truncate">{email}</p>
                 <a
                   href={`mailto:${email}`}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 underline"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 hover:text-amber-700 underline"
                 >
-                  Kirim Email Kapan Saja
+                  Kirim Email ↗
                 </a>
               </div>
 
@@ -154,103 +154,94 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
                 <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 mb-4 group-hover:scale-110 transition-transform">
                   <Clock className="w-6 h-6" />
                 </div>
-                <h4 className="font-bold text-primary text-base mb-1">Jam Operasional</h4>
-                <p className="text-xs font-medium text-slate-600 leading-relaxed">{hours}</p>
-                <span className="inline-block mt-2 text-[10px] font-bold uppercase tracking-wider text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full">
-                  Layanan Konsultasi 24/7
+                <h4 className="font-bold text-primary text-sm mb-1">Jam Layanan</h4>
+                <p className="text-[11px] font-medium text-slate-600 leading-tight">{hours}</p>
+                <span className="inline-block mt-2 text-[9px] font-bold uppercase tracking-wider text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full">
+                  CS Online 24/7
                 </span>
-              </div>
-
-              {/* Office Address Card */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all group">
-                <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 mb-4 group-hover:scale-110 transition-transform">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <h4 className="font-bold text-primary text-base mb-1">
-                  {isDefault ? 'Alamat Kantor Pusat' : (activeMapTab === 'pusat' ? 'Alamat Kantor Pusat' : 'Alamat Kantor Mitra / Cabang')}
-                </h4>
-                <p className="text-xs font-medium text-slate-600 leading-relaxed line-clamp-3">
-                  {isDefault ? maps.pusat.address : (activeMapTab === 'pusat' ? maps.pusat.address : maps.mitra.address)}
-                </p>
               </div>
 
             </div>
 
-            {/* Google Maps Embed Card */}
-            <Card className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm">
-              <div className="p-3 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-4">
-                {isDefault ? (
-                  <span className="flex items-center gap-1.5 text-amber-300 text-xs font-bold">
-                    <MapPin className="w-4 h-4" /> Peta Lokasi Kantor Pusat
-                  </span>
-                ) : (
-                  <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
-                    <button
-                      type="button"
-                      onClick={() => setActiveMapTab('mitra')}
-                      className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
-                        activeMapTab === 'mitra'
-                          ? 'bg-amber-500 text-slate-950 shadow-md'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
+            {/* Google Maps Embed Cards Grid */}
+            <div className={`grid grid-cols-1 ${isDefault ? '' : 'sm:grid-cols-2'} gap-6`}>
+              
+              {/* Map Card 1: Kantor Mitra (only if !isDefault) */}
+              {!isDefault && (
+                <Card className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm flex flex-col h-full bg-white">
+                  <div className="p-3 bg-slate-900 text-white flex items-center justify-between text-xs font-bold px-4">
+                    <span className="flex items-center gap-1.5 text-amber-300">
+                      <MapPin className="w-4 h-4" /> Kantor Mitra / Cabang
+                    </span>
+                    <a 
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(maps.mitra.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white hover:text-amber-300 underline text-[10px]"
                     >
-                      📍 Peta Mitra
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveMapTab('pusat')}
-                      className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
-                        activeMapTab === 'pusat'
-                          ? 'bg-amber-500 text-slate-950 shadow-md'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      🏢 Peta Pusat
-                    </button>
+                      Buka Maps ↗
+                    </a>
                   </div>
-                )}
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentMap.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-white hover:text-amber-300 underline text-[11px] self-end sm:self-auto"
-                >
-                  Buka di Google Maps ↗
-                </a>
-              </div>
-              <div className="h-64 w-full bg-slate-100 flex items-center justify-center relative">
-                <AnimatePresence mode="wait">
-                  {currentMap.embedUrl ? (
-                    <motion.iframe
-                      key={activeMapTab}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      src={currentMap.embedUrl}
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      allowFullScreen={false}
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      title={currentMap.name}
-                    />
-                  ) : (
-                    <motion.div
-                      key="empty-map"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="flex flex-col items-center justify-center p-4 text-center text-muted-foreground gap-1 bg-slate-50 w-full h-full border border-dashed border-slate-200"
-                    >
-                      <MapPin className="w-6 h-6 text-slate-300" />
-                      <span className="text-xs font-bold text-slate-400">Peta Mitra Belum Dikonfigurasi</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </Card>
+                  <div className="h-56 w-full bg-slate-100 flex items-center justify-center relative border-b">
+                    {maps.mitra.embedUrl ? (
+                      <iframe
+                        src={maps.mitra.embedUrl}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        allowFullScreen={false}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title={maps.mitra.name}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-4 text-center text-muted-foreground gap-1 bg-slate-50 w-full h-full border border-dashed border-slate-200">
+                        <MapPin className="w-6 h-6 text-slate-300" />
+                        <span className="text-[11px] font-bold text-slate-400">Peta Mitra Belum Dikonfigurasi</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 bg-slate-50 flex-grow text-[11px] text-slate-600 leading-relaxed">
+                    <strong className="text-primary block font-bold mb-1">Alamat Kantor Mitra:</strong>
+                    {maps.mitra.address}
+                  </div>
+                </Card>
+              )}
+
+              {/* Map Card 2: Kantor Pusat */}
+              <Card className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm flex flex-col h-full bg-white">
+                <div className="p-3 bg-slate-900 text-white flex items-center justify-between text-xs font-bold px-4">
+                  <span className="flex items-center gap-1.5 text-amber-300">
+                    <MapPin className="w-4 h-4" /> Kantor Pusat Samira
+                  </span>
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(maps.pusat.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white hover:text-amber-300 underline text-[10px]"
+                  >
+                    Buka Maps ↗
+                  </a>
+                </div>
+                <div className="h-56 w-full bg-slate-100 flex items-center justify-center relative border-b">
+                  <iframe
+                    src={maps.pusat.embedUrl}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen={false}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title={maps.pusat.name}
+                  />
+                </div>
+                <div className="p-4 bg-slate-50 flex-grow text-[11px] text-slate-600 leading-relaxed">
+                  <strong className="text-primary block font-bold mb-1">Alamat Kantor Pusat:</strong>
+                  {maps.pusat.address}
+                </div>
+              </Card>
+
+            </div>
 
           </motion.div>
 
