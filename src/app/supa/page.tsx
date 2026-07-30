@@ -1326,30 +1326,44 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
           {/* ==========================================
               TAB PACKAGES LIST
               ========================================== */}
-          <TabsContent value="packages">
-            <div className="grid md:grid-cols-4 gap-6">
-              {(['free', 'basic', 'pro', 'enterprise'] as TenantPlan[]).map(planKey => {
-                const plan = SYSTEM_PLANS[planKey];
-                return (
-                  <Card key={planKey} className="rounded-3xl border bg-white p-6 relative overflow-hidden flex flex-col">
-                    <CardHeader className="p-0 border-b pb-4 mb-4">
-                      <CardTitle className="text-lg font-bold text-primary capitalize">{plan.name}</CardTitle>
-                      <CardDescription className="text-xs font-semibold text-accent mt-1">
-                        Rp {plan.priceMonthly.toLocaleString()}/bulan
-                      </CardDescription>
-                    </CardHeader>
-                    
-                    <CardContent className="p-0 flex-1 space-y-3 text-sm text-muted-foreground">
-                      <div className="flex justify-between"><span>Landing Pages:</span><strong className="text-primary">{plan.limits.landingPages}</strong></div>
-                      <div className="flex justify-between"><span>Storage:</span><strong className="text-primary">{plan.limits.storageMb} MB</strong></div>
-                      <div className="flex justify-between"><span>Max Upload:</span><strong className="text-primary">{(plan.limits.uploadLimitKb / 1024).toFixed(1)} MB</strong></div>
-                      <div className="flex justify-between"><span>Custom Domain:</span><strong className="text-primary">{plan.limits.domainEnabled ? 'Aktif' : 'Nonaktif'}</strong></div>
-                      <div className="flex justify-between"><span>Pengunjung:</span><strong className="text-primary">{plan.limits.visitorLimit.toLocaleString()}</strong></div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+          <TabsContent value="packages" className="space-y-6">
+            <Card className="rounded-3xl border shadow-none bg-white p-6">
+              <CardHeader className="px-0 pt-0 border-b pb-4 mb-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-xl font-headline font-bold text-primary">Kebijakan Harga Tunggal & Limit Flexibel</CardTitle>
+                    <CardDescription className="text-xs mt-1">
+                      Seluruh Mitra menggunakan <strong>1 Harga Tunggal Resmi (Rp 150.000 / bulan)</strong>. Super Admin memiliki wewenang penuh untuk mengubah limit operasional (Jumlah Landing Page, Storage, Max Upload, dan Pengunjung) secara kustom untuk masing-masing tenant kapan saja.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <div className="grid md:grid-cols-4 gap-6 pt-2">
+                {(['free', 'basic', 'pro', 'enterprise'] as TenantPlan[]).map(planKey => {
+                  const plan = SYSTEM_PLANS[planKey];
+                  return (
+                    <Card key={planKey} className="rounded-3xl border bg-white p-6 relative overflow-hidden flex flex-col hover:border-accent transition-all">
+                      <CardHeader className="p-0 border-b pb-4 mb-4">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-accent mb-1 block">Rencana Standar</span>
+                        <CardTitle className="text-base font-bold text-primary">{plan.name}</CardTitle>
+                        <CardDescription className="text-base font-extrabold text-accent mt-1">
+                          Rp {plan.priceMonthly.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">/ bulan</span>
+                        </CardDescription>
+                      </CardHeader>
+                      
+                      <CardContent className="p-0 flex-1 space-y-3 text-xs text-muted-foreground">
+                        <div className="flex justify-between"><span>Landing Pages:</span><strong className="text-primary">{plan.limits.landingPages} Halaman</strong></div>
+                        <div className="flex justify-between"><span>Storage Media:</span><strong className="text-primary">{plan.limits.storageMb} MB</strong></div>
+                        <div className="flex justify-between"><span>Batas Upload:</span><strong className="text-primary">{(plan.limits.uploadLimitKb / 1024).toFixed(1)} MB</strong></div>
+                        <div className="flex justify-between"><span>Domain Kustom:</span><strong className="text-primary">{plan.limits.domainEnabled ? 'Aktif' : 'Nonaktif'}</strong></div>
+                        <div className="flex justify-between"><span>Batas Pengunjung:</span><strong className="text-primary">{plan.limits.visitorLimit.toLocaleString()} / bln</strong></div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </Card>
           </TabsContent>
 
           {/* ==========================================
