@@ -48,9 +48,9 @@ export default function HotelExplanation({ data }: { data?: Record<string, any> 
     <section id="penjelasan" className="py-16 md:py-24 bg-background overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <p className="font-semibold text-accent font-headline text-sm md:text-base uppercase tracking-widest">Informasi Akomodasi</p>
+          <p className="font-semibold text-accent font-headline text-sm md:text-base uppercase tracking-widest">{data?.badgeText || 'Informasi Akomodasi'}</p>
           <h2 className="text-2xl md:text-4xl font-headline font-bold text-primary mt-2">
-            PENJELASAN PAKET UMROH SAMIRA
+            {data?.title || 'PENJELASAN PAKET UMROH SAMIRA'}
           </h2>
         </div>
 
@@ -63,7 +63,7 @@ export default function HotelExplanation({ data }: { data?: Record<string, any> 
             className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3] group"
           >
             <Image
-              src="/images/penjelasan hotel.jpeg"
+              src={data?.imageUrl || "/images/penjelasan hotel.jpeg"}
               alt="Penjelasan Hotel Samira"
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-105"

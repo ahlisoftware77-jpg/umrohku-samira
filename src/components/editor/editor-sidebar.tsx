@@ -79,6 +79,7 @@ export default function EditorSidebar() {
     why_samira: 'Mengapa Samira Travel',
     finance: 'Solusi Pembiayaan',
     muri: 'Anugrah Rekor MURI',
+    faq: 'Informasi Akomodasi',
   };
 
   const getSectionLabel = (type?: string) => {
@@ -143,6 +144,7 @@ export default function EditorSidebar() {
     { type: 'finance', label: 'Solusi Pembiayaan' },
     { type: 'why_samira', label: 'Mengapa Samira Travel' },
     { type: 'service', label: 'Paket & Layanan' },
+    { type: 'faq', label: 'Informasi Akomodasi' },
     { type: 'gallery', label: 'Galeri Media' },
     { type: 'muri', label: 'Anugrah Rekor MURI' },
     { type: 'portfolio', label: 'E-Katalog Product Knowledge' },
@@ -882,6 +884,51 @@ export default function EditorSidebar() {
                 onChange={(e) => handleFieldChange('whatsappNumber', e.target.value)}
                 placeholder="083815862300"
               />
+            </div>
+          </div>
+        );
+
+      case 'faq':
+        return (
+          <div className="space-y-4">
+            <div className="border-b pb-3">
+              <h3 className="font-bold text-base text-primary">Informasi Akomodasi & Penjelasan Paket</h3>
+              <p className="text-xs text-muted-foreground">Seksi ini menampilkan penjelasan detail mengenai tipe paket hotel (Safara, Safawi, Sukari, Majol) dan catatan jenis kamar (Double, Triple, Quad).</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Teks Lencana (Badge)</Label>
+              <Input 
+                value={activeSectionContent.badgeText || ''} 
+                onChange={(e) => handleFieldChange('badgeText', e.target.value)}
+                placeholder="Informasi Akomodasi"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Judul Utama Seksi</Label>
+              <Input 
+                value={activeSectionContent.title || ''} 
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                placeholder="PENJELASAN PAKET UMROH SAMIRA"
+              />
+            </div>
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                <span>Foto Sampul Hotel / Akomodasi</span>
+                <ImageIcon className="h-3.5 w-3.5 text-accent" />
+              </Label>
+              {activeSectionContent.imageUrl && (
+                <div className="relative aspect-video w-full rounded-xl overflow-hidden border bg-muted mb-2">
+                  <img src={activeSectionContent.imageUrl} alt="Sampul Akomodasi" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => openMediaPicker((url) => handleFieldChange('imageUrl', url))}
+                className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-9"
+              >
+                <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Foto
+              </Button>
             </div>
           </div>
         );
