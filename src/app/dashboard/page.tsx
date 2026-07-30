@@ -723,7 +723,14 @@ export default function TenantDashboardPage() {
             variant="ghost" 
             size="icon" 
             className="rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => signOut(auth)}
+            onClick={async () => {
+              await signOut(auth);
+              if (typeof window !== 'undefined') {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/dashboard';
+              }
+            }}
             title="Keluar"
           >
             <LogOut className="h-5 w-5" />
