@@ -93,6 +93,7 @@ export default function EditorSidebar() {
     finance: 'Solusi Pembiayaan',
     muri: 'Anugrah Rekor MURI',
     faq: 'Hal Yang Sering Ditanyakan (FAQ)',
+    hotel_explanation: 'Informasi Akomodasi & Hotel',
     flow: 'Cara Kerja / Alur',
     social_media: 'Media Sosial',
   };
@@ -169,6 +170,7 @@ export default function EditorSidebar() {
     { type: 'why_samira', label: 'Mengapa Samira Travel' },
     { type: 'service', label: 'Paket & Layanan' },
     { type: 'faq', label: 'Hal Yang Sering Ditanyakan (FAQ)' },
+    { type: 'hotel_explanation', label: 'Informasi Akomodasi & Hotel' },
     { type: 'flow', label: 'Cara Kerja / Alur' },
     { type: 'gallery', label: 'Galeri Media' },
     { type: 'muri', label: 'Anugrah Rekor MURI' },
@@ -947,6 +949,33 @@ export default function EditorSidebar() {
             </div>
           </div>
         );
+
+      case 'hotel_explanation':
+        return (
+          <div className="space-y-4">
+            <div className="border-b pb-3">
+              <h3 className="font-bold text-base text-primary">Informasi Akomodasi & Hotel</h3>
+              <p className="text-xs text-muted-foreground">Seksi ini menampilkan penjelasan detail mengenai tipe paket hotel (Safara, Safawi, Sukari, Majol) dan catatan jenis kamar (Double, Triple, Quad).</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Teks Lencana (Badge)</Label>
+              <Input 
+                value={activeSectionContent.badgeText || ''} 
+                onChange={(e) => handleFieldChange('badgeText', e.target.value)}
+                placeholder="Informasi Akomodasi"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Judul Utama Seksi</Label>
+              <Input 
+                value={activeSectionContent.title || ''} 
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                placeholder="PENJELASAN PAKET UMROH SAMIRA"
+              />
+            </div>
+          </div>
+        );
+
 
       case 'flow':
         return (

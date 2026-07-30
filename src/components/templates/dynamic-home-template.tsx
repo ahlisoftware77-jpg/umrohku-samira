@@ -16,6 +16,7 @@ import Testimonials from '@/components/sections/testimonials';
 import RegistrationFlow from '@/components/sections/registration-flow';
 import ContactSection from '@/components/sections/contact-section';
 import SocialMediaSection from '@/components/sections/social-media-section';
+import FaqSection from '@/components/sections/faq-section';
 import ProductKnowledgeSection from '@/components/sections/product-knowledge-section';
 import BuilderPromoBanner from '@/components/sections/builder-promo-banner';
 import FinalCta from '@/components/sections/final-cta';
@@ -118,7 +119,9 @@ export default function DynamicHomeTemplate({
       case 'catalog':
         return <ProductKnowledgeSection key={section.sectionId} agent={agentCompat} data={data} />;
       case 'faq':
-        return <HotelExplanation key={section.sectionId} data={data} />; // Using hotel explanation layout as FAQ
+        return <FaqSection key={section.sectionId} agent={agentCompat} data={data} />;
+      case 'hotel_explanation':
+        return <HotelExplanation key={section.sectionId} data={data} />;
       case 'testimonial':
         return <Testimonials key={section.sectionId} agent={agentCompat} data={data} />;
       case 'cta':
