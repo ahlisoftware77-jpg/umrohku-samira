@@ -30,17 +30,18 @@ const stats = [
 ];
 
 export default function WhyChooseUs({ data }: { data?: Record<string, any> }) {
-  const bgImage = PlaceHolderImages.find(p => p.id === 'why-choose-us-2');
+  const fallbackBg = PlaceHolderImages.find(p => p.id === 'why-choose-us-2');
+  const bgImageUrl = data?.imageUrl || fallbackBg?.imageUrl;
 
   return (
     <section id="mengapa" className="relative py-12 md:py-32 overflow-hidden">
-      {bgImage && (
+      {bgImageUrl && (
         <Image
-          src={bgImage.imageUrl}
-          alt={bgImage.description}
+          src={bgImageUrl}
+          alt="Background Keunggulan"
           fill
           className="object-cover"
-          data-ai-hint={bgImage.imageHint}
+          data-ai-hint={fallbackBg?.imageHint}
         />
       )}
       <div className="absolute inset-0 bg-primary/90"></div>

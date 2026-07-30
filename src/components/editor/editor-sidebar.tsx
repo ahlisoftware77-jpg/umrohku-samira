@@ -805,6 +805,26 @@ export default function EditorSidebar() {
               />
             </div>
 
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                <span>Gambar Latar Belakang (Background)</span>
+                <ImageIcon className="h-3.5 w-3.5 text-accent" />
+              </Label>
+              {activeSectionContent.imageUrl && (
+                <div className="relative aspect-video w-full rounded-xl overflow-hidden border bg-muted mb-2">
+                  <img src={activeSectionContent.imageUrl} alt="Background Keunggulan" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => openMediaPicker((url) => handleFieldChange('imageUrl', url))}
+                className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-9"
+              >
+                <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar Background
+              </Button>
+            </div>
+
             <div className="space-y-3 pt-2">
               <div className="p-3 border rounded-2xl bg-muted/20 space-y-2">
                 <Label className="font-bold text-xs text-primary">Poin Keunggulan 1</Label>
