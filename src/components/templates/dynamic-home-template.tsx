@@ -15,6 +15,7 @@ import MuriAwards from '@/components/sections/muri-awards';
 import Testimonials from '@/components/sections/testimonials';
 import RegistrationFlow from '@/components/sections/registration-flow';
 import ContactSection from '@/components/sections/contact-section';
+import SocialMediaSection from '@/components/sections/social-media-section';
 import ProductKnowledgeSection from '@/components/sections/product-knowledge-section';
 import BuilderPromoBanner from '@/components/sections/builder-promo-banner';
 import FinalCta from '@/components/sections/final-cta';
@@ -134,6 +135,8 @@ export default function DynamicHomeTemplate({
         return <MuriAwards key={section.sectionId} />;
       case 'flow':
         return <RegistrationFlow key={section.sectionId} data={data} />;
+      case 'social_media':
+        return <SocialMediaSection key={section.sectionId} data={data} />;
       default:
         return null;
     }

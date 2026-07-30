@@ -94,6 +94,7 @@ export default function EditorSidebar() {
     muri: 'Anugrah Rekor MURI',
     faq: 'Informasi Akomodasi',
     flow: 'Cara Kerja / Alur',
+    social_media: 'Media Sosial',
   };
 
   const getSectionLabel = (type?: string) => {
@@ -175,6 +176,7 @@ export default function EditorSidebar() {
     { type: 'testimonial', label: 'Testimoni' },
     { type: 'cta', label: 'Ajakan Daftar' },
     { type: 'contact', label: 'Kontak & Form Konsultasi' },
+    { type: 'social_media', label: 'Media Sosial' },
   ];
 
   // Render inputs dynamically based on section type
@@ -1355,6 +1357,77 @@ export default function EditorSidebar() {
                 value={activeSectionContent.officePusatMapUrl || ''} 
                 onChange={(e) => handleFieldChange('officePusatMapUrl', e.target.value)}
                 placeholder="Tautan peta otomatis atau link embed"
+              />
+            </div>
+          </div>
+        );
+
+      case 'social_media':
+        return (
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-primary mb-2">Penyuntingan Seksi Media Sosial</h3>
+            <div className="space-y-2">
+              <Label>Teks Lencana (Badge)</Label>
+              <Input 
+                value={activeSectionContent.badgeText || ''} 
+                onChange={(e) => handleFieldChange('badgeText', e.target.value)}
+                placeholder="Media Sosial & Komunitas"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Judul Utama Seksi</Label>
+              <Input 
+                value={activeSectionContent.title || ''} 
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                placeholder="Ikuti Perjalanan & Informasi Terbaru Kami"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Deskripsi Seksi</Label>
+              <Textarea 
+                value={activeSectionContent.description || ''} 
+                onChange={(e) => handleFieldChange('description', e.target.value)}
+                placeholder="Dapatkan update dokumentasi keberangkatan, tips ibadah, dan berita promo umrah..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link Facebook</Label>
+              <Input 
+                value={activeSectionContent.facebookUrl || ''} 
+                onChange={(e) => handleFieldChange('facebookUrl', e.target.value)}
+                placeholder="https://facebook.com/namapage"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link Instagram</Label>
+              <Input 
+                value={activeSectionContent.instagramUrl || ''} 
+                onChange={(e) => handleFieldChange('instagramUrl', e.target.value)}
+                placeholder="https://instagram.com/username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link TikTok</Label>
+              <Input 
+                value={activeSectionContent.tiktokUrl || ''} 
+                onChange={(e) => handleFieldChange('tiktokUrl', e.target.value)}
+                placeholder="https://tiktok.com/@username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link YouTube</Label>
+              <Input 
+                value={activeSectionContent.youtubeUrl || ''} 
+                onChange={(e) => handleFieldChange('youtubeUrl', e.target.value)}
+                placeholder="https://youtube.com/@channel"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link Telegram / WhatsApp Channel</Label>
+              <Input 
+                value={activeSectionContent.telegramUrl || ''} 
+                onChange={(e) => handleFieldChange('telegramUrl', e.target.value)}
+                placeholder="https://t.me/channel"
               />
             </div>
           </div>

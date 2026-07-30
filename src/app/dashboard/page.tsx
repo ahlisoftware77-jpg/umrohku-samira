@@ -390,9 +390,11 @@ export default function TenantDashboardPage() {
             'faq',
             'flow',
             'muri',
+            'portfolio',
             'gallery',
             'testimonial',
             'cta',
+            'social_media',
             'contact'
           ];
           const existingTypes = new Set(sectionsList.map(s => s.type));

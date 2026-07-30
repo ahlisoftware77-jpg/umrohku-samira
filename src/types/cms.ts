@@ -139,7 +139,8 @@ export const SectionTypeSchema = z.enum([
   'why_samira',
   'finance',
   'muri',
-  'flow'
+  'flow',
+  'social_media'
 ]);
 export type SectionType = z.infer<typeof SectionTypeSchema>;
 
