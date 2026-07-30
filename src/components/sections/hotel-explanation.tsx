@@ -2,7 +2,7 @@
 "use client";
 
 import Image from 'next/image';
-import { Star, Info, Users2, MapPin } from 'lucide-react';
+import { Star, Info, Users2, MapPin, Bed, BedDouble, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 
@@ -38,9 +38,30 @@ const packageTiers = [
 ];
 
 const roomNotes = [
-  { type: 'Quad', desc: 'Sekamar isi 4 orang' },
-  { type: 'Triple', desc: 'Sekamar isi 3 orang' },
-  { type: 'Double', desc: 'Sekamar isi 2 orang' }
+  { 
+    type: 'Quad Room', 
+    title: 'Sekamar Berempat',
+    desc: 'Satu kamar hotel dengan kapasitas 4 tempat tidur single.', 
+    bestFor: 'Cocok untuk rombongan / keluarga besar',
+    tagColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    icon: <Users className="w-5 h-5 text-primary group-hover:text-accent transition-colors" />
+  },
+  { 
+    type: 'Triple Room', 
+    title: 'Sekamar Bertiga',
+    desc: 'Satu kamar hotel dengan kapasitas 3 tempat tidur single.', 
+    bestFor: 'Ideal untuk keluarga kecil & rombongan bertiga',
+    tagColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    icon: <Bed className="w-5 h-5 text-primary group-hover:text-accent transition-colors" />
+  },
+  { 
+    type: 'Double Room', 
+    title: 'Sekamar Berdua',
+    desc: 'Satu kamar hotel dengan kapasitas 2 tempat tidur single / 1 double.', 
+    bestFor: 'Privasi penuh, direkomendasikan untuk pasutri',
+    tagColor: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+    icon: <BedDouble className="w-5 h-5 text-primary group-hover:text-accent transition-colors" />
+  }
 ];
 
 export default function HotelExplanation({ data }: { data?: Record<string, any> }) {
@@ -141,16 +162,37 @@ export default function HotelExplanation({ data }: { data?: Record<string, any> 
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {roomNotes.map((note) => (
-              <div key={note.type} className="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm border border-border/50 group hover:border-accent transition-colors">
-                <div className="bg-primary text-white w-12 h-12 flex items-center justify-center rounded-xl font-bold text-lg group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
-                  {note.type.charAt(0)}
+            {roomNotes.map((note, index) => (
+              <motion.div
+                key={note.type}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.8 }}
+                className="relative flex flex-col p-6 bg-white rounded-2xl border border-border/80 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group hover:border-accent/40"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="bg-primary/5 w-10 h-10 flex items-center justify-center rounded-xl group-hover:bg-accent/10 transition-colors">
+                    {note.icon}
+                  </div>
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${note.tagColor}`}>
+                    {note.type}
+                  </span>
                 </div>
-                <div>
-                  <p className="font-bold text-base text-primary">{note.type}</p>
-                  <p className="text-sm text-muted-foreground">{note.desc}</p>
+                
+                <h4 className="font-bold text-base text-primary group-hover:text-accent transition-colors duration-300 font-headline">
+                  {note.title}
+                </h4>
+                
+                <p className="text-xs md:text-sm text-muted-foreground mt-2 flex-grow leading-relaxed">
+                  {note.desc}
+                </p>
+                
+                <div className="mt-4 pt-4 border-t border-border/60 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0"></span>
+                  <p className="text-[11px] font-semibold text-primary/70">{note.bestFor}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
           <div className="mt-6 pt-6 border-t border-primary/10">
