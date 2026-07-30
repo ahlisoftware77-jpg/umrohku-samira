@@ -70,6 +70,26 @@ export default function ContactTemplate({ agent }: ContactTemplateProps) {
     }
   ];
 
+  const extractSrcUrl = (url: string) => {
+    if (!url) return '';
+    if (url.includes('<iframe')) {
+      const match = url.match(/src=["']([^"']+)["']/);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    return url.trim();
+  };
+
+  const isDefault = agent.slug?.toLowerCase() === 'default';
+  const cleanMapEmbedUrl = extractSrcUrl(agent.mapEmbedUrl);
+  const partnerBusinessName = agent.displayName && agent.displayName !== 'Kantor Cabang Mitra' ? agent.displayName : '';
+  const partnerQueryText = partnerBusinessName && !agent.address.toLowerCase().includes(partnerBusinessName.toLowerCase())
+    ? `${partnerBusinessName}, ${agent.address}`
+    : agent.address;
+
+  const resolvedPartnerMapLink = cleanMapEmbedUrl || (partnerQueryText ? `https://www.google.com/maps?q=${encodeURIComponent(partnerQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '');
+
   const locations = [
     {
       type: "Kantor Pusat",
@@ -77,12 +97,12 @@ export default function ContactTemplate({ agent }: ContactTemplateProps) {
       name: "Samira Travel - Kantor Pusat",
       mapLink: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.335553198888!2d106.941916!3d-6.2194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698ca30e181fdf%3A0x6a1529124239860b!2sJl.%20Malaka%20Merah%20No.7%2F6%2C%20RT.7%2FRW.6%2C%20Pd.%20Kopi%2C%20Kec.%20Duren%20Sawit%2C%20Kota%20Jakarta%20Timur%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2013460!5e0!3m2!1sid!2sid!4v1710000000000!5m2!1sid!2sid"
     },
-    {
-      type: agent.displayName,
+    ...(!isDefault ? [{
+      type: agent.displayName || "Kantor Cabang Mitra",
       address: agent.address,
       name: `${agent.name} - Mitra Samira`,
-      mapLink: agent.mapEmbedUrl
-    }
+      mapLink: resolvedPartnerMapLink
+    }] : [])
   ];
 
   const faqs = [
