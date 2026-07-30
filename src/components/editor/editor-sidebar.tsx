@@ -970,18 +970,38 @@ export default function EditorSidebar() {
         );
 
       case 'gallery':
-        const currentGalleryList: string[] = Array.isArray(activeSectionContent.galleryImages) 
+        const currentGalleryList: any[] = Array.isArray(activeSectionContent.galleryImages) 
           ? activeSectionContent.galleryImages 
           : (Array.isArray(activeSectionContent.images) ? activeSectionContent.images : []);
 
         const handleAddPhotoToGallery = (url: string | string[]) => {
-          // Always read the latest state from the store via contents to avoid stale closures
           const latestContent = contents[activeSectionId!] || {};
-          const latestList: string[] = Array.isArray(latestContent.galleryImages)
+          const latestList: any[] = Array.isArray(latestContent.galleryImages)
             ? latestContent.galleryImages
             : (Array.isArray(latestContent.images) ? latestContent.images : []);
           const newUrls = Array.isArray(url) ? url : [url];
-          const updatedList = Array.from(new Set([...latestList, ...newUrls]));
+          
+          const newItems = newUrls.map(u => ({
+            url: u,
+            title: '',
+            description: '',
+            category: 'kebersamaan'
+          }));
+          
+          const updatedList = [...latestList, ...newItems];
+          handleFieldChange('galleryImages', updatedList);
+          handleFieldChange('images', updatedList);
+        };
+
+        const handleUpdateGalleryPhotoItem = (indexToUpdate: number, key: 'title' | 'description' | 'category', value: string) => {
+          const updatedList = currentGalleryList.map((item, idx) => {
+            if (idx !== indexToUpdate) return item;
+            const isObject = typeof item !== 'string';
+            const url = isObject ? item.url : item;
+            const obj = isObject ? { ...item } : { url };
+            obj[key] = value;
+            return obj;
+          });
           handleFieldChange('galleryImages', updatedList);
           handleFieldChange('images', updatedList);
         };
@@ -1008,49 +1028,50 @@ export default function EditorSidebar() {
 
         return (
           <div className="space-y-4">
-            <div className="border-b pb-3">
-              <h3 className="font-bold text-base text-primary">Penyuntingan Seksi Galeri Foto</h3>
-              <p className="text-xs text-muted-foreground">Tambah dan kelola foto-foto kenangan perjalanan ibadah jamaah.</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Label Badge Seksi</Label>
-              <Input 
-                value={activeSectionContent.badgeText || ''} 
+            <h3 className="font-bold text-base text-primary mb-2">Penyuntingan Seksi Galeri</h3>
+            
+            <div className="space-y-3">
+              <Label className="text-xs font-bold text-slate-700">Sub-Judul Galeri (Badge)</Label>
+              <Input
+                value={activeSectionContent.badgeText || ''}
+                placeholder="cth: DOKUMENTASI KEGIATAN"
                 onChange={(e) => handleFieldChange('badgeText', e.target.value)}
-                placeholder="Galeri Dokumentasi"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Judul Utama Seksi</Label>
-              <Input 
-                value={activeSectionContent.title || ''} 
-                onChange={(e) => handleFieldChange('title', e.target.value)}
-                placeholder="Kenangan Indah di Tanah Suci"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Deskripsi Subtitle</Label>
-              <Textarea 
-                value={activeSectionContent.description || ''} 
-                onChange={(e) => handleFieldChange('description', e.target.value)}
-                placeholder="Dokumentasi perjalanan ibadah khusyuk bersama Samira Travel..."
+                className="rounded-xl"
               />
             </div>
 
-            {/* List of Photos in Gallery */}
-            <div className="space-y-3 border-t pt-3">
-              <div className="flex items-center justify-between">
-                <Label className="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-1.5">
-                  <ImageIcon className="h-4 w-4 text-accent" /> Foto Galeri ({currentGalleryList.length})
+            <div className="space-y-3">
+              <Label className="text-xs font-bold text-slate-700">Judul Utama Galeri</Label>
+              <Input
+                value={activeSectionContent.title || ''}
+                placeholder="cth: Kenangan Indah di Tanah Suci"
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                className="rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-xs font-bold text-slate-700">Deskripsi Seksi</Label>
+              <Textarea
+                value={activeSectionContent.description || ''}
+                placeholder="Tuliskan kata pengantar singkat tentang momen jamaah..."
+                onChange={(e) => handleFieldChange('description', e.target.value)}
+                className="rounded-xl min-h-[80px]"
+              />
+            </div>
+
+            <div className="space-y-3 border-t pt-4">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <ImageIcon className="h-4 w-4 text-accent" /> Foto Galeri &amp; Keterangan ({currentGalleryList.length})
                 </Label>
                 {currentGalleryList.length > 0 && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
+                    className="text-xs text-destructive hover:bg-destructive/10 h-7"
                     onClick={handleClearAllGalleryPhotos}
-                    className="h-6 text-[10px] text-destructive hover:bg-destructive/10 px-2 rounded-full font-bold"
                   >
                     <Trash2 className="h-3 w-3 mr-1" /> Hapus Semua Foto
                   </Button>
@@ -1058,22 +1079,63 @@ export default function EditorSidebar() {
               </div>
 
               {currentGalleryList.length > 0 ? (
-                <div className="grid grid-cols-3 gap-2 max-h-56 overflow-y-auto p-2 bg-muted/20 border rounded-2xl">
-                  {currentGalleryList.map((imgUrl, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border group bg-muted">
-                      <img src={imgUrl} alt={`Foto Galeri ${idx + 1}`} className="w-full h-full object-cover" />
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="destructive"
-                        onClick={() => handleRemovePhotoFromGallery(idx)}
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                        title="Hapus foto dari galeri"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
+                <div className="space-y-3 max-h-[360px] overflow-y-auto p-2 bg-muted/20 border rounded-2xl">
+                  {currentGalleryList.map((item, idx) => {
+                    const isObject = typeof item !== 'string';
+                    const imgUrl = isObject ? item.url : item;
+                    const title = isObject ? item.title || '' : '';
+                    const desc = isObject ? item.description || '' : '';
+                    const category = isObject ? item.category || 'kebersamaan' : 'kebersamaan';
+                    
+                    return (
+                      <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-2.5 relative group shadow-sm">
+                        <div className="flex gap-3">
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden border shrink-0 bg-muted">
+                            <img src={imgUrl} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-grow space-y-1.5">
+                            <input
+                              type="text"
+                              placeholder="Judul Momen (cth: Di Masjidil Haram)"
+                              value={title}
+                              onChange={(e) => handleUpdateGalleryPhotoItem(idx, 'title', e.target.value)}
+                              className="w-full text-xs font-bold border-b border-slate-100 hover:border-slate-300 focus:border-primary pb-0.5 outline-none"
+                            />
+                            <textarea
+                              placeholder="Deskripsi singkat..."
+                              value={desc}
+                              rows={2}
+                              onChange={(e) => handleUpdateGalleryPhotoItem(idx, 'description', e.target.value)}
+                              className="w-full text-[11px] text-muted-foreground border border-transparent focus:border-slate-200 p-1 rounded resize-none outline-none"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                          <select
+                            value={category}
+                            onChange={(e) => handleUpdateGalleryPhotoItem(idx, 'category', e.target.value)}
+                            className="text-[10px] bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-600 font-bold"
+                          >
+                            <option value="ibadah">🕌 Momen Ibadah</option>
+                            <option value="ziarah">🌴 Ziarah &amp; Wisata</option>
+                            <option value="kebersamaan">🤝 Kebersamaan</option>
+                          </select>
+                          
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            onClick={() => handleRemovePhotoFromGallery(idx)}
+                            className="h-6 w-6 rounded-full"
+                            title="Hapus foto"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground italic p-3 bg-muted/30 rounded-xl border text-center">

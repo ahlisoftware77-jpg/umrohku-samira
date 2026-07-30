@@ -74,7 +74,15 @@ export default function GallerySection({ agent, data }: GallerySectionProps) {
   const customSectionImages = useMemo(() => {
     const raw = data?.galleryImages || data?.images || [];
     if (!Array.isArray(raw)) return [];
-    return raw.filter((url: any) => typeof url === 'string' && url.trim() !== '' && !url.startsWith('data:'));
+    return raw.filter((item: any) => {
+      if (typeof item === 'string') {
+        return item.trim() !== '' && !item.startsWith('data:');
+      }
+      if (item && typeof item === 'object' && typeof item.url === 'string') {
+        return item.url.trim() !== '' && !item.url.startsWith('data:');
+      }
+      return false;
+    });
   }, [data?.galleryImages, data?.images]);
   
   const allImages = useMemo(() => {
@@ -101,25 +109,48 @@ export default function GallerySection({ agent, data }: GallerySectionProps) {
 
   // Build gallery items with category tags
   const galleryItems = useMemo(() => {
-    return allImages.map((imgUrl, idx) => {
-      const url = optimizeImageUrl(imgUrl);
-      let category = 'kebersamaan';
-      let title = 'Kebersamaan Jamaah';
+    return allImages.map((item, idx) => {
+      const isObject = typeof item !== 'string';
+      const rawUrl = isObject ? item.url : item;
+      const url = optimizeImageUrl(rawUrl);
       
-      // Smart categorization
-      if (url.toLowerCase().includes('makkah') || url.toLowerCase().includes('haram') || idx % 3 === 0) {
-        category = 'ibadah';
-        title = 'Kekhusyukan Ibadah';
-      } else if (url.toLowerCase().includes('madinah') || url.toLowerCase().includes('nabawi') || idx % 3 === 1) {
-        category = 'ziarah';
-        title = 'Ziarah & Perjalanan Religi';
+      let category = isObject && item.category ? item.category : 'kebersamaan';
+      let title = isObject && item.title ? item.title : 'Kebersamaan Jamaah';
+      let description = isObject && item.description ? item.description : 'Momen indah perjalanan ibadah bersama Samira Travel.';
+      
+      // Smart categorization fallback
+      if (!isObject) {
+        if (url.toLowerCase().includes('makkah') || url.toLowerCase().includes('haram') || idx % 3 === 0) {
+          category = 'ibadah';
+          title = 'Kekhusyukan Ibadah';
+        } else if (url.toLowerCase().includes('madinah') || url.toLowerCase().includes('nabawi') || idx % 3 === 1) {
+          category = 'ziarah';
+          title = 'Ziarah & Perjalanan Religi';
+        }
+      } else {
+        // Fallback for empty title/description/category inside object
+        if (!item.category) {
+          if (url.toLowerCase().includes('makkah') || url.toLowerCase().includes('haram') || idx % 3 === 0) {
+            category = 'ibadah';
+          } else if (url.toLowerCase().includes('madinah') || url.toLowerCase().includes('nabawi') || idx % 3 === 1) {
+            category = 'ziarah';
+          }
+        }
+        if (!item.title) {
+          if (category === 'ibadah') title = 'Kekhusyukan Ibadah';
+          else if (category === 'ziarah') title = 'Ziarah & Perjalanan Religi';
+          else title = 'Kebersamaan Jamaah';
+        }
+        if (!item.description) {
+          description = 'Momen indah perjalanan ibadah bersama Samira Travel.';
+        }
       }
       
       return {
         image: url,
         category,
         title,
-        description: `Momen indah perjalanan ibadah bersama Samira Travel.`
+        description
       };
     });
   }, [allImages]);
