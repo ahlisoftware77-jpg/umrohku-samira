@@ -31,6 +31,20 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
 
   const [activeMapTab, setActiveMapTab] = useState<'mitra' | 'pusat'>(isDefault ? 'pusat' : 'mitra');
 
+  const extractSrcUrl = (url: string) => {
+    if (!url) return '';
+    if (url.includes('<iframe')) {
+      const match = url.match(/src=["']([^"']+)["']/);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    return url.trim();
+  };
+
+  const cleanMapEmbedUrl = extractSrcUrl(mapEmbedUrl);
+  const cleanOfficePusatMapUrl = extractSrcUrl(data?.officePusatMapUrl);
+
   const partnerBusinessName = agent?.displayName && agent.displayName !== 'Kantor Cabang Mitra' ? agent.displayName : '';
   const partnerQueryText = partnerBusinessName && !address.toLowerCase().includes(partnerBusinessName.toLowerCase())
     ? `${partnerBusinessName}, ${address}`
@@ -46,12 +60,12 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
     pusat: {
       name: 'Kantor Pusat Samira Travel',
       address: rawPusatAddress,
-      embedUrl: data?.officePusatMapUrl || (pusatQueryText ? `https://www.google.com/maps?q=${encodeURIComponent(pusatQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
+      embedUrl: cleanOfficePusatMapUrl || (pusatQueryText ? `https://www.google.com/maps?q=${encodeURIComponent(pusatQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
     },
     mitra: {
       name: agent?.displayName || 'Kantor Cabang Mitra',
       address: address,
-      embedUrl: mapEmbedUrl || (partnerQueryText ? `https://www.google.com/maps?q=${encodeURIComponent(partnerQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
+      embedUrl: cleanMapEmbedUrl || (partnerQueryText ? `https://www.google.com/maps?q=${encodeURIComponent(partnerQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
     }
   };
 

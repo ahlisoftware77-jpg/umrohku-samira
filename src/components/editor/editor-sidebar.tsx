@@ -148,7 +148,16 @@ export default function EditorSidebar() {
   // Form field changes helper
   const handleFieldChange = (key: string, value: any) => {
     if (!activeSectionId) return;
-    updateContent(activeSectionId, key, value);
+    
+    let processedValue = value;
+    if (typeof value === 'string' && value.includes('<iframe')) {
+      const match = value.match(/src=["']([^"']+)["']/);
+      if (match && match[1]) {
+        processedValue = match[1];
+      }
+    }
+    
+    updateContent(activeSectionId, key, processedValue);
   };
 
   const sectionTypesList: { type: SectionType; label: string }[] = [
