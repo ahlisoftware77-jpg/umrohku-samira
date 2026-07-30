@@ -226,7 +226,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
             {filteredItems.map((item, idx) => (
               <motion.div
                 layout
-                key={item.image}
+                key={`${item.image}-${idx}`}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
