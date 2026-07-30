@@ -77,22 +77,32 @@ export function useTenantResolver(tenantSlug: string) {
           const qContent = query(contentsRef, where('tenantId', '==', activeTenantId));
           const contentSnap = await getDocs(qContent);
           
+          // First pass: collect all values — prefer from contact section if found
+          const allValues: Record<string, string> = {};
+          const contactValues: Record<string, string> = {};
+          
           contentSnap.docs.forEach(docSnap => {
             const c = docSnap.data();
-            if (c.key === 'phone' && c.value) phone = c.value;
-            if (c.key === 'whatsapp' && c.value && !phone) phone = c.value;
-            if (c.key === 'address' && c.value) address = c.value;
-            if (c.key === 'mapUrl' && c.value) mapEmbedUrl = c.value;
-            if (c.key === 'pdfUrl' && c.value) pdfUrl = c.value;
-            if (c.key === 'email' && c.value) email = c.value;
+            const isContactSection = c.sectionId && (
+              c.sectionId.includes('contact') || c.sectionId.endsWith('_contact')
+            );
+            
+            if (c.key === 'phone' && c.value) { allValues.phone = c.value; if (isContactSection) contactValues.phone = c.value; }
+            if (c.key === 'whatsapp' && c.value) { allValues.whatsapp = c.value; if (isContactSection) contactValues.whatsapp = c.value; }
+            if (c.key === 'address' && c.value) { allValues.address = c.value; if (isContactSection) contactValues.address = c.value; }
+            if (c.key === 'mapUrl' && c.value) { allValues.mapUrl = c.value; if (isContactSection) contactValues.mapUrl = c.value; }
+            if (c.key === 'pdfUrl' && c.value) { allValues.pdfUrl = c.value; if (isContactSection) contactValues.pdfUrl = c.value; }
+            if (c.key === 'email' && c.value) { allValues.email = c.value; if (isContactSection) contactValues.email = c.value; }
           });
+          
+          // Prefer contact section values, fall back to any section values
+          phone = contactValues.phone || contactValues.whatsapp || allValues.phone || allValues.whatsapp || '';
+          address = contactValues.address || allValues.address || '';
+          mapEmbedUrl = contactValues.mapUrl || allValues.mapUrl || '';
+          pdfUrl = allValues.pdfUrl || '';
+          email = contactValues.email || allValues.email || '';
         } catch (err) {
           console.error('Failed to fetch tenant contents:', err);
-        }
-
-        // Clean phone fallback if it is Triyadi's phone and we are not the default tenant
-        if (!isDefaultTenant && (phone === '6283815862300' || phone === '083815862300')) {
-          phone = '';
         }
 
         let displayAddress = address;
