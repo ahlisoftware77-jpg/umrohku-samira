@@ -66,6 +66,17 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
       imageUrl: PlaceHolderImages[2]?.imageUrl || '',
     });
   }
+  if (data?.package4_name) {
+    customPackages.push({
+      id: 'haji',
+      title: data.package4_name,
+      price: data.package4_price || 'Hubungi Kami',
+      description: 'Ibadah Haji tanpa antri dengan fasilitas premium dan bimbingan eksklusif untuk memastikan rukun haji tertunaikan.',
+      features: (data.package4_features || '• Visa Haji Furoda Resmi\n• Tenda Maktab Premium\n• Apartemen Transit').split('\n').filter(Boolean),
+      btnText: data.package4_btnText || 'Pesan Paket Haji',
+      imageUrl: PlaceHolderImages[3]?.imageUrl || PlaceHolderImages[0]?.imageUrl || '',
+    });
+  }
 
   const activeList = customPackages.length > 0 ? customPackages : packagesList.map(p => ({
     id: p.id,
@@ -98,7 +109,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
           {activeList.map((pkg, idx) => {
             return (
               <motion.div

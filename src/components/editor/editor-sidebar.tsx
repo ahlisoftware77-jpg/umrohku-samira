@@ -426,6 +426,46 @@ export default function EditorSidebar() {
                 />
               </div>
             </div>
+
+            {/* Paket 4 */}
+            <div className="space-y-3 p-3.5 bg-accent/10 border border-accent/30 rounded-2xl">
+              <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                🕋 Paket 4 (Haji Furoda / Khusus)
+              </p>
+              <div className="space-y-2">
+                <Label>Nama Paket 4</Label>
+                <Input 
+                  value={activeSectionContent.package4_name || ''} 
+                  onChange={(e) => handleFieldChange('package4_name', e.target.value)}
+                  placeholder="Paket Haji Furoda Premium"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Harga Paket 4</Label>
+                <Input 
+                  value={activeSectionContent.package4_price || ''} 
+                  onChange={(e) => handleFieldChange('package4_price', e.target.value)}
+                  placeholder="Hubungi Kami / Mulai $15.000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fasilitas & Layanan (Baris Baru)</Label>
+                <Textarea 
+                  value={activeSectionContent.package4_features || ''} 
+                  onChange={(e) => handleFieldChange('package4_features', e.target.value)}
+                  placeholder="• Visa Haji Furoda Resmi&#10;• Tenda Maktab Premium Arafah&#10;• Apartemen Transit Nyaman"
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Teks Tombol Daftar</Label>
+                <Input 
+                  value={activeSectionContent.package4_btnText || ''} 
+                  onChange={(e) => handleFieldChange('package4_btnText', e.target.value)}
+                  placeholder="Pesan Paket Haji"
+                />
+              </div>
+            </div>
           </div>
         );
 
