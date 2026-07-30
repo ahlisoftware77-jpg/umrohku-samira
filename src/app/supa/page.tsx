@@ -1166,7 +1166,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   </TableHeader>
                   <TableBody>
                     {tenants.map((t, idx) => (
-                      <TableRow key={`${t.tenantId}_${t.email || idx}`}>
+                      <TableRow key={`${t.tenantId || 'tenant'}_${idx}`}>
                         <TableCell>
                           <div>
                             <p className="font-bold text-sm text-primary">{t.name}</p>
