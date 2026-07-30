@@ -8,6 +8,7 @@ import { getAgent, Agent } from '@/lib/agents';
 import HomeTemplate from '@/components/templates/home-template';
 import DynamicHomeTemplate from '@/components/templates/dynamic-home-template';
 import { Tenant, LandingPage, Section, Content, SectionType, SYSTEM_PLANS } from '@/types/cms';
+import LoadingScreen from '@/components/ui/loading-screen';
 
 interface PageProps {
   params: Promise<{ tenant: string }>;
@@ -227,12 +228,7 @@ export default function DynamicTenantPage({ params }: PageProps) {
   }, [tenantSlug]);
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="mt-4 text-sm text-muted-foreground animate-pulse">Memuat halaman...</p>
-      </div>
-    );
+    return <LoadingScreen message="Memuat halaman..." />;
   }
 
   if (useStaticFallback && staticAgent) {
