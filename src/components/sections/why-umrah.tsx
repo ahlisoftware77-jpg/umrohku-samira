@@ -33,6 +33,45 @@ const reasons = [
   { icon: <Users className="w-6 h-6" />, text: "Mempererat Ukhuwah Islam" },
 ];
 
+const cardColors = [
+  {
+    bg: "bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/10",
+    border: "border-blue-200/60 dark:border-blue-900/40",
+    shadow: "rgba(59,130,246,0.18)",
+    iconBg: "bg-blue-600 text-white",
+  },
+  {
+    bg: "bg-gradient-to-br from-emerald-50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/10",
+    border: "border-emerald-200/60 dark:border-emerald-900/40",
+    shadow: "rgba(16,185,129,0.18)",
+    iconBg: "bg-emerald-600 text-white",
+  },
+  {
+    bg: "bg-gradient-to-br from-violet-50 to-purple-50/50 dark:from-violet-950/20 dark:to-purple-950/10",
+    border: "border-violet-200/60 dark:border-violet-900/40",
+    shadow: "rgba(139,92,246,0.18)",
+    iconBg: "bg-violet-600 text-white",
+  },
+  {
+    bg: "bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/10",
+    border: "border-amber-200/60 dark:border-amber-900/40",
+    shadow: "rgba(245,158,11,0.18)",
+    iconBg: "bg-amber-600 text-white",
+  },
+  {
+    bg: "bg-gradient-to-br from-rose-50 to-pink-50/50 dark:from-rose-950/20 dark:to-pink-950/10",
+    border: "border-rose-200/60 dark:border-rose-900/40",
+    shadow: "rgba(244,63,94,0.18)",
+    iconBg: "bg-rose-600 text-white",
+  },
+  {
+    bg: "bg-gradient-to-br from-cyan-50 to-sky-50/50 dark:from-cyan-950/20 dark:to-sky-950/10",
+    border: "border-cyan-200/60 dark:border-cyan-900/40",
+    shadow: "rgba(6,182,212,0.18)",
+    iconBg: "bg-cyan-600 text-white",
+  }
+];
+
 export default function WhyUmrah() {
   return (
     <section className="py-20 bg-muted/30 overflow-hidden">
@@ -74,24 +113,31 @@ export default function WhyUmrah() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reasons.map((reason, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.05, duration: 0.5 }}
-              whileHover={{ scale: 1.02 }}
-              className="bg-white p-6 rounded-2xl shadow-sm border border-primary/5 flex items-center gap-5 hover:shadow-xl hover:border-accent/50 transition-all duration-300 group"
-            >
-              <div className="bg-primary/5 p-4 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-inner shrink-0">
-                {reason.icon}
-              </div>
-              <p className="font-bold text-primary group-hover:text-primary transition-colors leading-snug text-base md:text-lg">
-                {reason.text}
-              </p>
-            </motion.div>
-          ))}
+          {reasons.map((reason, idx) => {
+            const color = cardColors[idx % cardColors.length];
+            return (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.04, duration: 0.5 }}
+                whileHover={{ 
+                  y: -6, 
+                  scale: 1.02,
+                  boxShadow: `0 20px 25px -5px ${color.shadow}, 0 8px 10px -6px ${color.shadow}`
+                }}
+                className={`p-6 rounded-2xl border ${color.bg} ${color.border} flex items-center gap-5 transition-all duration-300 shadow-[4px_4px_0px_0px_rgba(10,30,59,0.05)] hover:shadow-lg cursor-pointer group`}
+              >
+                <div className={`p-4 rounded-xl shadow-md ${color.iconBg} transform group-hover:rotate-12 transition-transform duration-300 shrink-0`}>
+                  {reason.icon}
+                </div>
+                <p className="font-bold text-primary dark:text-white leading-snug text-base md:text-lg">
+                  {reason.text}
+                </p>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>
