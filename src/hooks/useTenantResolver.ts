@@ -61,6 +61,7 @@ export function useTenantResolver(tenantSlug: string) {
         }
 
         setTenant(foundTenant);
+        activeTenantId = foundTenant.tenantId;
         
         const isDefaultTenant = tenantSlug.toLowerCase() === 'default' || tenantSlug.toLowerCase() === 'triyadi';
         
