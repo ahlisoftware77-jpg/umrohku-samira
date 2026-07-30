@@ -50,10 +50,6 @@ export default function DynamicHomeTemplate({
 
   // Get WhatsApp number
   let rawPhone = customPhone || page.globalSettings.whatsappNumber || '';
-  // If it's a subdomain and the phone is Triyadi's, clear it!
-  if (!isDefaultTenant && (rawPhone === '6283815862300' || rawPhone === '083815862300')) {
-    rawPhone = '';
-  }
 
   // Get address
   let rawAddress = customAddress || '';
