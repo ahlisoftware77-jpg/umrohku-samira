@@ -172,6 +172,7 @@ export default function DynamicTenantPage({ params }: PageProps) {
           'finance',
           'why_samira',
           'pricing',
+          'portfolio',
           'faq',
           'flow',
           'muri',
