@@ -334,31 +334,35 @@ export default function HotelExplanation({ data, agent }: FaqSectionProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="mt-16 bg-gradient-to-r from-primary via-primary/95 to-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border border-white/10"
+          className="mt-16 bg-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border-2 border-amber-400/40"
         >
+          {/* Subtle glow background element */}
+          <div className="absolute -top-24 -left-24 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+
           <div className="relative z-10 max-w-xl text-center md:text-left">
-            <span className="inline-flex items-center gap-1.5 bg-accent/20 border border-accent/30 text-accent px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-              <Sparkles className="w-3.5 h-3.5" /> Pelayanan 24/7
+            <span className="inline-flex items-center gap-1.5 bg-amber-400/20 border border-amber-400/50 text-amber-300 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider mb-4 shadow-sm">
+              <Sparkles className="w-4 h-4 text-amber-400" /> Pelayanan 24/7
             </span>
-            <h3 className="text-2xl md:text-3xl font-headline font-bold mb-2">
+            <h3 className="text-2xl md:text-3xl font-headline font-extrabold text-white mb-3 tracking-wide drop-shadow-md">
               Masih Ada Pertanyaan Lain?
             </h3>
-            <p className="text-white/80 text-xs md:text-sm leading-relaxed">
+            <p className="text-slate-200 text-sm md:text-base leading-relaxed font-medium">
               Tim konsultan profesional Samira Travel siap membantu menjawab & membimbing proses pendaftaran ibadah Anda.
             </p>
           </div>
 
           <div className="relative z-10 shrink-0">
             {agent?.whatsapp ? (
-              <Button asChild className="bg-accent text-accent-foreground hover:bg-white hover:text-primary rounded-2xl h-14 px-8 font-bold text-base shadow-lg transition-all">
+              <Button asChild className="bg-amber-400 text-slate-950 hover:bg-amber-300 hover:scale-105 rounded-2xl h-14 px-8 font-extrabold text-base shadow-xl shadow-amber-400/20 transition-all border border-amber-300">
                 <a href={`https://wa.me/${agent.whatsapp}?text=Assalamu'alaikum,%20saya%20ingin%20bertanya%20seputar%20paket%20umroh`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" /> Konsultasi via WhatsApp <ArrowRight className="w-4 h-4" />
+                  <MessageSquare className="w-5 h-5 text-slate-950" /> Konsultasi via WhatsApp <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
             ) : (
-              <Button asChild className="bg-accent text-accent-foreground hover:bg-white hover:text-primary rounded-2xl h-14 px-8 font-bold text-base shadow-lg transition-all">
+              <Button asChild className="bg-amber-400 text-slate-950 hover:bg-amber-300 hover:scale-105 rounded-2xl h-14 px-8 font-extrabold text-base shadow-xl shadow-amber-400/20 transition-all border border-amber-300">
                 <a href="#kontak" className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" /> Hubungi Kami <ArrowRight className="w-4 h-4" />
+                  <MessageSquare className="w-5 h-5 text-slate-950" /> Hubungi Kami <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
             )}
