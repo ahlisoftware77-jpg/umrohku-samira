@@ -34,8 +34,8 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
   const maps = {
     pusat: {
       name: 'Kantor Pusat Samira Travel',
-      address: 'Jl. Malaka Merah No.7/6, Pd. Kopi, Kec. Duren Sawit, Kota Jakarta Timur 13460',
-      embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.335553198888!2d106.941916!3d-6.2194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698ca30e181fdf%3A0x6a1529124239860b!2sJl.%20Malaka%20Merah%20No.7%2F6%2C%20RT.7%2FRW.6%2C%20Pd.%20Kopi%2C%20Kec.%20Duren%20Sawit%2C%20Kota%20Jakarta%20Timur%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2013460!5e0!3m2!1sid!2sid!4v1710000000000!5m2!1sid!2sid'
+      address: data?.officePusatAddress || 'Jl. Malaka Merah No.7/6, Pd. Kopi, Kec. Duren Sawit, Kota Jakarta Timur 13460',
+      embedUrl: data?.officePusatMapUrl || 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.335553198888!2d106.941916!3d-6.2194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698ca30e181fdf%3A0x6a1529124239860b!2sJl.%20Malaka%20Merah%20No.7%2F6%2C%20RT.7%2FRW.6%2C%20Pd.%20Kopi%2C%20Kec.%20Duren%20Sawit%2C%20Kota%20Jakarta%20Timur%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2013460!5e0!3m2!1sid!2sid!4v1710000000000!5m2!1sid!2sid'
     },
     mitra: {
       name: agent?.displayName || 'Kantor Cabang Mitra',

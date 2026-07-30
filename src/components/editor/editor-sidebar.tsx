@@ -1277,7 +1277,7 @@ export default function EditorSidebar() {
                 placeholder="Senin - Sabtu: 08.30 - 17.30 WIB"
               />
             </div>
-            <div className="space-y-2">
+             <div className="space-y-2">
               <Label>Alamat Lengkap Kantor</Label>
               <Textarea 
                 value={activeSectionContent.address || ''} 
@@ -1290,6 +1290,26 @@ export default function EditorSidebar() {
               <Input 
                 value={activeSectionContent.mapUrl || ''} 
                 onChange={(e) => handleFieldChange('mapUrl', e.target.value)}
+                placeholder="https://www.google.com/maps/embed?pb=..."
+              />
+            </div>
+
+            <div className="space-y-2 border-t pt-4 mt-4">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-primary">Kantor Pusat Samira</h4>
+            </div>
+            <div className="space-y-2">
+              <Label>Alamat Kantor Pusat</Label>
+              <Textarea 
+                value={activeSectionContent.officePusatAddress || ''} 
+                onChange={(e) => handleFieldChange('officePusatAddress', e.target.value)}
+                placeholder="Alamat Kantor Pusat..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link Embed Google Maps Kantor Pusat</Label>
+              <Input 
+                value={activeSectionContent.officePusatMapUrl || ''} 
+                onChange={(e) => handleFieldChange('officePusatMapUrl', e.target.value)}
                 placeholder="https://www.google.com/maps/embed?pb=..."
               />
             </div>
