@@ -1053,7 +1053,7 @@ service cloud.firestore {
           if (restoreSelectionOptions.contents && Array.isArray(tPkg.contents)) {
             for (const c of tPkg.contents) {
               if (c.sectionId && c.key) {
-                const contentDocId = `${tenantToRestore.tenantId}_${c.sectionId}_${c.key}`;
+                const contentDocId = `${tPkg.tenant.tenantId}_${c.sectionId}_${c.key}`;
                 await setDoc(doc(targetDb, 'contents', contentDocId), c, { merge: true });
               }
             }
@@ -1068,7 +1068,7 @@ service cloud.firestore {
           if (restoreSelectionOptions.images && Array.isArray(tPkg.images)) {
             for (const imgItem of tPkg.images) {
               if (imgItem.imageId || imgItem.publicId) {
-                const imgDocId = imgItem.imageId || `${tenantToRestore.tenantId}_${Date.now()}`;
+                const imgDocId = imgItem.imageId || `${tPkg.tenant.tenantId}_${Date.now()}`;
                 await setDoc(doc(targetDb, 'images', imgDocId), imgItem, { merge: true });
               }
             }
@@ -1076,56 +1076,86 @@ service cloud.firestore {
         }
       } else {
         // SINGLE TENANT RESTORE
-        const tenantToRestore = restoreTargetTenantOverride || backupData.tenant;
-        if (!tenantToRestore || !tenantToRestore.tenantId) {
+        const targetTenant = restoreTargetTenantOverride || backupData.tenant;
+        if (!targetTenant || !targetTenant.tenantId) {
           alert('ID Tenant target tidak ditemukan!');
           return;
         }
 
-        const activeServerConfig = dbServers.find(s => s.serverId === tenantToRestore.dbServerId);
+        const activeServerConfig = dbServers.find(s => s.serverId === targetTenant.dbServerId);
         const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+        const targetId = targetTenant.tenantId;
 
+        // If restoring profile, preserve target tenant's identity (ID, email, subdomain)
         if (restoreSelectionOptions.profile && backupData.tenant) {
-          await setDoc(doc(targetDb, 'tenants', tenantToRestore.tenantId), backupData.tenant, { merge: true });
-          await setDoc(doc(db, 'tenants', tenantToRestore.tenantId), backupData.tenant, { merge: true });
+          const mergedProfile = {
+            ...backupData.tenant,
+            tenantId: targetId,
+            subdomain: targetTenant.subdomain || backupData.tenant.subdomain,
+            email: targetTenant.email || backupData.tenant.email,
+            dbServerId: targetTenant.dbServerId || 'default'
+          };
+          await setDoc(doc(targetDb, 'tenants', targetId), mergedProfile, { merge: true });
+          await setDoc(doc(db, 'tenants', targetId), mergedProfile, { merge: true });
         }
 
         if (restoreSelectionOptions.profile && backupData.user) {
-          await setDoc(doc(targetDb, 'users', tenantToRestore.tenantId), backupData.user, { merge: true });
-          await setDoc(doc(db, 'users', tenantToRestore.tenantId), backupData.user, { merge: true });
+          const mergedUser = {
+            ...backupData.user,
+            userId: targetId,
+            tenantId: targetId,
+            email: targetTenant.email || backupData.user.email,
+            subdomain: targetTenant.subdomain || backupData.user.subdomain
+          };
+          await setDoc(doc(targetDb, 'users', targetId), mergedUser, { merge: true });
+          await setDoc(doc(db, 'users', targetId), mergedUser, { merge: true });
         }
 
+        // Restore Landing Pages with target tenantId
         if (restoreSelectionOptions.landingPages && Array.isArray(backupData.landingPages)) {
           for (const p of backupData.landingPages) {
-            if (p.pageId) await setDoc(doc(targetDb, 'landingPages', p.pageId), p, { merge: true });
+            const pageId = p.pageId || `page_${targetId}_home`;
+            const remappedPage = { ...p, tenantId: targetId, pageId };
+            await setDoc(doc(targetDb, 'landingPages', pageId), remappedPage, { merge: true });
           }
         }
 
+        // Restore Sections with target tenantId
         if (restoreSelectionOptions.sections && Array.isArray(backupData.sections)) {
           for (const s of backupData.sections) {
-            if (s.sectionId) await setDoc(doc(targetDb, 'sections', s.sectionId), s, { merge: true });
-          }
-        }
-
-        if (restoreSelectionOptions.contents && Array.isArray(backupData.contents)) {
-          for (const c of backupData.contents) {
-            if (c.sectionId && c.key) {
-              const contentDocId = `${tenantToRestore.tenantId}_${c.sectionId}_${c.key}`;
-              await setDoc(doc(targetDb, 'contents', contentDocId), c, { merge: true });
+            if (s.sectionId) {
+              const remappedSec = { ...s, tenantId: targetId };
+              await setDoc(doc(targetDb, 'sections', s.sectionId), remappedSec, { merge: true });
             }
           }
         }
 
-        if (restoreSelectionOptions.testimonials && Array.isArray(backupData.testimonials)) {
-          for (const tItem of backupData.testimonials) {
-            if (tItem.testimonialId) await setDoc(doc(targetDb, 'testimonials', tItem.testimonialId), tItem, { merge: true });
+        // Restore Contents with target tenantId
+        if (restoreSelectionOptions.contents && Array.isArray(backupData.contents)) {
+          for (const c of backupData.contents) {
+            if (c.sectionId && c.key) {
+              const contentDocId = `${targetId}_${c.sectionId}_${c.key}`;
+              const remappedContent = { ...c, tenantId: targetId };
+              await setDoc(doc(targetDb, 'contents', contentDocId), remappedContent, { merge: true });
+            }
           }
         }
 
+        // Restore Testimonials with target tenantId
+        if (restoreSelectionOptions.testimonials && Array.isArray(backupData.testimonials)) {
+          for (const tItem of backupData.testimonials) {
+            const tId = tItem.testimonialId || `testi_${targetId}_${Date.now()}`;
+            const remappedTesti = { ...tItem, tenantId: targetId, testimonialId: tId };
+            await setDoc(doc(targetDb, 'testimonials', tId), remappedTesti, { merge: true });
+          }
+        }
+
+        // Restore Images with target tenantId
         if (restoreSelectionOptions.images && Array.isArray(backupData.images)) {
           for (const imgItem of backupData.images) {
-            const imgDocId = imgItem.imageId || `${tenantToRestore.tenantId}_${Date.now()}`;
-            await setDoc(doc(targetDb, 'images', imgDocId), imgItem, { merge: true });
+            const imgDocId = imgItem.imageId || `${targetId}_${Date.now()}`;
+            const remappedImg = { ...imgItem, tenantId: targetId, imageId: imgDocId };
+            await setDoc(doc(targetDb, 'images', imgDocId), remappedImg, { merge: true });
           }
         }
       }
