@@ -315,8 +315,8 @@ export default function EditorSidebar() {
                     <Button 
                       type="button" 
                       variant="outline" 
-                      onClick={() => openMediaPicker((url) => {
-                        const newUrls = Array.isArray(url) ? url : [url];
+                      onClick={() => openMediaPicker((urlResult) => {
+                        const newUrls = Array.isArray(urlResult) ? urlResult : [urlResult];
                         const updated = [...currentImages, ...newUrls];
                         handleFieldChange('images', updated);
                         if (updated.length > 0) handleFieldChange('imageUrl', updated[0]);
