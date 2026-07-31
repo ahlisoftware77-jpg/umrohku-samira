@@ -292,21 +292,21 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
                   transition={{ delay: 0.2 }}
                   className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
                 >
-                  {/* Tab header - Mobile Scrollable & Fit */}
-                  <div className="flex border-b border-gray-100 overflow-x-auto scrollbar-none snap-x px-1 sm:px-0">
+                  {/* Tab header - Grid cols 4 for 100% Mobile Fit without clipping */}
+                  <div className="grid grid-cols-4 w-full border-b border-gray-100 bg-gray-50/60 p-1 sm:p-0">
                     {TABS.map(tab => (
                       <button
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         className={cn(
-                          "flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm font-bold whitespace-nowrap transition-all border-b-2 -mb-px flex-1 sm:flex-initial justify-center snap-start",
+                          "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 py-2 sm:py-3.5 text-[11px] sm:text-xs md:text-sm font-bold transition-all rounded-xl sm:rounded-none border-b-2 sm:border-b-2 -mb-px",
                           activeTab === tab.key
-                            ? "border-primary text-primary bg-primary/5"
-                            : "border-transparent text-gray-500 hover:text-primary hover:bg-gray-50"
+                            ? "border-primary text-primary bg-white sm:bg-primary/5 font-extrabold shadow-xs sm:shadow-none"
+                            : "border-transparent text-gray-500 hover:text-primary hover:bg-gray-100/60"
                         )}
                       >
-                        {tab.icon}
-                        <span>{tab.label}</span>
+                        <span className="shrink-0 [&>svg]:w-3.5 [&>svg]:h-3.5 sm:[&>svg]:w-4 sm:[&>svg]:h-4">{tab.icon}</span>
+                        <span className="truncate max-w-full text-center">{tab.label}</span>
                       </button>
                     ))}
                   </div>
