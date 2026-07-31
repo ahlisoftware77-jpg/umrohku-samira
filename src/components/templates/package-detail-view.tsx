@@ -161,6 +161,30 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
     setIsMounted(true);
   }, []);
 
+  // ── Mobile Hardware/Browser Back Button Interceptor to Close Brochure Modal ──
+  useEffect(() => {
+    if (!isBrochureOpen) return;
+
+    const stateId = `brochure_modal_${Date.now()}`;
+    window.history.pushState({ isBrochureModal: true, stateId }, '');
+
+    let closedViaPopstate = false;
+
+    const handlePopState = () => {
+      closedViaPopstate = true;
+      setIsBrochureOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (!closedViaPopstate && window.history.state?.isBrochureModal) {
+        window.history.back();
+      }
+    };
+  }, [isBrochureOpen]);
+
   const agent = providedAgent || getAgent('default');
   const agentSlug = agent?.slug || 'default';
   const prefix = agentSlug === 'default' ? '' : `/${agentSlug}`;
@@ -256,11 +280,10 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
                     </div>
                     <Button
                       onClick={() => setIsBrochureOpen(true)}
-                      variant="outline"
-                      className="rounded-2xl gap-1.5 shrink-0 border-primary/20 hover:border-primary hover:bg-primary hover:text-white transition-all text-xs h-9 px-3 sm:px-4"
+                      className="rounded-xl gap-1.5 shrink-0 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white hover:from-amber-600 hover:to-amber-700 transition-all duration-300 text-xs font-bold h-9 px-3.5 shadow-md shadow-amber-500/25 hover:shadow-lg hover:shadow-amber-500/40 hover:scale-105 border border-amber-400/40"
                     >
-                      <BookOpen className="w-3.5 h-3.5" />
-                      <span className="inline">Brosur</span>
+                      <BookOpen className="w-3.5 h-3.5 animate-pulse" />
+                      <span className="inline font-headline tracking-wide">Buka Brosur HD</span>
                     </Button>
                   </div>
 
@@ -594,7 +617,7 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
                   </div>
                 </motion.div>
 
-                {/* Brochure Card */}
+                {/* Prominent Brochure Card */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -602,16 +625,29 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
                 >
                   <button
                     onClick={() => setIsBrochureOpen(true)}
-                    className="w-full group bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 flex items-center gap-3 sm:gap-4 hover:border-primary hover:shadow-md transition-all text-left"
+                    className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 p-0.5 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/40 transition-all duration-300 transform hover:-translate-y-0.5 text-left"
                   >
-                    <div className="p-2.5 sm:p-3 bg-primary/10 rounded-xl group-hover:bg-primary transition-all shrink-0">
-                      <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-primary group-hover:text-white transition-all" />
+                    <div className="relative bg-white rounded-[14px] p-4 sm:p-5 flex items-center gap-3 sm:gap-4 transition-colors group-hover:bg-gradient-to-r group-hover:from-amber-50/90 group-hover:to-orange-50/90">
+                      <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl text-white shadow-md group-hover:scale-110 transition-all duration-300 shrink-0">
+                        <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                          <span className="font-headline font-extrabold text-gray-900 text-xs sm:text-sm group-hover:text-amber-950 transition-colors">
+                            Lihat Brosur Lengkap
+                          </span>
+                          <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-300 animate-bounce">
+                            HD PDF
+                          </span>
+                        </div>
+                        <div className="text-[11px] sm:text-xs text-gray-600 font-medium truncate">8 Halaman Brosur Visual · Klik Buka</div>
+                      </div>
+
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 group-hover:bg-amber-500 text-amber-700 group-hover:text-white flex items-center justify-center transition-all duration-300 shrink-0 shadow-xs">
+                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-gray-800 text-xs sm:text-sm">Lihat Brosur Lengkap</div>
-                      <div className="text-[11px] text-gray-500">8 halaman brosur visual</div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary ml-auto transition-all shrink-0" />
                   </button>
                 </motion.div>
 
