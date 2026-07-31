@@ -269,93 +269,136 @@ export default function BuilderLandingPage() {
             </p>
           </motion.div>
 
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
-            {/* Feature 1 */}
-            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
-              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
-                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+            {/* Feature 1: Slide In From Left + Clock Rotate */}
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -10, rotate: -1.5, scale: 1.02 }}
+              className="h-full"
+            >
+              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-2xl hover:shadow-amber-400/20 transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5 group-hover:rotate-180 transition-transform duration-700">
                   <Clock className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-950 mb-2">Langsung Siap Pakai Dalam 1 Menit</h3>
+                <h3 className="text-lg font-bold text-slate-950 mb-2 group-hover:text-amber-700 transition-colors">Langsung Siap Pakai Dalam 1 Menit</h3>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
                   Begitu mendaftar, sistem otomatis membuatkan 8 seksi lengkap (Hero, Paket, E-Katalog, Peta, Form WA, dll).
                 </p>
               </Card>
             </motion.div>
 
-            {/* Feature 2 */}
-            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
-              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                  <MessageSquare className="w-6 h-6" />
+            {/* Feature 2: Slide Up From Bottom + WA Pulse Bounce */}
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -10, scale: 1.03 }}
+              className="h-full"
+            >
+              <Card className="h-full bg-slate-50 border-emerald-200/80 text-slate-900 rounded-3xl p-6 hover:border-emerald-400 hover:shadow-2xl hover:shadow-emerald-400/20 hover:bg-emerald-50/30 transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-125 transition-transform duration-300 shadow-sm">
+                  <MessageSquare className="w-6 h-6 animate-pulse" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-950 mb-2">Terintegrasi Chat WhatsApp</h3>
+                <h3 className="text-lg font-bold text-slate-950 mb-2 group-hover:text-emerald-700 transition-colors">Terintegrasi Chat WhatsApp</h3>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
                   Semua calon jamaah yang mengisi form atau mengklik tombol konsultasi akan langsung masuk ke WhatsApp HP Anda.
                 </p>
               </Card>
             </motion.div>
 
-            {/* Feature 3 */}
-            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
-              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
-                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+            {/* Feature 3: Slide In From Right + 3D Book Tilt */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -10, rotateY: 10, scale: 1.02 }}
+              className="h-full"
+              style={{ perspective: 1000 }}
+            >
+              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-500 hover:shadow-2xl hover:shadow-amber-500/20 transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-amber-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5 group-hover:-translate-y-1 group-hover:scale-110 transition-all duration-300">
                   <BookOpen className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-950 mb-2">E-Katalog Flipbook 47 Halaman</h3>
+                <h3 className="text-lg font-bold text-slate-950 mb-2 group-hover:text-amber-800 transition-colors">E-Katalog Flipbook 47 Halaman</h3>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
                   Sudah termasuk viewer buku katalog interaktif 2025/2026 yang dapat di-flip dan di-download dalam bentuk PDF.
                 </p>
               </Card>
             </motion.div>
 
-            {/* Feature 4 */}
-            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
-              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+            {/* Feature 4: Scale/Zoom In + Globe Spin */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -10, rotate: 1.5, scale: 1.02 }}
+              className="h-full"
+            >
+              <Card className="h-full bg-slate-50 border-teal-200/80 text-slate-900 rounded-3xl p-6 hover:border-teal-400 hover:shadow-2xl hover:shadow-teal-400/20 hover:bg-teal-50/20 transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="w-12 h-12 rounded-2xl bg-teal-100 border border-teal-300 text-teal-700 flex items-center justify-center mb-5 group-hover:rotate-90 transition-transform duration-500">
                   <Globe className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-950 mb-2">Subdomain Kustom Pemilik Akun</h3>
+                <h3 className="text-lg font-bold text-slate-950 mb-2 group-hover:text-teal-800 transition-colors">Subdomain Kustom Pemilik Akun</h3>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
                   Dapatkan nama alamat web resmi gratis kustom Anda sendiri (contoh: <code className="text-amber-800 font-bold bg-amber-100 px-1.5 py-0.5 rounded">umrohku-samira.my.id/namamitra</code>).
                 </p>
               </Card>
             </motion.div>
 
-            {/* Feature 5 */}
-            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
-              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
-                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+            {/* Feature 5: Drop Down From Top + Layout Expand Bounce */}
+            <motion.div 
+              initial={{ opacity: 0, y: -40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.6, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -10, scale: 1.04 }}
+              className="h-full"
+            >
+              <Card className="h-full bg-slate-50 border-indigo-200/80 text-slate-900 rounded-3xl p-6 hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-400/20 hover:bg-indigo-50/20 transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100 border border-indigo-300 text-indigo-700 flex items-center justify-center mb-5 group-hover:scale-125 group-hover:rotate-6 transition-transform duration-300">
                   <Layout className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-950 mb-2">CMS Visual Live Editor</h3>
+                <h3 className="text-lg font-bold text-slate-950 mb-2 group-hover:text-indigo-800 transition-colors">CMS Visual Live Editor</h3>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
                   Ubah judul, warna, deskripsi, foto, dan susunan seksi secara langsung di layar editor drag & drop yang sangat mudah.
                 </p>
               </Card>
             </motion.div>
 
-            {/* Feature 6 */}
-            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
-              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+            {/* Feature 6: 3D Rotate Entrance + Shield Ring Glow */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.85, rotate: -3 }}
+              whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -12, scale: 1.03 }}
+              className="h-full"
+            >
+              <Card className="h-full bg-slate-50 border-emerald-200/80 text-slate-900 rounded-3xl p-6 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-125 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-sm">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-950 mb-2">Akses Publik 100% Bebas Hambatan</h3>
+                <h3 className="text-lg font-bold text-slate-950 mb-2 group-hover:text-emerald-800 transition-colors">Akses Publik 100% Bebas Hambatan</h3>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
                   Website Anda dapat diakses oleh siapapun di seluruh dunia 24/7 tanpa perlu login dengan performa tinggi.
                 </p>
               </Card>
             </motion.div>
 
-          </motion.div>
+          </div>
         </div>
       </section>
 
