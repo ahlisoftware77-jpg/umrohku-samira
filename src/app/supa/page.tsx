@@ -1358,7 +1358,15 @@ service cloud.firestore {
       const testiData = testiSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       addLog(`Memindahkan profil Tenant & User ke Server Tujuan...`);
-      const updatedTenant = { ...tenantDocData, dbServerId: newServerId };
+      const updatedTenant: Tenant = { 
+        ...tenantDocData, 
+        subdomain: tenant.subdomain || tenantDocData.subdomain,
+        name: tenant.name || tenantDocData.name,
+        company: tenant.company || tenantDocData.company,
+        email: tenant.email || tenantDocData.email,
+        dbServerId: newServerId 
+      };
+
       await setDoc(doc(targetInstance.db, 'tenants', tenant.tenantId), updatedTenant, { merge: true });
       if (userDocData) {
         await setDoc(doc(targetInstance.db, 'users', tenant.tenantId), userDocData, { merge: true });
@@ -1390,11 +1398,11 @@ service cloud.firestore {
 
       // 6. Update pointer in Primary Global DB Registry so routing resolves seamlessly
       addLog(`Perbarui pointer server database di Global Registry...`);
-      await setDoc(doc(db, 'tenants', tenant.tenantId), { dbServerId: newServerId }, { merge: true });
+      await setDoc(doc(db, 'tenants', tenant.tenantId), updatedTenant, { merge: true });
       const qTenantsSub = query(collection(db, 'tenants'), where('subdomain', '==', tenant.subdomain));
       const snapSub = await getDocs(qTenantsSub);
       for (const d of snapSub.docs) {
-        await updateDoc(doc(db, 'tenants', d.id), { dbServerId: newServerId });
+        await setDoc(doc(db, 'tenants', d.id), updatedTenant, { merge: true });
       }
 
       // Update LocalState
