@@ -24,9 +24,11 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [dbGalleryImages, setDbGalleryImages] = useState<string[]>([]);
 
+  const isLightboxOpen = selectedIndex !== null;
+
   // ── Mobile Hardware Back Button Interceptor to Close Lightbox Modal ──
   useEffect(() => {
-    if (selectedIndex === null) return;
+    if (!isLightboxOpen) return;
 
     const stateId = `gallery_lightbox_${Date.now()}`;
     window.history.pushState({ isGalleryLightbox: true, stateId }, '');
@@ -46,7 +48,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
         window.history.back();
       }
     };
-  }, [selectedIndex]);
+  }, [isLightboxOpen]);
 
   // Fetch all gallery-category Cloudinary photos for this tenant from Firestore
   useEffect(() => {
