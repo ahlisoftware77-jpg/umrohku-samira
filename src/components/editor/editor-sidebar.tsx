@@ -34,7 +34,8 @@ import {
   ArrowLeft,
   Share2,
   MessageSquare,
-  RefreshCw
+  RefreshCw,
+  Check
 } from 'lucide-react';
 import { SectionType } from '@/types/cms';
 
@@ -1852,80 +1853,252 @@ export default function EditorSidebar() {
         </TabsContent>
 
         {/* ====================================================
-            THEME TAB
+            THEME TAB (Ultra-Pro Design)
             ==================================================== */}
-        <TabsContent value="theme" className="flex-1 overflow-y-auto pt-2 px-4 pb-4 space-y-4">
-          <h3 className="font-bold text-sm text-primary uppercase tracking-wider mb-2">Tema & Tampilan</h3>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Warna Utama (Primary Color)</Label>
-              <div className="flex gap-2">
-                <Input type="color" className="h-10 w-16 p-1 rounded" value={page?.theme.primaryColor || '#0A1E3B'} onChange={(e) => updateTheme({ primaryColor: e.target.value })} />
-                <Input value={page?.theme.primaryColor || '#0A1E3B'} className="flex-1" onChange={(e) => updateTheme({ primaryColor: e.target.value })} />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Warna Kedua (Secondary Color)</Label>
-              <div className="flex gap-2">
-                <Input type="color" className="h-10 w-16 p-1 rounded" value={page?.theme.secondaryColor || '#D4AF37'} onChange={(e) => updateTheme({ secondaryColor: e.target.value })} />
-                <Input value={page?.theme.secondaryColor || '#D4AF37'} className="flex-1" onChange={(e) => updateTheme({ secondaryColor: e.target.value })} />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Sudut Melengkung (Border Radius)</Label>
-              <select 
-                value={page?.theme.borderRadius || 'lg'} 
-                onChange={(e) => updateTheme({ borderRadius: e.target.value as any })}
-                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="none">Siku (None)</option>
-                <option value="sm">Halus Kecil (SM)</option>
-                <option value="md">Sedang (MD)</option>
-                <option value="lg">Membulat (LG)</option>
-                <option value="xl">Sangat Bulat (XL)</option>
-                <option value="full">Lingkaran (Full)</option>
-              </select>
-            </div>
+        <TabsContent value="theme" className="flex-1 overflow-y-auto pt-2 px-4 pb-6 space-y-6">
+          {/* Header */}
+          <div className="border-b pb-3 space-y-1">
+            <h3 className="font-extrabold text-sm text-primary uppercase tracking-wider flex items-center gap-2">
+              <Palette className="h-4 w-4 text-amber-500" /> Tema & Skema Warna
+            </h3>
+            <p className="text-xs text-muted-foreground">Kustomisasi identitas visual, warna dominan, dan tipografi landing page Anda.</p>
+          </div>
 
-            <div className="space-y-2">
-              <Label>Gaya Huruf (Font Family)</Label>
-              <select 
-                value={page?.theme.fontFamily || 'PT Sans'} 
-                onChange={(e) => updateTheme({ fontFamily: e.target.value })}
-                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="PT Sans">PT Sans (Modern Sans-Serif)</option>
-                <option value="Alegreya">Alegreya (Premium Serif)</option>
-                <option value="system-ui">System Default (Bawaan HP/Laptop)</option>
-                <option value="monospace">Monospace (Gaya Ketik)</option>
-              </select>
+          {/* 1. Curated Color Presets for Umrah & Travel */}
+          <div className="space-y-3 p-3.5 bg-gradient-to-br from-amber-500/10 via-primary/5 to-amber-500/10 border border-amber-500/20 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Palet Warna Pilihan Instant
+              </Label>
             </div>
+            <p className="text-[11px] text-muted-foreground">Pilih kombinasi warna islami & profesional yang dirancang khusus untuk travel Haji & Umrah:</p>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {[
+                { name: 'Royal Gold & Navy', primary: '#0A1E3B', secondary: '#D4AF37' },
+                { name: 'Emerald Islamic', primary: '#064E3B', secondary: '#F59E0B' },
+                { name: 'Ka\'bah Gold & Black', primary: '#18181B', secondary: '#EAB308' },
+                { name: 'Ocean Turquoise', primary: '#0E7490', secondary: '#38BDF8' },
+                { name: 'Deep Violet & Gold', primary: '#3B0764', secondary: '#F59E0B' },
+                { name: 'Maroon & Amber', primary: '#881337', secondary: '#FBBF24' },
+              ].map((preset, idx) => {
+                const isCurrent = 
+                  page?.theme.primaryColor?.toLowerCase() === preset.primary.toLowerCase() &&
+                  page?.theme.secondaryColor?.toLowerCase() === preset.secondary.toLowerCase();
+
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => updateTheme({ primaryColor: preset.primary, secondaryColor: preset.secondary })}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-1.5 transition-all hover:scale-[1.02] ${
+                      isCurrent
+                        ? 'bg-white border-amber-500 ring-2 ring-amber-500/40 shadow-sm'
+                        : 'bg-white/80 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full border shadow-xs" style={{ backgroundColor: preset.primary }} />
+                      <span className="w-4 h-4 rounded-full border shadow-xs" style={{ backgroundColor: preset.secondary }} />
+                      {isCurrent && <Check className="h-3.5 w-3.5 text-amber-600 ml-auto" />}
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-800 truncate">{preset.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. Custom Color Pickers */}
+          <div className="space-y-4 p-3.5 bg-muted/30 border rounded-2xl">
+            <p className="text-xs font-bold text-primary uppercase tracking-wider">Pilihan Warna Kustom</p>
+            
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-slate-700">Warna Utama (Primary Color)</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="color" 
+                    className="h-10 w-14 p-1 rounded-xl cursor-pointer border" 
+                    value={page?.theme.primaryColor || '#0A1E3B'} 
+                    onChange={(e) => updateTheme({ primaryColor: e.target.value })} 
+                  />
+                  <Input 
+                    value={page?.theme.primaryColor || '#0A1E3B'} 
+                    className="flex-1 font-mono text-xs uppercase h-10 rounded-xl" 
+                    onChange={(e) => updateTheme({ primaryColor: e.target.value })} 
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-slate-700">Warna Aksesori / Gelar (Secondary Color)</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="color" 
+                    className="h-10 w-14 p-1 rounded-xl cursor-pointer border" 
+                    value={page?.theme.secondaryColor || '#D4AF37'} 
+                    onChange={(e) => updateTheme({ secondaryColor: e.target.value })} 
+                  />
+                  <Input 
+                    value={page?.theme.secondaryColor || '#D4AF37'} 
+                    className="flex-1 font-mono text-xs uppercase h-10 rounded-xl" 
+                    onChange={(e) => updateTheme({ secondaryColor: e.target.value })} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Border Radius Selection */}
+          <div className="space-y-3 p-3.5 bg-muted/30 border rounded-2xl">
+            <p className="text-xs font-bold text-primary uppercase tracking-wider">Sudut Melengkung Kartu & Tombol</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'none', label: 'Siku', previewClass: 'rounded-none' },
+                { id: 'sm', label: 'Halus', previewClass: 'rounded-sm' },
+                { id: 'md', label: 'Sedang', previewClass: 'rounded-md' },
+                { id: 'lg', label: 'Membulat', previewClass: 'rounded-xl' },
+                { id: 'xl', label: 'Sangat Bulat', previewClass: 'rounded-2xl' },
+                { id: 'full', label: 'Oval/Full', previewClass: 'rounded-full' },
+              ].map((b) => {
+                const isSelected = (page?.theme.borderRadius || 'lg') === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => updateTheme({ borderRadius: b.id as any })}
+                    className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${
+                      isSelected
+                        ? 'bg-primary text-white border-primary shadow-sm font-bold'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className={`w-8 h-5 border-2 ${isSelected ? 'border-amber-300 bg-white/20' : 'border-slate-400 bg-slate-100'} ${b.previewClass}`} />
+                    <span className="text-[10px] font-bold">{b.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4. Font Family Selection */}
+          <div className="space-y-2.5 p-3.5 bg-muted/30 border rounded-2xl">
+            <p className="text-xs font-bold text-primary uppercase tracking-wider">Gaya Huruf & Tipografi (Font)</p>
+            <select 
+              value={page?.theme.fontFamily || 'PT Sans'} 
+              onChange={(e) => updateTheme({ fontFamily: e.target.value })}
+              className="w-full h-11 px-3 rounded-xl border border-input bg-white text-xs font-bold font-sans shadow-xs focus:outline-none focus:border-amber-500"
+            >
+              <option value="PT Sans">PT Sans — Modern Sans-Serif (Rekomendasi Utama)</option>
+              <option value="Alegreya">Alegreya — Premium Elegant Serif</option>
+              <option value="system-ui">System UI — Standar Bawaan Smartphone / PC</option>
+              <option value="monospace">Monospace — Gaya Ketikan Rapi</option>
+            </select>
           </div>
         </TabsContent>
 
         {/* ====================================================
-            SEO TAB
+            SEO TAB (Ultra-Pro Design with Live Google SERP Preview)
             ==================================================== */}
-        <TabsContent value="seo" className="flex-1 overflow-y-auto pt-2 px-4 pb-4 space-y-4">
-          <h3 className="font-bold text-sm text-primary uppercase tracking-wider mb-2">Optimasi SEO Halaman</h3>
-          
+        <TabsContent value="seo" className="flex-1 overflow-y-auto pt-2 px-4 pb-6 space-y-6">
+          {/* Header */}
+          <div className="border-b pb-3 space-y-1">
+            <h3 className="font-extrabold text-sm text-primary uppercase tracking-wider flex items-center gap-2">
+              <Globe className="h-4 w-4 text-emerald-600" /> Optimasi Mesin Pencari (SEO)
+            </h3>
+            <p className="text-xs text-muted-foreground">Maksimalkan peringkat pencarian Google & pratinjau media sosial untuk akun travel Anda.</p>
+          </div>
+
+          {/* Live Google Search Preview Card */}
+          <div className="space-y-2 p-4 bg-slate-900 text-white rounded-2xl shadow-lg border border-slate-800">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" /> Pratinjau Tampilan Pencarian Google
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">SERP Live</span>
+            </div>
+
+            <div className="space-y-1 pt-1 font-sans">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
+                <span className="w-4 h-4 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center text-[10px] font-bold">S</span>
+                <span className="truncate">umrohku-samira.my.id › {page?.tenantId || 'mitra'}</span>
+              </div>
+              <h4 className="text-sm font-bold text-blue-400 hover:underline truncate">
+                {page?.seo.title || `Mitra Resmi Samira Travel — Paket Umrah Terpercaya`}
+              </h4>
+              <p className="text-[11px] text-slate-300 line-clamp-2 leading-relaxed">
+                {page?.seo.description || `Website resmi layanan bimbingan perjalanan ibadah Haji & Umrah. Dapatkan konsultasi gratis & jadwal keberangkatan terbaik.`}
+              </p>
+            </div>
+          </div>
+
+          {/* Form Inputs */}
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Meta Title</Label>
-              <Input value={page?.seo.title || ''} placeholder="Judul pencarian..." onChange={(e) => updateSeo({ title: e.target.value })} />
+            {/* Meta Title */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-bold text-slate-700">Judul Pencarian (Meta Title) *</Label>
+                <span className={`text-[10px] font-bold ${
+                  (page?.seo.title?.length || 0) >= 30 && (page?.seo.title?.length || 0) <= 60
+                    ? 'text-emerald-600'
+                    : 'text-amber-600'
+                }`}>
+                  {page?.seo.title?.length || 0} / 60 Karakter
+                </span>
+              </div>
+              <Input 
+                value={page?.seo.title || ''} 
+                placeholder="Contoh: Samira Travel Karawang — Promo Umrah Reguler 2026" 
+                onChange={(e) => updateSeo({ title: e.target.value })} 
+                className="rounded-xl text-xs h-10 border-slate-300 focus:border-amber-500 font-medium"
+              />
+              <p className="text-[10px] text-muted-foreground">Judul yang menarik & relevan membantu meningkatkan angka klik dari hasil pencarian Google.</p>
             </div>
             
-            <div className="space-y-2">
-              <Label>Meta Description</Label>
-              <Textarea value={page?.seo.description || ''} placeholder="Deskripsi pencarian singkat..." onChange={(e) => updateSeo({ description: e.target.value })} />
+            {/* Meta Description */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-bold text-slate-700">Deskripsi Ringkasan (Meta Description) *</Label>
+                <span className={`text-[10px] font-bold ${
+                  (page?.seo.description?.length || 0) >= 70 && (page?.seo.description?.length || 0) <= 160
+                    ? 'text-emerald-600'
+                    : 'text-amber-600'
+                }`}>
+                  {page?.seo.description?.length || 0} / 160 Karakter
+                </span>
+              </div>
+              <Textarea 
+                value={page?.seo.description || ''} 
+                placeholder="Rangkum layanan terbaik, bonus akomodasi hotel dekat masjid, serta kontak konsultasi WhatsApp Anda..." 
+                onChange={(e) => updateSeo({ description: e.target.value })} 
+                rows={3}
+                className="rounded-xl text-xs border-slate-300 focus:border-amber-500 leading-relaxed font-medium"
+              />
+              <p className="text-[10px] text-muted-foreground">Deskripsi singkat yang muncul di bawah judul pada pencarian Google & pesan WhatsApp.</p>
             </div>
             
+            {/* Keywords Tags */}
             <div className="space-y-2">
-              <Label>Keywords (Koma sebagai pemisah)</Label>
-              <Input value={page?.seo.keywords.join(', ') || ''} placeholder="haji, umrah, samira, travel" onChange={(e) => updateSeo({ keywords: e.target.value.split(',').map(s => s.trim()) })} />
+              <Label className="text-xs font-bold text-slate-700">Kata Kunci Kunci (Keywords)</Label>
+              <Input 
+                value={page?.seo.keywords.join(', ') || ''} 
+                placeholder="umrah 2026, samira travel, haji plus, karawang" 
+                onChange={(e) => updateSeo({ keywords: e.target.value.split(',').map(s => s.trim()) })} 
+                className="rounded-xl text-xs h-10 border-slate-300 focus:border-amber-500 font-medium"
+              />
+              <p className="text-[10px] text-muted-foreground">Gunakan koma (,) untuk memisahkan setiap kata kunci pencarian.</p>
+
+              {/* Keywords Pills List Preview */}
+              {page?.seo.keywords && page.seo.keywords.length > 0 && page.seo.keywords[0] !== '' && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {page.seo.keywords.map((kw, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                      #{kw}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </TabsContent>
