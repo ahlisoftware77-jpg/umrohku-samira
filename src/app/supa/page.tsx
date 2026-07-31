@@ -1271,40 +1271,72 @@ service cloud.firestore {
     }
   };
 
-  // Scan for Orphaned Contents in DB Utama & Server Clusters
+  // Scan for Orphaned Contents in DB Utama & Server Clusters (With Server Connection & Comparison)
   const handleScanOrphanedContents = async () => {
     try {
       setIsScanningOrphans(true);
       setOrphanedContents([]);
 
-      // Create set of active tenant IDs
-      const activeTenantIds = new Set<string>();
+      // 1. Build map of active tenant IDs and their assigned DB server
+      const activeTenantMap = new Map<string, { company: string; subdomain: string; dbServerId: string }>();
       tenants.forEach(t => {
-        if (t.tenantId) activeTenantIds.add(t.tenantId);
-        if (t.subdomain) activeTenantIds.add(t.subdomain);
-        if (t.email) activeTenantIds.add(t.email.toLowerCase().replace(/[^a-z0-9]/g, '_'));
+        const info = {
+          company: t.company || t.name || t.subdomain,
+          subdomain: t.subdomain || '',
+          dbServerId: t.dbServerId || 'default',
+        };
+        if (t.tenantId) activeTenantMap.set(t.tenantId, info);
+        if (t.subdomain) activeTenantMap.set(t.subdomain, info);
+        if (t.email) activeTenantMap.set(t.email.toLowerCase().replace(/[^a-z0-9]/g, '_'), info);
       });
 
       const orphansFound: any[] = [];
 
       // Helper scan database instance
-      const scanDbInstance = async (targetDbInstance: any, serverLabel: string) => {
+      const scanDbInstance = async (targetDbInstance: any, serverId: string, serverLabel: string, projectId: string) => {
         try {
           const contentsSnap = await getDocs(collection(targetDbInstance, 'contents'));
           contentsSnap.docs.forEach(docSnap => {
             const data = docSnap.data();
             const contentTenantId = data.tenantId;
+            const activeTenantInfo = contentTenantId ? activeTenantMap.get(contentTenantId) : null;
 
-            // Check if tenantId is missing or does not match any active tenant
-            if (!contentTenantId || !activeTenantIds.has(contentTenantId)) {
+            if (!contentTenantId || !activeTenantInfo) {
+              // Completely orphaned (no active tenant account exists for this tenantId)
               orphansFound.push({
                 docId: docSnap.id,
                 tenantId: contentTenantId || 'Tanpa Tenant ID',
                 sectionId: data.sectionId || '-',
                 key: data.key || '-',
                 value: typeof data.value === 'object' ? JSON.stringify(data.value) : String(data.value || ''),
+                serverId,
                 serverLabel,
+                projectId,
                 instanceDb: targetDbInstance,
+                status: 'orphaned',
+                statusLabel: 'Terasing (Akun Dihapus)',
+                assignedServer: '-',
+              });
+            } else if (activeTenantInfo.dbServerId !== serverId) {
+              // Misplaced contents (Tenant account has been migrated to another DB server, e.g. umroh2, but old contents remain on DB Utama)
+              const assignedServerConfig = dbServers.find(s => s.serverId === activeTenantInfo.dbServerId);
+              const assignedLabel = activeTenantInfo.dbServerId === 'default' 
+                ? 'DB Utama (landing-umroh)' 
+                : (assignedServerConfig?.name || activeTenantInfo.dbServerId);
+
+              orphansFound.push({
+                docId: docSnap.id,
+                tenantId: contentTenantId,
+                sectionId: data.sectionId || '-',
+                key: data.key || '-',
+                value: typeof data.value === 'object' ? JSON.stringify(data.value) : String(data.value || ''),
+                serverId,
+                serverLabel,
+                projectId,
+                instanceDb: targetDbInstance,
+                status: 'misplaced',
+                statusLabel: `Sisa Migrasi (Tenant Terhubung ke ${assignedLabel})`,
+                assignedServer: assignedLabel,
               });
             }
           });
@@ -1313,14 +1345,15 @@ service cloud.firestore {
         }
       };
 
-      // 1. Scan Primary DB
-      await scanDbInstance(db, 'DB Utama');
+      // 1. Scan Primary DB (landing-umroh)
+      await scanDbInstance(db, 'default', 'DB Utama (landing-umroh)', fbProjectId || 'landing-umroh');
 
-      // 2. Scan Cluster DBs
+      // 2. Scan Cluster DBs (e.g. landing-umroh2)
       for (const serverConfig of dbServers) {
         try {
           const clusterInstance = getDynamicFirebaseInstance(serverConfig).db;
-          await scanDbInstance(clusterInstance, serverConfig.name || serverConfig.serverId);
+          const label = `${serverConfig.name || serverConfig.serverId} (${serverConfig.projectId})`;
+          await scanDbInstance(clusterInstance, serverConfig.serverId, label, serverConfig.projectId);
         } catch (e) {}
       }
 
@@ -2621,9 +2654,10 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       <Table>
                         <TableHeader className="bg-slate-50 sticky top-0 z-10">
                           <TableRow>
-                            <TableHead className="text-xs font-bold">Lokasi Server</TableHead>
+                            <TableHead className="text-xs font-bold">Lokasi Dokumen</TableHead>
+                            <TableHead className="text-xs font-bold">Status & Perbandingan</TableHead>
+                            <TableHead className="text-xs font-bold">Tenant ID</TableHead>
                             <TableHead className="text-xs font-bold">Dokumen ID</TableHead>
-                            <TableHead className="text-xs font-bold">Tenant ID Lama</TableHead>
                             <TableHead className="text-xs font-bold">Key / Field</TableHead>
                             <TableHead className="text-xs font-bold">Pratinjau Isi</TableHead>
                           </TableRow>
@@ -2632,14 +2666,30 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           {orphanedContents.map((item, idx) => (
                             <TableRow key={idx} className="hover:bg-slate-50/50">
                               <TableCell className="text-xs font-bold text-primary">
-                                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20 text-[10px]">
+                                <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-md border border-primary/20 text-[10px] whitespace-nowrap">
                                   {item.serverLabel}
                                 </span>
                               </TableCell>
-                              <TableCell className="font-mono text-[11px] text-slate-600">{item.docId}</TableCell>
-                              <TableCell className="text-xs text-amber-700 font-semibold">{item.tenantId}</TableCell>
+                              <TableCell className="text-xs font-medium">
+                                {item.status === 'misplaced' ? (
+                                  <span className="inline-flex flex-col gap-0.5">
+                                    <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded-full text-[10px] w-fit">
+                                      🔄 {item.statusLabel}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500">
+                                      Terhubung Aktif ke: <strong className="text-primary">{item.assignedServer}</strong>
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <span className="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                                    ⚠️ {item.statusLabel}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-xs text-amber-700 font-bold">{item.tenantId}</TableCell>
+                              <TableCell className="font-mono text-[11px] text-slate-600 truncate max-w-[150px]" title={item.docId}>{item.docId}</TableCell>
                               <TableCell className="text-xs font-bold">{item.key}</TableCell>
-                              <TableCell className="text-xs text-slate-500 truncate max-w-[250px]" title={item.value}>
+                              <TableCell className="text-xs text-slate-500 truncate max-w-[200px]" title={item.value}>
                                 {item.value}
                               </TableCell>
                             </TableRow>
