@@ -584,12 +584,36 @@ service cloud.firestore {
       setDbLoading(false);
     };
 
-    // 1. Real-time Tenants listener
-    const unsubTenants = onSnapshot(collection(db, 'tenants'), (snap) => {
-      rawTenants = snap.docs.map(d => {
+    // 1. Real-time Tenants listener across all database servers
+    const unsubTenants = onSnapshot(collection(db, 'tenants'), async (snap) => {
+      const primaryTenants = snap.docs.map(d => {
         const data = d.data() as Tenant;
         return { ...data, tenantId: data.tenantId || d.id };
       });
+
+      // Fetch live visitorCount from target cluster DB if tenant is on another server
+      const updatedTenants = await Promise.all(primaryTenants.map(async (t) => {
+        if (t.dbServerId && t.dbServerId !== 'default') {
+          try {
+            const stored = typeof window !== 'undefined' ? localStorage.getItem('database_servers') : null;
+            if (stored) {
+              const servers: DatabaseServerConfig[] = JSON.parse(stored);
+              const serverConfig = servers.find(s => s.serverId === t.dbServerId);
+              if (serverConfig) {
+                const targetDb = getDynamicFirebaseInstance(serverConfig).db;
+                const tSnap = await getDoc(doc(targetDb, 'tenants', t.tenantId));
+                if (tSnap.exists()) {
+                  const targetData = tSnap.data() as Tenant;
+                  return { ...t, ...targetData, dbServerId: t.dbServerId };
+                }
+              }
+            }
+          } catch (e) {}
+        }
+        return t;
+      }));
+
+      rawTenants = updatedTenants;
       processAndSetTenants();
     }, (err) => {
       console.log('Realtime tenants fallback:', err);
