@@ -67,13 +67,24 @@ export function useTenantResolver(tenantSlug: string) {
         let targetDb = db;
         if (foundTenant && foundTenant.dbServerId && foundTenant.dbServerId !== 'default') {
           try {
-            const storedServers = localStorage.getItem('database_servers');
-            if (storedServers) {
-              const servers: any[] = JSON.parse(storedServers);
-              const serverConfig = servers.find(s => s.serverId === foundTenant.dbServerId);
-              if (serverConfig) {
-                targetDb = getDynamicFirebaseInstance(serverConfig).db;
+            let serverConfig: any = null;
+            if (typeof window !== 'undefined') {
+              const storedServers = localStorage.getItem('database_servers');
+              if (storedServers) {
+                const servers: any[] = JSON.parse(storedServers);
+                serverConfig = servers.find(s => s.serverId === foundTenant.dbServerId);
               }
+            }
+
+            if (!serverConfig) {
+              const dbServerDoc = await getDoc(doc(db, 'databaseServers', foundTenant.dbServerId));
+              if (dbServerDoc.exists()) {
+                serverConfig = dbServerDoc.data();
+              }
+            }
+
+            if (serverConfig && serverConfig.apiKey) {
+              targetDb = getDynamicFirebaseInstance(serverConfig).db;
             }
           } catch (e) {}
         }
@@ -101,19 +112,12 @@ export function useTenantResolver(tenantSlug: string) {
         
         const isDefaultTenant = tenantSlug.toLowerCase() === 'default';
         
-        // Try to fetch custom contact information from contents collection using targetDb instance
-        let phone = '';
-        let address = '';
-        let mapEmbedUrl = '';
-        let pdfUrl = '';
-        let email = '';
-
-        try {
-          const contentsRef = collection(targetDb, 'contents');
+        // Helper to fetch custom contact information from a given Firestore database instance
+        const fetchContentsFromDb = async (dbInstance: any) => {
+          const contentsRef = collection(dbInstance, 'contents');
           const qContent = query(contentsRef, where('tenantId', '==', activeTenantId));
           const contentSnap = await getDocs(qContent);
           
-          // First pass: collect all values — prefer from contact section if found
           const allValues: Record<string, string> = {};
           const contactValues: Record<string, string> = {};
           
@@ -131,15 +135,38 @@ export function useTenantResolver(tenantSlug: string) {
             if (c.key === 'email' && c.value) { allValues.email = c.value; if (isContactSection) contactValues.email = c.value; }
           });
           
-          // Prefer contact section values, fall back to any section values
-          phone = contactValues.phone || contactValues.whatsapp || allValues.phone || allValues.whatsapp || '';
-          address = contactValues.address || allValues.address || '';
-          mapEmbedUrl = contactValues.mapUrl || allValues.mapUrl || '';
-          pdfUrl = allValues.pdfUrl || '';
-          email = contactValues.email || allValues.email || '';
+          return {
+            phone: contactValues.phone || contactValues.whatsapp || allValues.phone || allValues.whatsapp || '',
+            address: contactValues.address || allValues.address || '',
+            mapEmbedUrl: contactValues.mapUrl || allValues.mapUrl || '',
+            pdfUrl: allValues.pdfUrl || '',
+            email: contactValues.email || allValues.email || '',
+          };
+        };
+
+        let contentsData = { phone: '', address: '', mapEmbedUrl: '', pdfUrl: '', email: '' };
+
+        try {
+          contentsData = await fetchContentsFromDb(targetDb);
+          if (!contentsData.phone && targetDb !== db) {
+            const fallbackData = await fetchContentsFromDb(db);
+            contentsData = {
+              phone: contentsData.phone || fallbackData.phone,
+              address: contentsData.address || fallbackData.address,
+              mapEmbedUrl: contentsData.mapEmbedUrl || fallbackData.mapEmbedUrl,
+              pdfUrl: contentsData.pdfUrl || fallbackData.pdfUrl,
+              email: contentsData.email || fallbackData.email,
+            };
+          }
         } catch (err) {
           console.error('Failed to fetch tenant contents:', err);
         }
+
+        const phone = contentsData.phone || (foundTenant as any).phone || (foundTenant as any).whatsapp || '';
+        const address = contentsData.address || (foundTenant as any).address || '';
+        const mapEmbedUrl = contentsData.mapEmbedUrl || (foundTenant as any).mapEmbedUrl || '';
+        const pdfUrl = contentsData.pdfUrl || '';
+        const email = contentsData.email || foundTenant.email || '';
 
         let displayAddress = address;
         if (!displayAddress) {
@@ -149,8 +176,8 @@ export function useTenantResolver(tenantSlug: string) {
         }
         
         const agentStatic = getAgent(foundTenant.subdomain || tenantSlug);
-        const resolvedPhone = phone || agentStatic?.phone || '083815862300';
-        const rawWa = phone || agentStatic?.whatsapp || '6283815862300';
+        const resolvedPhone = phone || (foundTenant as any).phone || agentStatic?.phone || '083815862300';
+        const rawWa = phone || (foundTenant as any).whatsapp || agentStatic?.whatsapp || '6283815862300';
         const resolvedWhatsapp = rawWa.replace(/[^0-9]/g, '') || '6283815862300';
 
         // Build Agent object for templates

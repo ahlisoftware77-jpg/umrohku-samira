@@ -489,6 +489,47 @@ export const useCmsStore = create<CmsState>((set, get) => {
 
         await batch.commit();
         console.log('Autosaved to targetDb Firestore successfully.');
+
+        if (targetDb !== db) {
+          try {
+            const mainBatch = writeBatch(db);
+            const mainPageRef = doc(db, 'landingPages', page.pageId);
+            mainBatch.set(mainPageRef, { 
+              updatedAt: new Date(),
+              theme: page.theme,
+              seo: page.seo,
+              globalSettings: page.globalSettings
+            }, { merge: true });
+
+            sections.forEach(sec => {
+              mainBatch.set(doc(db, 'sections', sec.sectionId), sec);
+            });
+
+            Object.keys(contents).forEach(secId => {
+              const sectionContent = contents[secId];
+              if (!sectionContent || typeof sectionContent !== 'object') return;
+              Object.keys(sectionContent).forEach(key => {
+                if (!key || key === 'undefined') return;
+                const rawValue = sectionContent[key];
+                if (rawValue === undefined || rawValue === null) return;
+                if (typeof rawValue === 'string' && rawValue.startsWith('data:')) return;
+                const sanitized = sanitizeValue(rawValue);
+                if (Array.isArray(sanitized) && sanitized.length === 0 && Array.isArray(rawValue) && rawValue.length > 0) return;
+
+                const contentId = `${page.tenantId}_${secId}_${key}`;
+                mainBatch.set(doc(db, 'contents', contentId), {
+                  contentId,
+                  tenantId: page.tenantId,
+                  sectionId: secId,
+                  key,
+                  value: sanitized
+                });
+              });
+            });
+
+            await mainBatch.commit().catch(() => {});
+          } catch (mErr) {}
+        }
       } catch (err) {
         console.error('Autosave failed:', err);
       }
