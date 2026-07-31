@@ -1301,6 +1301,17 @@ service cloud.firestore {
             const contentTenantId = data.tenantId;
             const activeTenantInfo = contentTenantId ? activeTenantMap.get(contentTenantId) : null;
 
+            const createdAtRaw = data.createdAt || data.updatedAt;
+            const createdAtFormatted = createdAtRaw
+              ? new Date((createdAtRaw as any)?.seconds ? (createdAtRaw as any).seconds * 1000 : createdAtRaw).toLocaleDateString('id-ID', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              : '-';
+
             if (!contentTenantId || !activeTenantInfo) {
               // Completely orphaned (no active tenant account exists for this tenantId)
               orphansFound.push({
@@ -1309,6 +1320,7 @@ service cloud.firestore {
                 sectionId: data.sectionId || '-',
                 key: data.key || '-',
                 value: typeof data.value === 'object' ? JSON.stringify(data.value) : String(data.value || ''),
+                createdAt: createdAtFormatted,
                 serverId,
                 serverLabel,
                 projectId,
@@ -1330,6 +1342,7 @@ service cloud.firestore {
                 sectionId: data.sectionId || '-',
                 key: data.key || '-',
                 value: typeof data.value === 'object' ? JSON.stringify(data.value) : String(data.value || ''),
+                createdAt: createdAtFormatted,
                 serverId,
                 serverLabel,
                 projectId,
@@ -2656,6 +2669,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           <TableRow>
                             <TableHead className="text-xs font-bold">Lokasi Dokumen</TableHead>
                             <TableHead className="text-xs font-bold">Status & Perbandingan</TableHead>
+                            <TableHead className="text-xs font-bold">Tanggal Dibuat</TableHead>
                             <TableHead className="text-xs font-bold">Tenant ID</TableHead>
                             <TableHead className="text-xs font-bold">Dokumen ID</TableHead>
                             <TableHead className="text-xs font-bold">Key / Field</TableHead>
@@ -2685,6 +2699,12 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                                     ⚠️ {item.statusLabel}
                                   </span>
                                 )}
+                              </TableCell>
+                              <TableCell className="text-xs text-slate-600 font-medium whitespace-nowrap">
+                                <span className="inline-flex items-center gap-1 bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200 text-[11px]">
+                                  <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
+                                  {item.createdAt}
+                                </span>
                               </TableCell>
                               <TableCell className="text-xs text-amber-700 font-bold">{item.tenantId}</TableCell>
                               <TableCell className="font-mono text-[11px] text-slate-600 truncate max-w-[150px]" title={item.docId}>{item.docId}</TableCell>
