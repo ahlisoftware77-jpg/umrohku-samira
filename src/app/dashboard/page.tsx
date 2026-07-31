@@ -379,21 +379,40 @@ export default function TenantDashboardPage() {
           }
         } catch (fErr) {}
 
-        // 2. Query for landing page
+        // Resolve Target Database Server Instance dynamically for migrated tenants (e.g. landing-umroh2)
+        let targetDb = db;
+        if (tenantData && tenantData.dbServerId && tenantData.dbServerId !== 'default') {
+          try {
+            if (typeof window !== 'undefined') {
+              const storedServers = localStorage.getItem('database_servers');
+              if (storedServers) {
+                const servers: any[] = JSON.parse(storedServers);
+                const serverConfig = servers.find(s => s.serverId === tenantData.dbServerId);
+                if (serverConfig) {
+                  targetDb = getDynamicFirebaseInstance(serverConfig).db;
+                }
+              }
+            }
+          } catch (dbErr) {
+            console.warn('Failed resolving targetDb in dashboard loadCms, falling back to db:', dbErr);
+          }
+        }
+
+        // 2. Query for landing page in targetDb
         let pageSnap: any = { empty: true };
         try {
-          const pagesRef = collection(db, 'landingPages');
+          const pagesRef = collection(targetDb, 'landingPages');
           const qPage = query(pagesRef, where('tenantId', '==', tenantIdString), where('slug', '==', 'home'));
           pageSnap = await getDocs(qPage);
         } catch (pErr) {}
 
         if (!pageSnap.empty) {
-          // Normal Flow: Load existing pages, sections, contents
+          // Normal Flow: Load existing pages, sections, contents from targetDb
           const foundPage = pageSnap.docs[0].data() as LandingPage;
           
           let sectionsList: Section[] = [];
           try {
-            const sectionsRef = collection(db, 'sections');
+            const sectionsRef = collection(targetDb, 'sections');
             const qSec = query(sectionsRef, where('landingPageId', '==', foundPage.pageId), where('tenantId', '==', tenantIdString));
             const secSnap = await getDocs(qSec);
             sectionsList = secSnap.docs.map(doc => doc.data() as Section).sort((a, b) => a.order - b.order);
@@ -437,7 +456,7 @@ export default function TenantDashboardPage() {
 
           const contentsMap: Record<string, Record<string, any>> = {};
           try {
-            const contentsRef = collection(db, 'contents');
+            const contentsRef = collection(targetDb, 'contents');
             const qContent = query(contentsRef, where('tenantId', '==', tenantIdString));
             const contentSnap = await getDocs(qContent);
             contentSnap.docs.forEach(docSnap => {
@@ -449,7 +468,7 @@ export default function TenantDashboardPage() {
           
           setInitialData(foundPage, sectionsList, contentsMap);
         } else {
-          // Dynamic Auto-Onboarding: Setup default home page template
+          // Dynamic Auto-Onboarding: Setup default home page template in targetDb
           const pageId = `page_${tenantIdString}`;
           const defaultPage: LandingPage = {
             pageId,
@@ -544,12 +563,12 @@ export default function TenantDashboardPage() {
             { contentId: `${tenantIdString}_sec_contact_badgeText`, tenantId: tenantIdString, sectionId: 'sec_contact', key: 'badgeText', value: 'Hubungi Kami' }
           ];
 
-          // Save batch to Firestore (Fail-Safe)
+          // Save batch to targetDb Firestore (Fail-Safe)
           try {
-            const batch = writeBatch(db);
-            batch.set(doc(db, 'landingPages', pageId), defaultPage);
-            seedSections.forEach(s => batch.set(doc(db, 'sections', s.sectionId), s));
-            seedContents.forEach(c => batch.set(doc(db, 'contents', c.contentId), c));
+            const batch = writeBatch(targetDb);
+            batch.set(doc(targetDb, 'landingPages', pageId), defaultPage);
+            seedSections.forEach(s => batch.set(doc(targetDb, 'sections', s.sectionId), s));
+            seedContents.forEach(c => batch.set(doc(targetDb, 'contents', c.contentId), c));
             await batch.commit();
           } catch (bErr) {}
 

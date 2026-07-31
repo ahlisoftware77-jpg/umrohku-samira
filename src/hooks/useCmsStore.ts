@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { doc, updateDoc, writeBatch, collection, deleteDoc, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc, writeBatch, collection, deleteDoc, getDocs, query, where } from 'firebase/firestore';
+import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
 import { LandingPage, Section, Content, SectionType } from '@/types/cms';
 
 interface CmsState {
@@ -395,10 +395,31 @@ export const useCmsStore = create<CmsState>((set, get) => {
       if (!page) return;
 
       try {
-        const batch = writeBatch(db);
+        // Resolve Target Database Server Instance dynamically for migrated tenants (e.g. landing-umroh2)
+        let targetDb = db;
+        try {
+          // 1. Check local storage cluster cache first
+          if (typeof window !== 'undefined') {
+            const storedServers = localStorage.getItem('database_servers');
+            const tenantDocSnap = await getDoc(doc(db, 'tenants', page.tenantId));
+            const tenantDbServerId = tenantDocSnap.exists() ? tenantDocSnap.data()?.dbServerId : null;
+
+            if (tenantDbServerId && tenantDbServerId !== 'default' && storedServers) {
+              const servers: any[] = JSON.parse(storedServers);
+              const serverConfig = servers.find(s => s.serverId === tenantDbServerId);
+              if (serverConfig) {
+                targetDb = getDynamicFirebaseInstance(serverConfig).db;
+              }
+            }
+          }
+        } catch (dbErr) {
+          console.warn('Failed resolving targetDb for save, falling back to default db:', dbErr);
+        }
+
+        const batch = writeBatch(targetDb);
 
         // 1. Save page meta data (theme, seo, globalSettings, updatedAt)
-        const pageRef = doc(db, 'landingPages', page.pageId);
+        const pageRef = doc(targetDb, 'landingPages', page.pageId);
         batch.set(pageRef, { 
           updatedAt: new Date(),
           theme: page.theme,
@@ -408,21 +429,21 @@ export const useCmsStore = create<CmsState>((set, get) => {
 
         // 2. Delete obsolete sections from Firestore no longer present in current state
         try {
-          const sectionsRef = collection(db, 'sections');
+          const sectionsRef = collection(targetDb, 'sections');
           const qOldSec = query(sectionsRef, where('landingPageId', '==', page.pageId));
           const oldSecSnap = await getDocs(qOldSec);
           const currentSecIds = new Set(sections.map(s => s.sectionId));
 
           oldSecSnap.docs.forEach(oldDoc => {
             if (!currentSecIds.has(oldDoc.id)) {
-              batch.delete(doc(db, 'sections', oldDoc.id));
+              batch.delete(doc(targetDb, 'sections', oldDoc.id));
             }
           });
         } catch (sDelErr) {}
 
         // 3. Save all current sections order & layout config
         sections.forEach(sec => {
-          const secRef = doc(db, 'sections', sec.sectionId);
+          const secRef = doc(targetDb, 'sections', sec.sectionId);
           batch.set(secRef, sec);
         });
 
@@ -461,7 +482,7 @@ export const useCmsStore = create<CmsState>((set, get) => {
             if (Array.isArray(sanitized) && sanitized.length === 0 && Array.isArray(rawValue) && rawValue.length > 0) return;
 
             const contentId = `${page.tenantId}_${secId}_${key}`;
-            const contentRef = doc(db, 'contents', contentId);
+            const contentRef = doc(targetDb, 'contents', contentId);
             batch.set(contentRef, {
               contentId,
               tenantId: page.tenantId,
@@ -473,7 +494,7 @@ export const useCmsStore = create<CmsState>((set, get) => {
         });
 
         await batch.commit();
-        console.log('Autosaved to Firestore successfully.');
+        console.log('Autosaved to targetDb Firestore successfully.');
       } catch (err) {
         console.error('Autosave failed:', err);
       }
