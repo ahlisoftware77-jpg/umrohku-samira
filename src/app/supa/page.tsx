@@ -50,7 +50,9 @@ import {
   Terminal,
   ShieldCheck,
   Download,
-  Upload
+  Upload,
+  EyeOff,
+  Lock
 } from 'lucide-react';
 import { Tenant, TenantPlan, TenantStatus, SYSTEM_PLANS, DatabaseServerConfig, BuilderPlan } from '@/types/cms';
 
@@ -97,6 +99,22 @@ export default function SuperAdminPage() {
 
   const [cldCloudName, setCldCloudName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_cloud_name') || '' : ''));
   const [cldUploadPreset, setCldUploadPreset] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_upload_preset') || 'ml_default' : 'ml_default'));
+
+  // Security PIN & API Key Masking state
+  const [savedPin, setSavedPin] = useState(() => 
+    typeof window !== 'undefined' ? localStorage.getItem('supa_security_pin') || '123456' : '123456'
+  );
+  const [isApiKeyVisible, setIsApiKeyVisible] = useState(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [isChangePinModalOpen, setIsChangePinModalOpen] = useState(false);
+  const [enteredPin, setEnteredPin] = useState('');
+  const [pinError, setPinError] = useState('');
+
+  // Change PIN states
+  const [oldPinInput, setOldPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [changePinError, setChangePinError] = useState('');
 
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -562,6 +580,10 @@ service cloud.firestore {
           if (cn) setCldCloudName(cn);
           if (up) setCldUploadPreset(up);
         }
+        if (sysData.securityPin) {
+          setSavedPin(sysData.securityPin);
+          if (typeof window !== 'undefined') localStorage.setItem('supa_security_pin', sysData.securityPin);
+        }
       }
     }, (err) => {});
 
@@ -992,6 +1014,58 @@ service cloud.firestore {
       console.error(err);
       alert('Gagal menghapus paket.');
     }
+  };
+
+  // Verify Security PIN to Reveal API Key
+  const handleVerifyPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinError('');
+
+    if (enteredPin.trim() === savedPin.trim()) {
+      setIsApiKeyVisible(true);
+      setIsPinModalOpen(false);
+      setEnteredPin('');
+    } else {
+      setPinError('PIN Keamanan salah. Harap periksa kembali PIN Anda.');
+    }
+  };
+
+  // Change Security PIN handler
+  const handleChangePin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePinError('');
+
+    if (oldPinInput.trim() !== savedPin.trim()) {
+      setChangePinError('PIN lama yang Anda masukkan tidak sesuai.');
+      return;
+    }
+
+    if (newPinInput.length < 4) {
+      setChangePinError('PIN baru minimal harus 4 digit angka/karakter.');
+      return;
+    }
+
+    if (newPinInput !== confirmPinInput) {
+      setChangePinError('Konfirmasi PIN baru tidak cocok.');
+      return;
+    }
+
+    const updatedPin = newPinInput.trim();
+    setSavedPin(updatedPin);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('supa_security_pin', updatedPin);
+    }
+
+    try {
+      await setDoc(doc(db, 'systemSettings', 'global'), { securityPin: updatedPin }, { merge: true });
+    } catch (e) {}
+
+    setIsChangePinModalOpen(false);
+    setOldPinInput('');
+    setNewPinInput('');
+    setConfirmPinInput('');
+    alert('PIN Keamanan Super Admin berhasil diperbarui!');
   };
 
   const handleSaveSystemSettings = async (e: React.FormEvent) => {
@@ -1587,8 +1661,61 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   
                   <CardContent className="px-0 py-4 space-y-4">
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold">API Key (apiKey)</Label>
-                      <Input value={fbApiKey} onChange={(e) => setFbApiKey(e.target.value)} placeholder="AIzaSy..." />
+                      <div className="flex justify-between items-center">
+                        <Label className="text-xs font-bold">API Key (apiKey)</Label>
+                        <div className="flex gap-2">
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => {
+                              if (isApiKeyVisible) {
+                                setIsApiKeyVisible(false);
+                              } else {
+                                setEnteredPin('');
+                                setPinError('');
+                                setIsPinModalOpen(true);
+                              }
+                            }}
+                            className="h-7 px-2.5 text-xs text-primary font-bold hover:bg-primary/10 flex items-center gap-1 rounded-full"
+                          >
+                            {isApiKeyVisible ? (
+                              <>
+                                <EyeOff className="h-3.5 w-3.5" /> Sembunyikan API Key
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="h-3.5 w-3.5 text-accent" /> Tampilkan (Pakai PIN)
+                              </>
+                            )}
+                          </Button>
+
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setOldPinInput('');
+                              setNewPinInput('');
+                              setConfirmPinInput('');
+                              setChangePinError('');
+                              setIsChangePinModalOpen(true);
+                            }}
+                            className="h-7 px-2.5 text-xs border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 font-bold flex items-center gap-1 rounded-full"
+                          >
+                            <Lock className="h-3 w-3" /> Atur PIN Security
+                          </Button>
+                        </div>
+                      </div>
+
+                      <Input 
+                        type={isApiKeyVisible ? "text" : "password"}
+                        value={isApiKeyVisible ? fbApiKey : (fbApiKey ? "••••••••••••••••••••••••••••••••" : "")} 
+                        onChange={(e) => setFbApiKey(e.target.value)} 
+                        readOnly={!isApiKeyVisible}
+                        placeholder="AIzaSy..." 
+                        className={`font-mono text-xs ${!isApiKeyVisible ? 'bg-slate-100 text-slate-500 cursor-not-allowed select-none' : 'bg-white'}`}
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -2222,6 +2349,156 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Modal Dialog Masukkan PIN Security untuk Membuka API Key */}
+      {isPinModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-sm shadow-2xl rounded-3xl bg-white border-none overflow-hidden">
+            <CardHeader className="bg-primary text-white p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/10 rounded-2xl">
+                  <Lock className="h-6 w-6 text-accent" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-headline font-bold">PIN Keamanan Required</CardTitle>
+                  <CardDescription className="text-white/80 text-xs mt-0.5">
+                    Masukkan PIN Super Admin untuk melihat Kunci API sensitif
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6">
+              <form onSubmit={handleVerifyPin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700">PIN Keamanan Super Admin</Label>
+                  <Input 
+                    type="password"
+                    maxLength={10}
+                    value={enteredPin}
+                    onChange={(e) => setEnteredPin(e.target.value)}
+                    placeholder="••••••"
+                    autoFocus
+                    required
+                    className="text-center font-mono text-lg tracking-widest h-12 rounded-2xl border-slate-300 focus:border-primary"
+                  />
+                  <p className="text-[11px] text-muted-foreground text-center">(Default PIN pertama kali: <code className="bg-slate-100 px-1 py-0.5 rounded font-bold">123456</code>)</p>
+                </div>
+
+                {pinError && (
+                  <p className="text-xs text-red-600 font-bold bg-red-50 p-2.5 rounded-xl border border-red-200 text-center">
+                    {pinError}
+                  </p>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setIsPinModalOpen(false)}
+                    className="rounded-full text-xs font-bold h-10 px-4"
+                  >
+                    Batal
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="rounded-full text-xs font-bold h-10 px-6 bg-primary text-white hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Buka Akses API Key
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal Dialog Ubah / Pengaturan PIN Security */}
+      {isChangePinModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md shadow-2xl rounded-3xl bg-white border-none overflow-hidden">
+            <CardHeader className="bg-slate-900 text-white p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-amber-500/20 rounded-2xl border border-amber-500/30">
+                  <ShieldCheck className="h-6 w-6 text-amber-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-headline font-bold">Pengaturan PIN Keamanan</CardTitle>
+                  <CardDescription className="text-slate-300 text-xs mt-0.5">
+                    Perbarui PIN untuk mengamankan Kunci API & data rahasia
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6">
+              <form onSubmit={handleChangePin} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">PIN Lama</Label>
+                  <Input 
+                    type="password"
+                    maxLength={10}
+                    value={oldPinInput}
+                    onChange={(e) => setOldPinInput(e.target.value)}
+                    placeholder="Masukkan PIN lama..."
+                    required
+                    className="rounded-xl text-xs h-10 border-slate-300 font-mono tracking-widest"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">PIN Baru</Label>
+                  <Input 
+                    type="password"
+                    maxLength={10}
+                    value={newPinInput}
+                    onChange={(e) => setNewPinInput(e.target.value)}
+                    placeholder="Minimal 4 angka/karakter..."
+                    required
+                    className="rounded-xl text-xs h-10 border-slate-300 font-mono tracking-widest"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">Konfirmasi PIN Baru</Label>
+                  <Input 
+                    type="password"
+                    maxLength={10}
+                    value={confirmPinInput}
+                    onChange={(e) => setConfirmPinInput(e.target.value)}
+                    placeholder="Ketik ulang PIN baru..."
+                    required
+                    className="rounded-xl text-xs h-10 border-slate-300 font-mono tracking-widest"
+                  />
+                </div>
+
+                {changePinError && (
+                  <p className="text-xs text-red-600 font-bold bg-red-50 p-2.5 rounded-xl border border-red-200">
+                    {changePinError}
+                  </p>
+                )}
+
+                <div className="flex justify-end gap-2 pt-3 border-t">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setIsChangePinModalOpen(false)}
+                    className="rounded-full text-xs font-bold h-10 px-4"
+                  >
+                    Batal
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="rounded-full text-xs font-bold h-10 px-6 bg-amber-600 hover:bg-amber-700 text-white shadow-md"
+                  >
+                    Simpan PIN Baru
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
