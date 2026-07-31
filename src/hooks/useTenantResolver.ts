@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAgent, Agent } from '@/lib/agents';
 import { Tenant, SYSTEM_PLANS } from '@/types/cms';
@@ -152,6 +152,23 @@ export function useTenantResolver(tenantSlug: string) {
 
     loadTenant();
   }, [tenantSlug]);
+
+  // Realtime subscription to tenant visitorCount changes
+  useEffect(() => {
+    if (!tenant?.tenantId) return;
+
+    const unsub = onSnapshot(doc(db, 'tenants', tenant.tenantId), (snap) => {
+      if (snap.exists()) {
+        const liveData = snap.data() as Tenant;
+        const liveCount = liveData.visitorCount || 0;
+        
+        setTenant(prev => prev ? { ...prev, visitorCount: liveCount } : prev);
+        setAgent(prev => prev ? { ...prev, visitorCount: liveCount } : prev);
+      }
+    }, (err) => {});
+
+    return () => unsub();
+  }, [tenant?.tenantId]);
 
   return { loading, tenant, agent, error };
 }
