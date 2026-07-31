@@ -120,16 +120,21 @@ export default function EditorCanvas() {
     }
   };
 
-  // Smooth scroll canvas preview to active section whenever activeSectionId changes
+  // Smooth scroll canvas preview to active section whenever activeSectionId changes.
+  // Uses setTimeout to wait for CSS display:none → flex transition (mobile tab switch)
+  // to complete before calling scrollIntoView (which is a no-op on hidden elements).
   useEffect(() => {
     if (!activeSectionId) return;
-    const targetElement = document.getElementById(`canvas-section-${activeSectionId}`);
-    if (targetElement) {
-      targetElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    }
+    const timer = setTimeout(() => {
+      const targetElement = document.getElementById(`canvas-section-${activeSectionId}`);
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 150); // 150ms: enough for CSS to apply, not noticeable to user
+    return () => clearTimeout(timer);
   }, [activeSectionId]);
 
   return (

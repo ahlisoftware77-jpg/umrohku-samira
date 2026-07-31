@@ -73,7 +73,7 @@ function getProfessionalAuthErrorMessage(err: any): string {
 
 export default function TenantDashboardPage() {
   const { user, profile, loading, tenantId } = useAuthHandler();
-  const { setInitialData, setTargetDb, page, targetDb } = useCmsStore();
+  const { setInitialData, setTargetDb, page, targetDb, activeSectionId } = useCmsStore();
 
   const [initLoading, setInitLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -118,6 +118,14 @@ export default function TenantDashboardPage() {
 
   // Mobile responsive tab switcher: 'edit' | 'preview'
   const [mobileTab, setMobileTab] = useState<'edit' | 'preview'>('edit');
+
+  // Auto-switch to preview when a section is selected (mobile UX)
+  // On desktop both panels are always visible, so this has no visual side-effect.
+  useEffect(() => {
+    if (activeSectionId) {
+      setMobileTab('preview');
+    }
+  }, [activeSectionId]);
 
   // Handle Sign In / Up
   const handleAuthSubmit = async (e: React.FormEvent) => {
