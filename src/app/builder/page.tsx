@@ -70,15 +70,15 @@ export default function BuilderLandingPage() {
       try {
         const snap = await getDocs(collection(db, 'plans'));
         if (!snap.empty) {
-          const list = snap.docs.map(d => d.data() as BuilderPlan);
+          const list = snap.docs.map(d => d.data() as BuilderPlan).filter(p => !p.isHidden);
           list.sort((a, b) => (a.order || 0) - (b.order || 0));
           setPlans(list);
         } else {
-          setPlans(defaultPlans);
+          setPlans(defaultPlans.filter(p => !p.isHidden));
         }
       } catch (err) {
         // Quiet fallback to default plans for unauthenticated public visitors
-        setPlans(defaultPlans);
+        setPlans(defaultPlans.filter(p => !p.isHidden));
       } finally {
         setLoadingPlans(false);
       }

@@ -357,6 +357,7 @@ export interface BuilderPlan {
   price: string;
   period: string;
   isPopular?: boolean;
+  isHidden?: boolean;
   description: string;
   features: string[];
   order: number;

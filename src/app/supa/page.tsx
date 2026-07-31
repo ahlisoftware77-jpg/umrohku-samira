@@ -95,6 +95,7 @@ export default function SuperAdminPage() {
   const [bPlanDesc, setBPlanDesc] = useState('');
   const [bPlanFeatures, setBPlanFeatures] = useState('');
   const [bPlanIsPopular, setBPlanIsPopular] = useState(false);
+  const [bPlanIsHidden, setBPlanIsHidden] = useState(false);
   const [bPlanOrder, setBPlanOrder] = useState(1);
   
   const [dbLoading, setDbLoading] = useState(false);
@@ -1767,6 +1768,7 @@ service cloud.firestore {
     setBPlanDesc('');
     setBPlanFeatures('');
     setBPlanIsPopular(false);
+    setBPlanIsHidden(false);
     setBPlanOrder(builderPlans.length + 1);
     setIsPlanModalOpen(true);
   };
@@ -1781,6 +1783,7 @@ service cloud.firestore {
     setBPlanDesc(plan.description);
     setBPlanFeatures(plan.features ? plan.features.join('\n') : '');
     setBPlanIsPopular(!!plan.isPopular);
+    setBPlanIsHidden(!!plan.isHidden);
     setBPlanOrder(plan.order || 1);
     setIsPlanModalOpen(true);
   };
@@ -1804,6 +1807,7 @@ service cloud.firestore {
       price: bPlanPrice,
       period: bPlanPeriod || '/ bulan',
       isPopular: bPlanIsPopular,
+      isHidden: bPlanIsHidden,
       description: bPlanDesc,
       features: featureList,
       order: Number(bPlanOrder) || 1,
@@ -1823,6 +1827,17 @@ service cloud.firestore {
     } catch (err) {
       console.error(err);
       alert('Gagal menyimpan paket.');
+    }
+  };
+
+  const handleToggleHideBuilderPlan = async (plan: BuilderPlan) => {
+    try {
+      const updated = { ...plan, isHidden: !plan.isHidden };
+      await setDoc(doc(db, 'plans', plan.planId), updated, { merge: true });
+      setBuilderPlans(prev => prev.map(p => p.planId === plan.planId ? updated : p));
+    } catch (err: any) {
+      console.error(err);
+      alert('Gagal mengubah status sembunyi paket: ' + err.message);
     }
   };
 
@@ -3968,12 +3983,21 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
                 {builderPlans.map((plan) => (
-                  <Card key={plan.planId} className="rounded-3xl border bg-slate-50 p-6 flex flex-col justify-between relative shadow-sm hover:shadow-md transition-all">
-                    {plan.isPopular && (
-                      <span className="absolute top-0 right-0 bg-accent text-accent-foreground font-bold text-[10px] uppercase tracking-wider px-3 py-1 rounded-bl-xl shadow-sm">
-                        PALING POPULER
-                      </span>
-                    )}
+                  <Card key={plan.planId} className={`rounded-3xl border p-6 flex flex-col justify-between relative shadow-sm hover:shadow-md transition-all ${
+                    plan.isHidden ? 'bg-amber-50/50 border-amber-200 opacity-90' : 'bg-slate-50'
+                  }`}>
+                    <div className="absolute top-0 right-0 flex gap-1 items-center">
+                      {plan.isHidden && (
+                        <span className="bg-amber-800 text-white font-bold text-[9px] uppercase tracking-wider px-2.5 py-1 rounded-bl-xl shadow-xs flex items-center gap-1">
+                          <EyeOff className="w-3 h-3" /> HIDDEN
+                        </span>
+                      )}
+                      {plan.isPopular && (
+                        <span className="bg-accent text-accent-foreground font-bold text-[10px] uppercase tracking-wider px-3 py-1 rounded-bl-xl shadow-sm">
+                          PALING POPULER
+                        </span>
+                      )}
+                    </div>
 
                     <div>
                       <span className="inline-block px-3 py-1 rounded-full bg-white text-primary border font-bold text-[10px] mb-3">
@@ -3996,7 +4020,19 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       </div>
                     </div>
 
-                    <div className="pt-6 border-t mt-6 flex gap-2 justify-end">
+                    <div className="pt-6 border-t mt-6 flex gap-2 justify-end items-center">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleToggleHideBuilderPlan(plan)}
+                        className={`rounded-full text-xs font-bold gap-1 ${
+                          plan.isHidden ? 'bg-amber-100 text-amber-900 border-amber-300' : 'text-slate-600'
+                        }`}
+                        title={plan.isHidden ? 'Tampilkan di Halaman Builder' : 'Sembunyikan dari Halaman Builder'}
+                      >
+                        {plan.isHidden ? <Eye className="w-3.5 h-3.5 text-amber-600" /> : <EyeOff className="w-3.5 h-3.5 text-slate-500" />}
+                        {plan.isHidden ? 'Tampilkan' : 'Sembunyikan'}
+                      </Button>
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -4073,15 +4109,26 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2">
-                      <input
-                        type="checkbox"
-                        id="bPlanIsPopular"
-                        checked={bPlanIsPopular}
-                        onChange={(e) => setBPlanIsPopular(e.target.checked)}
-                        className="rounded h-4 w-4 text-accent border-gray-300"
-                      />
-                      <Label htmlFor="bPlanIsPopular" className="cursor-pointer font-bold">Tandai Sebagai "Paling Populer"</Label>
+                    <div className="flex flex-col gap-2 pt-2 border-t">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                        <input 
+                          type="checkbox"
+                          checked={bPlanIsPopular}
+                          onChange={(e) => setBPlanIsPopular(e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent cursor-pointer"
+                        />
+                        <span>Tandai sebagai Paket Paling Populer</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-amber-800">
+                        <input 
+                          type="checkbox"
+                          checked={bPlanIsHidden}
+                          onChange={(e) => setBPlanIsHidden(e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                        />
+                        <span>Sembunyikan Paket ini dari Halaman Builder (/builder)</span>
+                      </label>
                     </div>
 
                     <div className="flex gap-3 justify-end pt-4 border-t">
