@@ -95,15 +95,15 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent font-semibold text-xs uppercase tracking-wider mb-4"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-widest mb-3.5 shadow-md border border-amber-300"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-4 h-4 fill-slate-950" />
             {badgeText}
           </motion.div>
 
@@ -112,7 +112,7 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-3xl md:text-5xl font-headline font-bold text-primary tracking-tight mb-4"
+            className="text-2xl sm:text-4xl md:text-5xl font-headline font-black text-primary tracking-tight mb-3 leading-tight"
           >
             {title}
           </motion.h2>
@@ -122,7 +122,7 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-muted-foreground text-base md:text-lg leading-relaxed"
+            className="text-slate-700 text-xs sm:text-base md:text-lg leading-relaxed font-semibold max-w-2xl mx-auto"
           >
             {description}
           </motion.p>

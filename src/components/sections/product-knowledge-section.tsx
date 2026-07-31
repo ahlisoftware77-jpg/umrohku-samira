@@ -54,15 +54,15 @@ export default function ProductKnowledgeSection({ agent, data }: ProductKnowledg
       <div className="container mx-auto px-4 relative z-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
+        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-300 font-semibold text-xs uppercase tracking-wider mb-4"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-widest mb-4 shadow-md border border-amber-300"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-4 h-4 fill-slate-950" />
             {badgeText}
           </motion.div>
 
@@ -71,7 +71,7 @@ export default function ProductKnowledgeSection({ agent, data }: ProductKnowledg
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-3xl md:text-5xl font-headline font-bold text-white tracking-tight mb-4"
+            className="text-2xl sm:text-4xl md:text-5xl font-headline font-black text-white tracking-tight mb-3 leading-tight drop-shadow-md"
           >
             {title}
           </motion.h2>
@@ -81,7 +81,7 @@ export default function ProductKnowledgeSection({ agent, data }: ProductKnowledg
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-slate-300 text-base md:text-lg leading-relaxed"
+            className="text-slate-200 text-xs sm:text-base md:text-lg leading-relaxed max-w-2xl mx-auto font-medium"
           >
             {description}
           </motion.p>
