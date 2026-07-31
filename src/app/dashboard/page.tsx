@@ -602,16 +602,32 @@ export default function TenantDashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8">
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
+            <form onSubmit={handleAuthSubmit} className="space-y-4" autoComplete="on">
               {isRegister && (
                 <>
                   <div className="space-y-1">
                     <Label htmlFor="reg-name">Nama Mitra</Label>
-                    <Input id="reg-name" placeholder="Triyadi Yanuar" value={name} onChange={(e) => setName(e.target.value)} required />
+                    <Input 
+                      id="reg-name" 
+                      name="name" 
+                      autoComplete="name" 
+                      placeholder="Triyadi Yanuar" 
+                      value={name} 
+                      onChange={(e) => setName(e.target.value)} 
+                      required 
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="reg-company">Nama Perusahaan / Agen</Label>
-                    <Input id="reg-company" placeholder="Samira Travel Karawang" value={company} onChange={(e) => setCompany(e.target.value)} required />
+                    <Input 
+                      id="reg-company" 
+                      name="organization" 
+                      autoComplete="organization" 
+                      placeholder="Samira Travel Karawang" 
+                      value={company} 
+                      onChange={(e) => setCompany(e.target.value)} 
+                      required 
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="reg-subdomain">Subdomain Akses</Label>
@@ -621,6 +637,8 @@ export default function TenantDashboardPage() {
                       </span>
                       <Input 
                         id="reg-subdomain" 
+                        name="username" 
+                        autoComplete="username" 
                         placeholder="triyadi" 
                         value={subdomain} 
                         onChange={(e) => setSubdomain(e.target.value)} 
@@ -633,11 +651,29 @@ export default function TenantDashboardPage() {
               )}
               <div className="space-y-1">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="nama@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input 
+                  id="email" 
+                  name="email" 
+                  type="email" 
+                  autoComplete="email" 
+                  placeholder="nama@email.com" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  required 
+                />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="password">Kata Sandi</Label>
-                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Input 
+                  id="password" 
+                  name="password" 
+                  type="password" 
+                  autoComplete={isRegister ? "new-password" : "current-password"} 
+                  placeholder="••••••••" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required 
+                />
               </div>
 
               {authError && <p className="text-xs text-destructive font-medium">{authError}</p>}
