@@ -1286,10 +1286,23 @@ service cloud.firestore {
 
     const currentServerConfig = dbServers.find(s => s.serverId === currentServerId);
     const targetServerConfig = dbServers.find(s => s.serverId === newServerId);
-    const currentServerName = currentServerConfig ? currentServerConfig.name : 'Server Utama (landing-umroh)';
-    const targetServerName = targetServerConfig ? targetServerConfig.name : 'Server Utama (landing-umroh)';
+    const currentServerName = currentServerId === 'default' ? 'Server Utama (landing-umroh)' : (currentServerConfig?.name || currentServerId);
+    const targetServerName = newServerId === 'default' ? 'Server Utama (landing-umroh)' : (targetServerConfig?.name || newServerId);
 
-    const confirmMsg = `Konfirmasi Migrasi Data Tenant:\n\nApakah Anda yakin ingin memigrasikan seluruh data landing page tenant '${tenant.name}' dari '${currentServerName}' ke '${targetServerName}'?`;
+    // ⚠️ COMPREHENSIVE WARNING CONFIRMATION PROMPT
+    const confirmMsg = `⚠️ PERINGATAN PEMINDAHAN SERVER DATABASE TEANANT! ⚠️\n\n` +
+      `Anda akan memindahkan lokasi penyimpanan Server Database Tenant:\n` +
+      `• Perusahaan / Mitra : "${tenant.company || tenant.name}" (${tenant.email})\n` +
+      `• Subdomain         : ${tenant.subdomain}\n` +
+      `• Dari Server       : [ ${currentServerName} ]\n` +
+      `• Ke Server Baru    : [ ${targetServerName} ]\n\n` +
+      `Sistem akan secara OTOMATIS memindahkan SELURUH DATA berikut ke server baru:\n` +
+      `1. Dokumen Profil Tenant & User\n` +
+      `2. Halaman Landing Page\n` +
+      `3. Struktur Seksi & Konten Halaman\n` +
+      `4. Testimoni Jamaah\n\n` +
+      `Apakah Anda yakin ingin memindahkan server database tenant ini sekarang?`;
+
     if (!window.confirm(confirmMsg)) return;
 
     setIsMigrating(true);
@@ -1309,49 +1322,80 @@ service cloud.firestore {
       const sourceInstance = getDynamicFirebaseInstance(currentServerConfig);
       const targetInstance = getDynamicFirebaseInstance(targetServerConfig);
 
-      addLog(`Mencari data landing page untuk tenant '${tenant.tenantId}'...`);
+      addLog(`Mencari seluruh aset data tenant '${tenant.company || tenant.subdomain}'...`);
 
-      // 1. Fetch & Migrate Landing Pages
+      // 1. Fetch Tenant Document & User Document
+      let tenantDocData = tenant;
+      try {
+        const tSnap = await getDoc(doc(sourceInstance.db, 'tenants', tenant.tenantId));
+        if (tSnap.exists()) tenantDocData = tSnap.data() as Tenant;
+      } catch (e) {}
+
+      let userDocData = null;
+      try {
+        const uSnap = await getDoc(doc(sourceInstance.db, 'users', tenant.tenantId));
+        if (uSnap.exists()) userDocData = uSnap.data();
+      } catch (e) {}
+
+      // 2. Fetch Landing Pages
       const qPages = query(collection(sourceInstance.db, 'landingPages'), where('tenantId', '==', tenant.tenantId));
       const pagesSnap = await getDocs(qPages);
       const pagesData = pagesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      addLog(`Ditemukan ${pagesData.length} Landing Page. Memindahkan ke server tujuan...`);
-      for (const pageDoc of pagesData) {
-        const { id, ...data } = pageDoc;
-        await setDoc(doc(targetInstance.db, 'landingPages', id), data);
-      }
-
-      // 2. Fetch & Migrate Sections
+      // 3. Fetch Sections
       const qSections = query(collection(sourceInstance.db, 'sections'), where('tenantId', '==', tenant.tenantId));
       const sectionsSnap = await getDocs(qSections);
       const sectionsData = sectionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      addLog(`Memindahkan ${sectionsData.length} seksi landing page...`);
+      // 4. Fetch Contents
+      const qContents = query(collection(sourceInstance.db, 'contents'), where('tenantId', '==', tenant.tenantId));
+      const contentsSnap = await getDocs(qContents);
+      const contentsData = contentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // 5. Fetch Testimonials
+      const qTesti = query(collection(sourceInstance.db, 'testimonials'), where('tenantId', '==', tenant.tenantId));
+      const testiSnap = await getDocs(qTesti);
+      const testiData = testiSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      addLog(`Memindahkan profil Tenant & User ke Server Tujuan...`);
+      const updatedTenant = { ...tenantDocData, dbServerId: newServerId };
+      await setDoc(doc(targetInstance.db, 'tenants', tenant.tenantId), updatedTenant, { merge: true });
+      if (userDocData) {
+        await setDoc(doc(targetInstance.db, 'users', tenant.tenantId), userDocData, { merge: true });
+      }
+
+      addLog(`Memindahkan ${pagesData.length} Halaman Landing Page...`);
+      for (const pageDoc of pagesData) {
+        const { id, ...data } = pageDoc;
+        await setDoc(doc(targetInstance.db, 'landingPages', id), data, { merge: true });
+      }
+
+      addLog(`Memindahkan ${sectionsData.length} Seksi Halaman...`);
       for (const secDoc of sectionsData) {
         const { id, ...data } = secDoc;
-        await setDoc(doc(targetInstance.db, 'sections', id), data);
+        await setDoc(doc(targetInstance.db, 'sections', id), data, { merge: true });
       }
 
-      // 3. Fetch & Migrate Section Contents
-      let contentsCount = 0;
-      for (const secDoc of sectionsData) {
-        try {
-          const contentSnap = await getDoc(doc(sourceInstance.db, 'contents', secDoc.id));
-          if (contentSnap.exists()) {
-            await setDoc(doc(targetInstance.db, 'contents', secDoc.id), contentSnap.data());
-            contentsCount++;
-          }
-        } catch (cErr) {}
+      addLog(`Memindahkan ${contentsData.length} Rekaman Konten...`);
+      for (const cntDoc of contentsData) {
+        const { id, ...data } = cntDoc;
+        await setDoc(doc(targetInstance.db, 'contents', id), data, { merge: true });
       }
-      addLog(`Memindahkan ${contentsCount} rekaman konten seksi...`);
 
-      // 4. Update tenant document routing in Main & Target database
-      const updatedTenant = { ...tenant, dbServerId: newServerId };
-      try {
-        await updateDoc(doc(db, 'tenants', tenant.tenantId), { dbServerId: newServerId });
-        await setDoc(doc(targetInstance.db, 'tenants', tenant.tenantId), updatedTenant);
-      } catch (tErr) {}
+      addLog(`Memindahkan ${testiData.length} Testimoni Jamaah...`);
+      for (const tDoc of testiData) {
+        const { id, ...data } = tDoc;
+        await setDoc(doc(targetInstance.db, 'testimonials', id), data, { merge: true });
+      }
+
+      // 6. Update pointer in Primary Global DB Registry so routing resolves seamlessly
+      addLog(`Perbarui pointer server database di Global Registry...`);
+      await setDoc(doc(db, 'tenants', tenant.tenantId), { dbServerId: newServerId }, { merge: true });
+      const qTenantsSub = query(collection(db, 'tenants'), where('subdomain', '==', tenant.subdomain));
+      const snapSub = await getDocs(qTenantsSub);
+      for (const d of snapSub.docs) {
+        await updateDoc(doc(db, 'tenants', d.id), { dbServerId: newServerId });
+      }
 
       // Update LocalState
       setTenants(prev => prev.map(t => t.tenantId === tenant.tenantId ? updatedTenant : t));
@@ -1360,15 +1404,15 @@ service cloud.firestore {
       const durationSec = (durationMs / 1000).toFixed(2);
       addLog(`✅ MIGRASI BERHASIL! Seluruh data dipindahkan secara komprehensif dalam ${durationSec} detik.`);
 
-      // 5. Generate Comprehensive Migration Report
+      // Generate Comprehensive Migration Report
       const report = {
-        tenantName: tenant.name,
+        tenantName: tenant.company || tenant.name,
         subdomain: tenant.subdomain,
         sourceServerName: currentServerName,
         targetServerName: targetServerName,
         landingPagesMigrated: pagesData.length,
         sectionsMigrated: sectionsData.length,
-        contentsMigrated: contentsCount,
+        contentsMigrated: contentsData.length,
         durationMs,
         timestamp: new Date().toLocaleString(),
       };
