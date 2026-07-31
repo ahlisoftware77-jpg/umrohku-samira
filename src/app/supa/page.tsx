@@ -43,12 +43,14 @@ import {
   Copy,
   Save,
   Server,
+  ImageIcon,
+  Search,
+  RefreshCw,
   CheckCircle2,
   PlusCircle,
   ArrowRightLeft,
   Wifi,
   WifiOff,
-  RefreshCw,
   Terminal,
   ShieldCheck,
   Download,
@@ -59,10 +61,10 @@ import {
   SlidersHorizontal,
   CheckSquare,
   Square,
-  Search,
   Calendar
 } from 'lucide-react';
-import { Tenant, TenantPlan, TenantStatus, SYSTEM_PLANS, DatabaseServerConfig, BuilderPlan } from '@/types/cms';
+import { cloudinaryService } from '@/lib/services/cloudinaryService';
+import { Tenant, TenantPlan, TenantStatus, LandingPage, Section, Content, SectionType, SYSTEM_PLANS, BuilderPlan, DatabaseServerConfig, MediaImage } from '@/types/cms';
 
 export default function SuperAdminPage() {
   const { user, profile, loading } = useAuthHandler();
@@ -71,6 +73,13 @@ export default function SuperAdminPage() {
   const [totalLandingPages, setTotalLandingPages] = useState<number>(0);
   const [cloudinaryStorageMb, setCloudinaryStorageMb] = useState<string>('0.0');
   const [totalImagesCount, setTotalImagesCount] = useState<number>(0);
+
+  // Media Library & Storage Management State
+  const [allImagesList, setAllImagesList] = useState<(MediaImage & { dbServerId?: string })[]>([]);
+  const [mediaSearchQuery, setMediaSearchQuery] = useState('');
+  const [selectedMediaTenant, setSelectedMediaTenant] = useState('all');
+  const [isDeletingMedia, setIsDeletingMedia] = useState<string | null>(null);
+  const [previewImageModal, setPreviewImageModal] = useState<MediaImage | null>(null);
 
   // Builder Plans state
   const [builderPlans, setBuilderPlans] = useState<BuilderPlan[]>([]);
@@ -369,6 +378,65 @@ service cloud.firestore {
     timestamp: string;
   } | null>(null);
 
+  // Helper to load all uploaded images from all cluster database servers
+  const loadAllAdminImages = async () => {
+    try {
+      const dbsToQuery = [{ dbInstance: db, serverId: 'default' }];
+      for (const s of dbServers) {
+        if (s.status === 'active') {
+          try {
+            const cDb = getDynamicFirebaseInstance(s).db;
+            if (cDb && cDb !== db) dbsToQuery.push({ dbInstance: cDb, serverId: s.serverId });
+          } catch (e) {}
+        }
+      }
+
+      const processedIds = new Set<string>();
+      const list: (MediaImage & { dbServerId?: string })[] = [];
+
+      for (const { dbInstance, serverId } of dbsToQuery) {
+        try {
+          const snap = await getDocs(collection(dbInstance, 'images'));
+          snap.docs.forEach(d => {
+            const data = d.data() as MediaImage;
+            const id = d.id || data.imageId;
+            if (id && !processedIds.has(id)) {
+              processedIds.add(id);
+              list.push({ ...data, imageId: id, dbServerId: serverId });
+            }
+          });
+        } catch (e) {}
+      }
+
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      setAllImagesList(list);
+    } catch (e) {}
+  };
+
+  // Helper to delete an image directly from Admin dashboard
+  const handleDeleteImageFromAdmin = async (img: MediaImage & { dbServerId?: string }) => {
+    if (!confirm(`Apakah Anda yakin ingin MENGHAPUS berkas gambar "${img.imageId}"?\n\nGambar akan dihapus secara permanen dari storage server.`)) return;
+
+    setIsDeletingMedia(img.imageId);
+    try {
+      const activeServerConfig = dbServers.find(s => s.serverId === img.dbServerId);
+      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+      await cloudinaryService.deleteImage(img.imageId, img.cloudinaryPublicId, img.secureUrl, targetDb);
+
+      setAllImagesList(prev => prev.filter(i => i.imageId !== img.imageId));
+      setTotalImagesCount(prev => Math.max(0, prev - 1));
+      const freedMb = (img.sizeBytes || 350000) / (1024 * 1024);
+      setCloudinaryStorageMb(prev => Math.max(0, parseFloat(prev) - freedMb).toFixed(1));
+
+      alert('✅ Berkas gambar berhasil dihapus dari storage!');
+    } catch (err: any) {
+      alert('Gagal menghapus gambar: ' + (err.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsDeletingMedia(null);
+    }
+  };
+
   // Load Tenants & metadata counts (Fail-Safe)
   const loadAdminData = async () => {
     try {
@@ -428,7 +496,10 @@ service cloud.firestore {
         setTotalImagesCount(imgCount);
       } catch (imgErr) {}
 
-      // 3. Fetch Builder Plans (Fail-Safe)
+      // Load all images list for media library tab
+      try {
+        await loadAllAdminImages();
+      } catch (e) {}
       try {
         const plansSnap = await getDocs(collection(db, 'plans'));
         if (!plansSnap.empty) {
@@ -2185,12 +2256,156 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
         <Tabs defaultValue="tenants" className="w-full">
           <TabsList className="bg-white border p-1 rounded-full w-fit mb-6 flex flex-wrap gap-1">
             <TabsTrigger value="tenants" className="rounded-full px-6 py-2 text-xs">Kelola Tenant</TabsTrigger>
+            <TabsTrigger value="media" onClick={loadAllAdminImages} className="rounded-full px-6 py-2 text-xs flex items-center gap-1.5 font-bold"><ImageIcon className="h-3.5 w-3.5 text-blue-600" /> Pustaka Media ({totalImagesCount})</TabsTrigger>
             <TabsTrigger value="orphans" className="rounded-full px-6 py-2 text-xs flex items-center gap-1.5"><Trash2 className="h-3.5 w-3.5 text-amber-600" /> Pembersihan Data Terasing</TabsTrigger>
             <TabsTrigger value="packages" className="rounded-full px-6 py-2 text-xs">Paket Limits Tenant</TabsTrigger>
             <TabsTrigger value="builderPlans" className="rounded-full px-6 py-2 text-xs">Paket Builder Iklan</TabsTrigger>
             <TabsTrigger value="settings" className="rounded-full px-6 py-2 text-xs">Pengaturan API & Database</TabsTrigger>
             <TabsTrigger value="activity" className="rounded-full px-6 py-2 text-xs">Log Aktivitas</TabsTrigger>
           </TabsList>
+
+          {/* ==========================================
+              TAB MEDIA LIBRARY & CLOUDINARY STORAGE
+              ========================================== */}
+          <TabsContent value="media" className="space-y-6">
+            <Card className="rounded-3xl border shadow-none bg-white p-6">
+              <CardHeader className="px-0 pt-0 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 mb-4">
+                <div>
+                  <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5 text-blue-600" /> Pustaka Storage Media Cloudinary ({allImagesList.length})
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Pantau seluruh berkas gambar yang terunggah di server storage Cloudinary lintas cluster database. Anda dapat pratinjau dan menghapus berkas secara langsung tanpa perlu masuk ke web Cloudinary.
+                  </CardDescription>
+                </div>
+                <Button 
+                  onClick={loadAllAdminImages} 
+                  variant="outline" 
+                  className="rounded-full text-xs font-bold border-primary text-primary hover:bg-primary hover:text-white h-9 px-4 flex items-center gap-1.5"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" /> Segarkan Pustaka Media
+                </Button>
+              </CardHeader>
+
+              {/* Search and Filters */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
+                <div className="relative flex-1 w-full">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={mediaSearchQuery}
+                    onChange={(e) => setMediaSearchQuery(e.target.value)}
+                    placeholder="Cari ID gambar, kategori, format, atau nama tenant..."
+                    className="rounded-2xl text-xs h-10 pl-10 bg-slate-50"
+                  />
+                </div>
+
+                <select
+                  value={selectedMediaTenant}
+                  onChange={(e) => setSelectedMediaTenant(e.target.value)}
+                  className="h-10 rounded-2xl border border-input bg-slate-50 px-3 text-xs font-bold text-slate-700 focus:outline-none w-full sm:w-60"
+                >
+                  <option value="all">Semua Tenant ({tenants.length})</option>
+                  {tenants.map(t => (
+                    <option key={t.tenantId} value={t.tenantId}>
+                      {t.name} ({t.subdomain})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Media Grid */}
+              {allImagesList.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed rounded-3xl bg-slate-50">
+                  <ImageIcon className="h-12 w-12 text-slate-400 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs font-bold text-slate-600">Pustaka Media Masih Kosong</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Belum ada gambar yang diunggah atau klik tombol di bawah untuk memuat.</p>
+                  <Button onClick={loadAllAdminImages} className="mt-4 rounded-full text-xs font-bold bg-primary text-white">
+                    Muat Pustaka Media Sekarang
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {allImagesList
+                    .filter(img => {
+                      const matchesTenant = selectedMediaTenant === 'all' || img.tenantId === selectedMediaTenant;
+                      const matchesSearch = 
+                        img.imageId.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
+                        img.tenantId.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
+                        (img.category && img.category.toLowerCase().includes(mediaSearchQuery.toLowerCase())) ||
+                        (img.format && img.format.toLowerCase().includes(mediaSearchQuery.toLowerCase()));
+                      return matchesTenant && matchesSearch;
+                    })
+                    .map((img) => (
+                      <div 
+                        key={img.imageId} 
+                        className="group relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col justify-between"
+                      >
+                        {/* Thumbnail Container */}
+                        <div 
+                          onClick={() => setPreviewImageModal(img)}
+                          className="relative aspect-square w-full bg-slate-950 cursor-pointer overflow-hidden group-hover:opacity-90 transition-opacity"
+                        >
+                          <img 
+                            src={img.secureUrl} 
+                            alt={img.imageId} 
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                          />
+                          
+                          {/* Category & Format Badges */}
+                          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                            <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-900/80 backdrop-blur-md text-amber-300 px-2 py-0.5 rounded-md border border-white/10">
+                              {img.category || 'media'}
+                            </span>
+                            <span className="text-[9px] font-bold uppercase bg-black/60 text-white px-1.5 py-0.5 rounded-md w-fit">
+                              {img.format || 'img'}
+                            </span>
+                          </div>
+
+                          {/* Size Badge */}
+                          <span className="absolute bottom-2 right-2 text-[9px] font-bold bg-slate-950/80 text-emerald-400 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
+                            {((img.sizeBytes || 350000) / 1024).toFixed(0)} KB
+                          </span>
+                        </div>
+
+                        {/* Card Footer Details */}
+                        <div className="p-2.5 bg-slate-900 text-white flex flex-col gap-1.5 border-t border-slate-800">
+                          <p className="text-[10px] font-bold text-amber-300 truncate" title={img.tenantId}>
+                            📌 {tenants.find(t => t.tenantId === img.tenantId)?.subdomain || img.tenantId}
+                          </p>
+
+                          <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-800/60">
+                            <button
+                              onClick={() => window.open(img.secureUrl, '_blank')}
+                              className="text-[10px] text-slate-300 hover:text-white flex items-center gap-1 font-medium"
+                              title="Buka gambar full"
+                            >
+                              <ExternalLink className="h-3 w-3" /> Full
+                            </button>
+
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={isDeletingMedia === img.imageId}
+                              onClick={() => handleDeleteImageFromAdmin(img)}
+                              className="h-6 px-2 text-[10px] font-bold text-red-400 hover:bg-red-950/60 hover:text-red-300 rounded-lg flex items-center gap-1"
+                              title="Hapus gambar dari Cloudinary & Storage"
+                            >
+                              {isDeletingMedia === img.imageId ? (
+                                <Loader2 className="h-3 w-3 animate-spin text-red-400" />
+                              ) : (
+                                <>
+                                  <Trash2 className="h-3 w-3" /> Hapus
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
 
           {/* ==========================================
               TAB TENANTS LIST & OPERATIONS

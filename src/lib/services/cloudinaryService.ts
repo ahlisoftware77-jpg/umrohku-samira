@@ -57,6 +57,23 @@ export const cloudinaryService = {
     const cloudName = (customCloudName || defaultCloudName).trim();
     const uploadPreset = (customUploadPreset || defaultUploadPreset).trim();
 
+    // 0. Duplicate Image Detection: Check if exact same file size & tenant already exists to skip re-uploading
+    try {
+      const qDup = query(
+        collection(db, 'images'),
+        where('tenantId', '==', tenantId),
+        where('sizeBytes', '==', file.size)
+      );
+      const dupSnap = await getDocs(qDup);
+      if (!dupSnap.empty) {
+        const existing = dupSnap.docs[0].data() as MediaImage;
+        if (existing && existing.secureUrl) {
+          console.log('⚡ [DUPLICATE DETECTED] Gambar duplikat terdeteksi! Menggunakan kembali URL terunggah:', existing.secureUrl);
+          return existing;
+        }
+      }
+    } catch (dupErr) {}
+
     const folder = `tenant/${tenantId}`;
     const isCustomCloudName = cloudName && cloudName !== 'landing-umroh';
     
@@ -129,29 +146,34 @@ export const cloudinaryService = {
   },
 
   // ==========================================
-  // REMOVE IMAGE
+  // REMOVE IMAGE (MULTI-DATABASE SYNC)
   // ==========================================
-  async deleteImage(imageId: string, _cloudinaryPublicId?: string, secureUrl?: string): Promise<void> {
+  async deleteImage(imageId: string, _cloudinaryPublicId?: string, secureUrl?: string, targetDbInstance?: any): Promise<void> {
+    const targetDb = targetDbInstance || db;
     if (!imageId && !secureUrl) return;
 
     try {
-      // 1. Delete by exact document ID
+      // 1. Delete by exact document ID across targetDb and Primary DB
       if (imageId && typeof imageId === 'string' && imageId.trim() !== '') {
-        try {
-          await deleteDoc(doc(db, 'images', imageId));
-        } catch (e) {}
+        await deleteDoc(doc(targetDb, 'images', imageId)).catch(() => {});
+        if (targetDb !== db) {
+          await deleteDoc(doc(db, 'images', imageId)).catch(() => {});
+        }
       }
 
-      // 2. Fallback query deletion by secureUrl to remove any matching document entries
+      // 2. Fallback query deletion by secureUrl to remove matching document entries
       if (secureUrl) {
-        try {
-          const imagesRef = collection(db, 'images');
-          const qUrl = query(imagesRef, where('secureUrl', '==', secureUrl));
-          const snapUrl = await getDocs(qUrl);
-          for (const d of snapUrl.docs) {
-            await deleteDoc(doc(db, 'images', d.id)).catch(() => {});
-          }
-        } catch (e) {}
+        const dbs = targetDb !== db ? [targetDb, db] : [db];
+        for (const dbInst of dbs) {
+          try {
+            const imagesRef = collection(dbInst, 'images');
+            const qUrl = query(imagesRef, where('secureUrl', '==', secureUrl));
+            const snapUrl = await getDocs(qUrl);
+            for (const d of snapUrl.docs) {
+              await deleteDoc(doc(dbInst, 'images', d.id)).catch(() => {});
+            }
+          } catch (e) {}
+        }
       }
     } catch (err) {
       console.error('Error executing deleteImage:', err);
