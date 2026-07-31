@@ -763,9 +763,27 @@ export default function EditorSidebar() {
                 <Textarea 
                   value={activeSectionContent.testi1_comment || ''} 
                   onChange={(e) => handleFieldChange('testi1_comment', e.target.value)}
-                  placeholder="Alhamdulillah ibadah berjalan dengan sangat khusyuk. Pelayanan ustaz pembimbing ramah dan hotel sangat dekat dengan masjid..."
+                  placeholder="Alhamdulillah ibadah berjalan dengan sangat khusyuk..."
                   rows={3}
                 />
+              </div>
+              <div className="space-y-2 pt-1">
+                <Label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                  <ImageIcon className="h-3.5 w-3.5 text-accent" /> Foto Jamaah (Opsional)
+                </Label>
+                {activeSectionContent.testi1_photo && (
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-accent/40 mb-1">
+                    <img src={activeSectionContent.testi1_photo} alt="foto testi 1" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => openMediaPicker((url) => handleFieldChange('testi1_photo', url))}
+                  className="w-full rounded-xl text-xs font-bold gap-1.5 border-blue-400/40 text-blue-700 hover:bg-blue-50 h-8"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Pilih Foto Jamaah 1
+                </Button>
               </div>
             </div>
 
@@ -795,9 +813,27 @@ export default function EditorSidebar() {
                 <Textarea 
                   value={activeSectionContent.testi2_comment || ''} 
                   onChange={(e) => handleFieldChange('testi2_comment', e.target.value)}
-                  placeholder="Sangat profesional! Jadwal penerbangan tepat waktu, bus AC eksekutif bersih, dan konsumsi makanan khas Indonesia selalu tersedia..."
+                  placeholder="Sangat profesional! Jadwal penerbangan tepat waktu..."
                   rows={3}
                 />
+              </div>
+              <div className="space-y-2 pt-1">
+                <Label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                  <ImageIcon className="h-3.5 w-3.5 text-accent" /> Foto Jamaah (Opsional)
+                </Label>
+                {activeSectionContent.testi2_photo && (
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-accent/40 mb-1">
+                    <img src={activeSectionContent.testi2_photo} alt="foto testi 2" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => openMediaPicker((url) => handleFieldChange('testi2_photo', url))}
+                  className="w-full rounded-xl text-xs font-bold gap-1.5 border-emerald-400/40 text-emerald-700 hover:bg-emerald-50 h-8"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Pilih Foto Jamaah 2
+                </Button>
               </div>
             </div>
 
@@ -827,9 +863,27 @@ export default function EditorSidebar() {
                 <Textarea 
                   value={activeSectionContent.testi3_comment || ''} 
                   onChange={(e) => handleFieldChange('testi3_comment', e.target.value)}
-                  placeholder="Pengalaman ibadah pertama yang tak tertandingi. Seluruh proses penanganan dokumen & visa ditangani dengan cepat..."
+                  placeholder="Pengalaman ibadah pertama yang tak tertandingi..."
                   rows={3}
                 />
+              </div>
+              <div className="space-y-2 pt-1">
+                <Label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                  <ImageIcon className="h-3.5 w-3.5 text-accent" /> Foto Jamaah (Opsional)
+                </Label>
+                {activeSectionContent.testi3_photo && (
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-accent/40 mb-1">
+                    <img src={activeSectionContent.testi3_photo} alt="foto testi 3" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => openMediaPicker((url) => handleFieldChange('testi3_photo', url))}
+                  className="w-full rounded-xl text-xs font-bold gap-1.5 border-purple-400/40 text-purple-700 hover:bg-purple-50 h-8"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Pilih Foto Jamaah 3
+                </Button>
               </div>
             </div>
           </div>

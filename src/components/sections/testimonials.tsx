@@ -106,7 +106,8 @@ export default function Testimonials({ agent, data }: TestimonialsProps) {
       name: data.testi1_name,
       city: data.testi1_role || 'Jamaah Umrah',
       quote: data.testi1_comment || '',
-      rating: 5
+      rating: 5,
+      avatarUrl: data.testi1_photo || null,
     });
   }
   if (data?.testi2_name) {
@@ -114,7 +115,8 @@ export default function Testimonials({ agent, data }: TestimonialsProps) {
       name: data.testi2_name,
       city: data.testi2_role || 'Jamaah Umrah',
       quote: data.testi2_comment || '',
-      rating: 5
+      rating: 5,
+      avatarUrl: data.testi2_photo || null,
     });
   }
   if (data?.testi3_name) {
@@ -122,7 +124,8 @@ export default function Testimonials({ agent, data }: TestimonialsProps) {
       name: data.testi3_name,
       city: data.testi3_role || 'Jamaah Umrah',
       quote: data.testi3_comment || '',
-      rating: 5
+      rating: 5,
+      avatarUrl: data.testi3_photo || null,
     });
   }
 
@@ -130,13 +133,14 @@ export default function Testimonials({ agent, data }: TestimonialsProps) {
     name: t.name,
     city: t.role,
     quote: t.comment,
-    rating: t.rating || 5
+    rating: t.rating || 5,
+    avatarUrl: t.avatarUrl || null,
   }));
 
   const activeTestimonialsList = [
     ...dbFormatted,
     ...customEditorTestimonials,
-    ...(dbFormatted.length === 0 && customEditorTestimonials.length === 0 ? customerTestimonials : [])
+    ...(dbFormatted.length === 0 && customEditorTestimonials.length === 0 ? customerTestimonials.map(t => ({ ...t, avatarUrl: null })) : [])
   ];
 
   const onSelect = useCallback(() => {
@@ -258,6 +262,20 @@ export default function Testimonials({ agent, data }: TestimonialsProps) {
                       </div>
 
                       <div className="flex items-center gap-3 justify-center lg:justify-start pt-3 md:pt-6 border-t border-white/10">
+                        {/* Avatar photo or initials fallback */}
+                        {(testimonial as any).avatarUrl ? (
+                          <img
+                            src={(testimonial as any).avatarUrl}
+                            alt={testimonial.name}
+                            className="w-8 h-8 md:w-12 md:h-12 rounded-full object-cover border-2 border-accent/60 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
+                            <span className="text-xs md:text-base font-bold text-accent">
+                              {testimonial.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
                         <div>
                           <p className="font-bold text-sm md:text-xl font-headline text-accent">{testimonial.name}</p>
                           <p className="text-[10px] md:text-sm text-white/50">{testimonial.city}</p>
