@@ -154,6 +154,20 @@ export default function SuperAdminPage() {
   // Search Query state for Tenant Table
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
 
+  // Backup Modal & Selective Data Types State
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [backupTargetTenant, setBackupTargetTenant] = useState<Tenant | null>(null);
+  const [isGlobalBackup, setIsGlobalBackup] = useState(false);
+  const [backupOptions, setBackupOptions] = useState({
+    profile: true,
+    landingPages: true,
+    sections: true,
+    contents: true,
+    testimonials: true,
+    images: true,
+  });
+  const [isExportingBackup, setIsExportingBackup] = useState(false);
+
   const toggleColumn = (colKey: string) => {
     setVisibleColumns(prev => {
       const updated = { ...prev, [colKey]: !prev[colKey] };
@@ -694,84 +708,204 @@ service cloud.firestore {
     }
   };
 
-  // Handle Tenant Database Backup Export (JSON Download)
-  const handleBackupTenant = async (tenant: Tenant) => {
+  // Open Selective Backup Modal (Single Tenant or Global All Tenants)
+  const openBackupModal = (tenant: Tenant | null = null) => {
+    setBackupTargetTenant(tenant);
+    setIsGlobalBackup(!tenant);
+    setBackupOptions({
+      profile: true,
+      landingPages: true,
+      sections: true,
+      contents: true,
+      testimonials: true,
+      images: true,
+    });
+    setIsBackupModalOpen(true);
+  };
+
+  const toggleAllBackupOptions = (select: boolean) => {
+    setBackupOptions({
+      profile: select,
+      landingPages: select,
+      sections: select,
+      contents: select,
+      testimonials: select,
+      images: select,
+    });
+  };
+
+  // Handle Selective Database Backup Export (.json Download)
+  const executeSelectiveBackup = async () => {
     try {
-      const activeServerConfig = dbServers.find(s => s.serverId === tenant.dbServerId);
-      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+      setIsExportingBackup(true);
 
-      // 1. Fetch Tenant Document & User Document
-      let tenantDocData = tenant;
-      try {
-        const tSnap = await getDoc(doc(targetDb, 'tenants', tenant.tenantId));
-        if (tSnap.exists()) tenantDocData = tSnap.data() as Tenant;
-      } catch (e) {}
+      if (isGlobalBackup) {
+        // GLOBAL BACKUP - ALL TENANTS ACCROSS CLUSTER SERVERS
+        const globalData: any = {
+          meta: {
+            exportType: 'global_all_tenants_backup',
+            version: '2.0',
+            exportedAt: new Date().toISOString(),
+            totalTenants: tenants.length,
+            selectedDataTypes: backupOptions,
+          },
+          tenants: [],
+        };
 
-      let userDocData = null;
-      try {
-        const uSnap = await getDoc(doc(targetDb, 'users', tenant.tenantId));
-        if (uSnap.exists()) userDocData = uSnap.data();
-      } catch (e) {}
+        for (const t of tenants) {
+          const activeServerConfig = dbServers.find(s => s.serverId === t.dbServerId);
+          const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
 
-      // 2. Fetch Landing Pages
-      const pagesRef = collection(targetDb, 'landingPages');
-      const qPages = query(pagesRef, where('tenantId', '==', tenant.tenantId));
-      const pagesSnap = await getDocs(qPages);
-      const landingPages = pagesSnap.docs.map(d => d.data());
+          const tenantPackage: any = { tenantId: t.tenantId, subdomain: t.subdomain };
 
-      // 3. Fetch Sections
-      const sectionsRef = collection(targetDb, 'sections');
-      const qSec = query(sectionsRef, where('tenantId', '==', tenant.tenantId));
-      const secSnap = await getDocs(qSec);
-      const sections = secSnap.docs.map(d => d.data());
+          if (backupOptions.profile) {
+            try {
+              const tSnap = await getDoc(doc(targetDb, 'tenants', t.tenantId));
+              tenantPackage.tenant = tSnap.exists() ? tSnap.data() : t;
+            } catch (e) { tenantPackage.tenant = t; }
 
-      // 4. Fetch Contents
-      const contentsRef = collection(targetDb, 'contents');
-      const qContent = query(contentsRef, where('tenantId', '==', tenant.tenantId));
-      const contentSnap = await getDocs(qContent);
-      const contents = contentSnap.docs.map(d => d.data());
+            try {
+              const uSnap = await getDoc(doc(targetDb, 'users', t.tenantId));
+              if (uSnap.exists()) tenantPackage.user = uSnap.data();
+            } catch (e) {}
+          }
 
-      // 5. Fetch Testimonials
-      const testRef = collection(targetDb, 'testimonials');
-      const qTest = query(testRef, where('tenantId', '==', tenant.tenantId));
-      const testSnap = await getDocs(qTest);
-      const testimonials = testSnap.docs.map(d => d.data());
+          if (backupOptions.landingPages) {
+            try {
+              const snap = await getDocs(query(collection(targetDb, 'landingPages'), where('tenantId', '==', t.tenantId)));
+              tenantPackage.landingPages = snap.docs.map(d => d.data());
+            } catch (e) {}
+          }
 
-      // Bundle full backup package
-      const backupPackage = {
-        meta: {
-          exportType: 'single_tenant_backup',
-          version: '1.0',
-          exportedAt: new Date().toISOString(),
-          subdomain: tenant.subdomain,
-          company: tenant.company || tenant.name,
-          email: tenant.email,
-          serverProjectId: activeServerConfig ? activeServerConfig.projectId : 'default',
-        },
-        tenant: tenantDocData,
-        user: userDocData,
-        landingPages,
-        sections,
-        contents,
-        testimonials,
-      };
+          if (backupOptions.sections) {
+            try {
+              const snap = await getDocs(query(collection(targetDb, 'sections'), where('tenantId', '==', t.tenantId)));
+              tenantPackage.sections = snap.docs.map(d => d.data());
+            } catch (e) {}
+          }
 
-      // Trigger automatic JSON file download
-      const jsonStr = JSON.stringify(backupPackage, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `backup_${tenant.subdomain || 'tenant'}_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+          if (backupOptions.contents) {
+            try {
+              const snap = await getDocs(query(collection(targetDb, 'contents'), where('tenantId', '==', t.tenantId)));
+              tenantPackage.contents = snap.docs.map(d => d.data());
+            } catch (e) {}
+          }
 
-      alert(`Backup database tenant "${tenant.company || tenant.subdomain}" berhasil diunduh!`);
+          if (backupOptions.testimonials) {
+            try {
+              const snap = await getDocs(query(collection(targetDb, 'testimonials'), where('tenantId', '==', t.tenantId)));
+              tenantPackage.testimonials = snap.docs.map(d => d.data());
+            } catch (e) {}
+          }
+
+          if (backupOptions.images) {
+            try {
+              const snap = await getDocs(query(collection(targetDb, 'images'), where('tenantId', '==', t.tenantId)));
+              tenantPackage.images = snap.docs.map(d => d.data());
+            } catch (e) {}
+          }
+
+          globalData.tenants.push(tenantPackage);
+        }
+
+        // Trigger JSON Download for Global Backup
+        const jsonStr = JSON.stringify(globalData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `backup_GLOBAL_ALL_TENANTS_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+      } else if (backupTargetTenant) {
+        // SINGLE TENANT BACKUP
+        const tenant = backupTargetTenant;
+        const activeServerConfig = dbServers.find(s => s.serverId === tenant.dbServerId);
+        const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+        const backupPackage: any = {
+          meta: {
+            exportType: 'single_tenant_backup',
+            version: '2.0',
+            exportedAt: new Date().toISOString(),
+            subdomain: tenant.subdomain,
+            company: tenant.company || tenant.name,
+            email: tenant.email,
+            selectedDataTypes: backupOptions,
+            serverProjectId: activeServerConfig ? activeServerConfig.projectId : 'default',
+          },
+        };
+
+        if (backupOptions.profile) {
+          try {
+            const tSnap = await getDoc(doc(targetDb, 'tenants', tenant.tenantId));
+            if (tSnap.exists()) backupPackage.tenant = tSnap.data();
+          } catch (e) { backupPackage.tenant = tenant; }
+
+          try {
+            const uSnap = await getDoc(doc(targetDb, 'users', tenant.tenantId));
+            if (uSnap.exists()) backupPackage.user = uSnap.data();
+          } catch (e) {}
+        }
+
+        if (backupOptions.landingPages) {
+          try {
+            const snapPages = await getDocs(query(collection(targetDb, 'landingPages'), where('tenantId', '==', tenant.tenantId)));
+            backupPackage.landingPages = snapPages.docs.map(d => d.data());
+          } catch (e) {}
+        }
+
+        if (backupOptions.sections) {
+          try {
+            const snapSec = await getDocs(query(collection(targetDb, 'sections'), where('tenantId', '==', tenant.tenantId)));
+            backupPackage.sections = snapSec.docs.map(d => d.data());
+          } catch (e) {}
+        }
+
+        if (backupOptions.contents) {
+          try {
+            const snapCnt = await getDocs(query(collection(targetDb, 'contents'), where('tenantId', '==', tenant.tenantId)));
+            backupPackage.contents = snapCnt.docs.map(d => d.data());
+          } catch (e) {}
+        }
+
+        if (backupOptions.testimonials) {
+          try {
+            const snapTest = await getDocs(query(collection(targetDb, 'testimonials'), where('tenantId', '==', tenant.tenantId)));
+            backupPackage.testimonials = snapTest.docs.map(d => d.data());
+          } catch (e) {}
+        }
+
+        if (backupOptions.images) {
+          try {
+            const snapImg = await getDocs(query(collection(targetDb, 'images'), where('tenantId', '==', tenant.tenantId)));
+            backupPackage.images = snapImg.docs.map(d => d.data());
+          } catch (e) {}
+        }
+
+        // Trigger JSON Download for Single Tenant
+        const jsonStr = JSON.stringify(backupPackage, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `backup_${tenant.subdomain || 'tenant'}_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
+      setIsBackupModalOpen(false);
+      alert('✅ Backup data berhasil diexport dan diunduh!');
     } catch (err: any) {
       console.error('Backup error:', err);
-      alert(`Gagal membuat backup database: ${err.message || 'Terjadi kesalahan'}`);
+      alert(`Gagal membuat backup: ${err.message || 'Terjadi kesalahan'}`);
+    } finally {
+      setIsExportingBackup(false);
     }
   };
 
@@ -1655,6 +1789,14 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     </div>
                   </div>
 
+                  {/* Global Selective Backup Button */}
+                  <button 
+                    onClick={() => openBackupModal(null)}
+                    className="rounded-full text-xs font-bold border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 h-9 px-4 shadow-sm"
+                  >
+                    <Download className="h-4 w-4" /> Export Backup Selected / Total (.json)
+                  </button>
+
                   <label className="cursor-pointer">
                     <input 
                       type="file" 
@@ -1821,7 +1963,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleResetPassword(t)} title="Reset Password">
                             <Key className="h-4 w-4 text-yellow-600" />
                           </Button>
-                          <Button size="icon" variant="outline" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50" onClick={() => handleBackupTenant(t)} title="Backup Database Tenant (.json)">
+                          <Button size="icon" variant="outline" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50" onClick={() => openBackupModal(t)} title="Opsi Backup Database Tenant (.json)">
                             <Download className="h-4 w-4" />
                           </Button>
                           <label className="cursor-pointer">
@@ -1847,6 +1989,108 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                 </Table>
               )}
             </Card>
+
+            {/* Selective & Total Database Backup Export Modal Dialog */}
+            {isBackupModalOpen && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <Card className="w-full max-w-lg shadow-2xl rounded-3xl bg-white border-none p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+                  <CardHeader className="px-0 pt-0 border-b pb-4">
+                    <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+                      <Download className="h-5 w-5 text-emerald-600" /> 
+                      {isGlobalBackup ? 'Export Backup Total Database (Semua Tenant)' : `Export Backup Tenant: ${backupTargetTenant?.company || backupTargetTenant?.name}`}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Pilih jenis data yang ingin dimasukkan ke dalam paket file cadangan database (.json).
+                    </CardDescription>
+                  </CardHeader>
+
+                  <div className="space-y-4 py-2 text-xs">
+                    {/* Select All / Deselect All Controls */}
+                    <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                      <span className="font-bold text-slate-800">Opsi Pemilihan Data:</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleAllBackupOptions(true)}
+                          className="px-3 py-1 bg-emerald-600 text-white rounded-full font-bold hover:bg-emerald-700 transition-colors shadow-xs"
+                        >
+                          Select All (Semua Data)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleAllBackupOptions(false)}
+                          className="px-3 py-1 bg-slate-200 text-slate-700 rounded-full font-bold hover:bg-slate-300 transition-colors"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Checkbox Options Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {[
+                        { key: 'profile', label: 'Profil Tenant & User', desc: 'Detail nama, email, subdomain, limits' },
+                        { key: 'landingPages', label: 'Halaman Landing Page', desc: 'Dokumen landing page & slug' },
+                        { key: 'sections', label: 'Seksi Halaman', desc: 'Struktur urutan & jenis seksi' },
+                        { key: 'contents', label: 'Isi Konten & Teks', desc: 'Judul, narasi, WhatsApp, maps' },
+                        { key: 'testimonials', label: 'Testimoni Jamaah', desc: 'Ulasan & foto jamaah' },
+                        { key: 'images', label: 'Galeri Foto Cloudinary', desc: 'Metadata URL foto yang diunggah' },
+                      ].map(opt => {
+                        const isChecked = (backupOptions as any)[opt.key];
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => setBackupOptions(prev => ({ ...prev, [opt.key]: !(prev as any)[opt.key] }))}
+                            className={`p-3 rounded-2xl border text-left transition-all flex items-start justify-between ${
+                              isChecked ? 'bg-emerald-50/60 border-emerald-300 text-emerald-950 shadow-xs' : 'bg-slate-50/50 border-slate-200 text-slate-500'
+                            }`}
+                          >
+                            <div className="space-y-0.5">
+                              <p className="font-bold text-xs">{opt.label}</p>
+                              <p className="text-[10px] text-slate-500">{opt.desc}</p>
+                            </div>
+                            {isChecked ? (
+                              <CheckSquare className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                            ) : (
+                              <Square className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 border-t pt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsBackupModalOpen(false)}
+                      disabled={isExportingBackup}
+                      className="rounded-full text-xs font-bold px-5"
+                    >
+                      Batal
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={executeSelectiveBackup}
+                      disabled={isExportingBackup || !Object.values(backupOptions).some(Boolean)}
+                      className="rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-6 shadow-md"
+                    >
+                      {isExportingBackup ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" /> Memproses...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Download className="h-4 w-4" /> Unduh Backup JSON
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            )}
 
             {/* Limits Editor Modal dialog */}
             {selectedTenant && (
