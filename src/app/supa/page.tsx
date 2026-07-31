@@ -48,7 +48,8 @@ import {
   WifiOff,
   RefreshCw,
   Terminal,
-  ShieldCheck
+  ShieldCheck,
+  Download
 } from 'lucide-react';
 import { Tenant, TenantPlan, TenantStatus, SYSTEM_PLANS, DatabaseServerConfig, BuilderPlan } from '@/types/cms';
 
@@ -607,6 +608,87 @@ service cloud.firestore {
   // Handle Reset Password (simulated/triggers alert)
   const handleResetPassword = (tenant: Tenant) => {
     alert(`Tautan reset sandi akun ${tenant.email} telah diproses (Wrappers Auth).`);
+  };
+
+  // Handle Tenant Database Backup Export (JSON Download)
+  const handleBackupTenant = async (tenant: Tenant) => {
+    try {
+      const activeServerConfig = dbServers.find(s => s.serverId === tenant.dbServerId);
+      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+      // 1. Fetch Tenant Document & User Document
+      let tenantDocData = tenant;
+      try {
+        const tSnap = await getDoc(doc(targetDb, 'tenants', tenant.tenantId));
+        if (tSnap.exists()) tenantDocData = tSnap.data() as Tenant;
+      } catch (e) {}
+
+      let userDocData = null;
+      try {
+        const uSnap = await getDoc(doc(targetDb, 'users', tenant.tenantId));
+        if (uSnap.exists()) userDocData = uSnap.data();
+      } catch (e) {}
+
+      // 2. Fetch Landing Pages
+      const pagesRef = collection(targetDb, 'landingPages');
+      const qPages = query(pagesRef, where('tenantId', '==', tenant.tenantId));
+      const pagesSnap = await getDocs(qPages);
+      const landingPages = pagesSnap.docs.map(d => d.data());
+
+      // 3. Fetch Sections
+      const sectionsRef = collection(targetDb, 'sections');
+      const qSec = query(sectionsRef, where('tenantId', '==', tenant.tenantId));
+      const secSnap = await getDocs(qSec);
+      const sections = secSnap.docs.map(d => d.data());
+
+      // 4. Fetch Contents
+      const contentsRef = collection(targetDb, 'contents');
+      const qContent = query(contentsRef, where('tenantId', '==', tenant.tenantId));
+      const contentSnap = await getDocs(qContent);
+      const contents = contentSnap.docs.map(d => d.data());
+
+      // 5. Fetch Testimonials
+      const testRef = collection(targetDb, 'testimonials');
+      const qTest = query(testRef, where('tenantId', '==', tenant.tenantId));
+      const testSnap = await getDocs(qTest);
+      const testimonials = testSnap.docs.map(d => d.data());
+
+      // Bundle full backup package
+      const backupPackage = {
+        meta: {
+          exportType: 'single_tenant_backup',
+          version: '1.0',
+          exportedAt: new Date().toISOString(),
+          subdomain: tenant.subdomain,
+          company: tenant.company || tenant.name,
+          email: tenant.email,
+          serverProjectId: activeServerConfig ? activeServerConfig.projectId : 'default',
+        },
+        tenant: tenantDocData,
+        user: userDocData,
+        landingPages,
+        sections,
+        contents,
+        testimonials,
+      };
+
+      // Trigger automatic JSON file download
+      const jsonStr = JSON.stringify(backupPackage, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_${tenant.subdomain || 'tenant'}_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert(`Backup database tenant "${tenant.company || tenant.subdomain}" berhasil diunduh!`);
+    } catch (err: any) {
+      console.error('Backup error:', err);
+      alert(`Gagal membuat backup database: ${err.message || 'Terjadi kesalahan'}`);
+    }
   };
 
   // Handle Delete Thoroughly (by tenantId, subdomain, and email)
@@ -1267,6 +1349,9 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           </Button>
                           <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleResetPassword(t)} title="Reset Password">
                             <Key className="h-4 w-4 text-yellow-600" />
+                          </Button>
+                          <Button size="icon" variant="outline" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50" onClick={() => handleBackupTenant(t)} title="Backup Database Tenant (.json)">
+                            <Download className="h-4 w-4" />
                           </Button>
                           <Button size="icon" variant="outline" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteTenant(t)} title="Hapus Permanen">
                             <Trash2 className="h-4 w-4" />
