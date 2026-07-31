@@ -1115,28 +1115,42 @@ service cloud.firestore {
         if (restoreSelectionOptions.landingPages && Array.isArray(backupData.landingPages)) {
           for (const p of backupData.landingPages) {
             const pageId = p.pageId || `page_${targetId}_home`;
+            const targetPageId = pageId;
             const remappedPage = { ...p, tenantId: targetId, pageId };
             await setDoc(doc(targetDb, 'landingPages', pageId), remappedPage, { merge: true });
-          }
-        }
 
-        // Restore Sections with target tenantId
-        if (restoreSelectionOptions.sections && Array.isArray(backupData.sections)) {
-          for (const s of backupData.sections) {
-            if (s.sectionId) {
-              const remappedSec = { ...s, tenantId: targetId };
-              await setDoc(doc(targetDb, 'sections', s.sectionId), remappedSec, { merge: true });
+            const sectionIdMap: Record<string, string> = {};
+            if (restoreSelectionOptions.sections && Array.isArray(backupData.sections)) {
+              for (const s of backupData.sections) {
+                if (s.sectionId) {
+                  const newSecId = s.type ? `sec_${targetId}_${s.type}` : s.sectionId;
+                  sectionIdMap[s.sectionId] = newSecId;
+                  const remappedSec = { 
+                    ...s, 
+                    sectionId: newSecId, 
+                    tenantId: targetId, 
+                    landingPageId: targetPageId 
+                  };
+                  await setDoc(doc(targetDb, 'sections', newSecId), remappedSec, { merge: true });
+                }
+              }
             }
-          }
-        }
 
-        // Restore Contents with target tenantId
-        if (restoreSelectionOptions.contents && Array.isArray(backupData.contents)) {
-          for (const c of backupData.contents) {
-            if (c.sectionId && c.key) {
-              const contentDocId = `${targetId}_${c.sectionId}_${c.key}`;
-              const remappedContent = { ...c, tenantId: targetId };
-              await setDoc(doc(targetDb, 'contents', contentDocId), remappedContent, { merge: true });
+            // Restore Contents with remapped sectionId and target tenantId
+            if (restoreSelectionOptions.contents && Array.isArray(backupData.contents)) {
+              for (const c of backupData.contents) {
+                if (c.sectionId && c.key) {
+                  const targetSecId = sectionIdMap[c.sectionId] || (c.sectionId.includes('_') ? `sec_${targetId}_${c.sectionId.split('_').pop()}` : c.sectionId);
+                  const contentDocId = `${targetId}_${targetSecId}_${c.key}`;
+                  const remappedContent = { 
+                    ...c, 
+                    contentId: contentDocId,
+                    tenantId: targetId, 
+                    sectionId: targetSecId 
+                  };
+                  await setDoc(doc(targetDb, 'contents', contentDocId), remappedContent, { merge: true });
+                }
+              }
             }
           }
         }
