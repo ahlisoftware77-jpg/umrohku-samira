@@ -184,28 +184,9 @@ export default function TenantDashboardPage() {
           console.log("Primary user doc saved with fallback.");
         }
 
-        // 2. Secondary developer-friendly alias writes (Fail-Safe)
-        if (readableId && readableId !== cred.user.uid) {
-          try { await setDoc(doc(db, 'tenants', readableId), newTenant); } catch (e) {}
-          try {
-            const userDoc = {
-              userId: cred.user.uid,
-              tenantId: cred.user.uid,
-              readableId,
-              name: name || 'Mitra',
-              company: company || name || 'Mitra Travel',
-              email,
-              role: 'owner',
-              createdAt: new Date().toISOString(),
-            };
-            await setDoc(doc(db, 'users', readableId), userDoc);
-          } catch (e) {}
-        }
-
         // Initialize pre-built default landing page template for new tenant
         try {
           await cmsService.initializeDefaultTenantLandingPage(cred.user.uid);
-          await cmsService.initializeDefaultTenantLandingPage(readableId);
         } catch (pErr) {}
       } else {
         await signInWithEmailAndPassword(auth, email, password);

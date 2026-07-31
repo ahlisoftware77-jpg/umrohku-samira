@@ -74,15 +74,9 @@ export const useAuthHandler = () => {
             };
 
             try {
-              // 1. Primary UID document writes (Strict Firestore Rules Compatible)
+              // Primary UID document writes
               await setDoc(uidRef, defaultProfile);
               await setDoc(doc(db, 'tenants', firebaseUser.uid), defaultTenant);
-
-              // 2. Secondary developer-friendly alias writes (Fail-Safe)
-              if (readableId && readableId !== firebaseUser.uid) {
-                try { await setDoc(readableRef, defaultProfile); } catch (e) {}
-                try { await setDoc(doc(db, 'tenants', readableId), defaultTenant); } catch (e) {}
-              }
             } catch (sErr) {
               console.log('Auto-creating UID profile fallback:', sErr);
             }
