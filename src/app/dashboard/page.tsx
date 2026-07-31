@@ -890,6 +890,48 @@ export default function TenantDashboardPage() {
         </div>
       </header>
 
+      {/* Mobile Subdomain & Account Info Banner */}
+      {tenantProfile && (
+        <div className="md:hidden bg-slate-900 text-white px-3.5 py-2 flex items-center justify-between gap-2 border-b border-slate-800 shadow-md">
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-extrabold text-amber-300 truncate">
+                {tenantProfile.name}
+              </span>
+              {tenantProfile.company && (
+                <span className="text-[10px] text-slate-400 truncate">
+                  ({tenantProfile.company})
+                </span>
+              )}
+            </div>
+            <a
+              href={`/${tenantProfile.subdomain}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[10px] font-mono text-slate-300 hover:text-white truncate flex items-center gap-1 mt-0.5"
+            >
+              <ExternalLink className="h-3 w-3 shrink-0 text-amber-400" /> umrohku-samira.my.id/{tenantProfile.subdomain}
+            </a>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Realtime Visitor Counter Badge */}
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-300 text-[10px] font-bold">
+              <Eye className="h-3 w-3 text-amber-400 animate-pulse" />
+              <span>{(tenantProfile.visitorCount || 0).toLocaleString()}</span>
+            </div>
+
+            {/* Button Bagikan */}
+            <Button
+              onClick={() => setShowShareModal(true)}
+              className="bg-amber-400 text-slate-950 hover:bg-amber-300 font-extrabold text-xs rounded-full h-7.5 px-3 flex items-center gap-1 shadow-md"
+            >
+              <Share2 className="h-3 w-3" /> Bagikan
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Editor Main Workspace Body */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Sidebar: full screen on mobile when mobileTab='edit', hidden when mobileTab='preview' */}
