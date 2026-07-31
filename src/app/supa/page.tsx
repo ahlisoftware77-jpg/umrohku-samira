@@ -43,6 +43,7 @@ import {
   Copy,
   Save,
   Server,
+  CheckCircle2,
   PlusCircle,
   ArrowRightLeft,
   Wifi,
@@ -226,6 +227,11 @@ export default function SuperAdminPage() {
   const [selectedCloneTargetId, setSelectedCloneTargetId] = useState('');
   const [isDeployingCli, setIsDeployingCli] = useState(false);
   const [cliLogOutput, setCliLogOutput] = useState<string | null>(null);
+
+  // Orphaned Contents Scanner State
+  const [orphanedContents, setOrphanedContents] = useState<any[]>([]);
+  const [isScanningOrphans, setIsScanningOrphans] = useState(false);
+  const [isPurgingOrphans, setIsPurgingOrphans] = useState(false);
 
   // CLI Auth state
   const [firebaseTokenInput, setFirebaseTokenInput] = useState(() => 
@@ -1265,6 +1271,94 @@ service cloud.firestore {
     }
   };
 
+  // Scan for Orphaned Contents in DB Utama & Server Clusters
+  const handleScanOrphanedContents = async () => {
+    try {
+      setIsScanningOrphans(true);
+      setOrphanedContents([]);
+
+      // Create set of active tenant IDs
+      const activeTenantIds = new Set<string>();
+      tenants.forEach(t => {
+        if (t.tenantId) activeTenantIds.add(t.tenantId);
+        if (t.subdomain) activeTenantIds.add(t.subdomain);
+        if (t.email) activeTenantIds.add(t.email.toLowerCase().replace(/[^a-z0-9]/g, '_'));
+      });
+
+      const orphansFound: any[] = [];
+
+      // Helper scan database instance
+      const scanDbInstance = async (targetDbInstance: any, serverLabel: string) => {
+        try {
+          const contentsSnap = await getDocs(collection(targetDbInstance, 'contents'));
+          contentsSnap.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            const contentTenantId = data.tenantId;
+
+            // Check if tenantId is missing or does not match any active tenant
+            if (!contentTenantId || !activeTenantIds.has(contentTenantId)) {
+              orphansFound.push({
+                docId: docSnap.id,
+                tenantId: contentTenantId || 'Tanpa Tenant ID',
+                sectionId: data.sectionId || '-',
+                key: data.key || '-',
+                value: typeof data.value === 'object' ? JSON.stringify(data.value) : String(data.value || ''),
+                serverLabel,
+                instanceDb: targetDbInstance,
+              });
+            }
+          });
+        } catch (err) {
+          console.warn(`Scan orphans failed on ${serverLabel}:`, err);
+        }
+      };
+
+      // 1. Scan Primary DB
+      await scanDbInstance(db, 'DB Utama');
+
+      // 2. Scan Cluster DBs
+      for (const serverConfig of dbServers) {
+        try {
+          const clusterInstance = getDynamicFirebaseInstance(serverConfig).db;
+          await scanDbInstance(clusterInstance, serverConfig.name || serverConfig.serverId);
+        } catch (e) {}
+      }
+
+      setOrphanedContents(orphansFound);
+    } catch (err: any) {
+      console.error('Failed scanning orphans:', err);
+      alert(`Eror pemindaian data terasing: ${err.message}`);
+    } finally {
+      setIsScanningOrphans(false);
+    }
+  };
+
+  // Purge All Orphaned Contents Permanently
+  const handlePurgeOrphanedContents = async () => {
+    if (orphanedContents.length === 0) return;
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${orphanedContents.length} dokumen konten terasing ini secara permanen? Tindakan ini akan mengosongkan sampah dokumen lama.`)) return;
+
+    try {
+      setIsPurgingOrphans(true);
+      let successCount = 0;
+
+      for (const item of orphanedContents) {
+        try {
+          await deleteDoc(doc(item.instanceDb, 'contents', item.docId));
+          successCount++;
+        } catch (e) {}
+      }
+
+      alert(`✅ Berhasil menghapus ${successCount} dari ${orphanedContents.length} dokumen konten terasing secara permanen.`);
+      setOrphanedContents([]);
+    } catch (err: any) {
+      console.error('Failed purging orphans:', err);
+      alert('Gagal membersihkan dokumen terasing.');
+    } finally {
+      setIsPurgingOrphans(false);
+    }
+  };
+
   // Handle Modify Limits
   const selectTenantForLimits = (tenant: Tenant) => {
     setSelectedTenant(tenant);
@@ -1888,6 +1982,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
         <Tabs defaultValue="tenants" className="w-full">
           <TabsList className="bg-white border p-1 rounded-full w-fit mb-6 flex flex-wrap gap-1">
             <TabsTrigger value="tenants" className="rounded-full px-6 py-2 text-xs">Kelola Tenant</TabsTrigger>
+            <TabsTrigger value="orphans" className="rounded-full px-6 py-2 text-xs flex items-center gap-1.5"><Trash2 className="h-3.5 w-3.5 text-amber-600" /> Pembersihan Data Terasing</TabsTrigger>
             <TabsTrigger value="packages" className="rounded-full px-6 py-2 text-xs">Paket Limits Tenant</TabsTrigger>
             <TabsTrigger value="builderPlans" className="rounded-full px-6 py-2 text-xs">Paket Builder Iklan</TabsTrigger>
             <TabsTrigger value="settings" className="rounded-full px-6 py-2 text-xs">Pengaturan API & Database</TabsTrigger>
@@ -2458,6 +2553,104 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                 </Card>
               </div>
             )}
+          </TabsContent>
+
+          {/* ==========================================
+              TAB ORPHANED DATA CLEANUP SCANNER
+              ========================================== */}
+          <TabsContent value="orphans" className="space-y-6">
+            <Card className="rounded-3xl border shadow-none bg-white p-6">
+              <CardHeader className="px-0 pt-0 border-b pb-4 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+                    <Trash2 className="h-5 w-5 text-amber-600" />
+                    Pembersihan Dokumen Konten Terasing (Orphaned Contents)
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Memindai dan menghapus sisa-sisa dokumen <code className="bg-slate-100 px-1 py-0.5 rounded text-amber-700 font-bold">contents</code> di database utama/cluster yang tenant ID-nya sudah tidak terhubung ke akun aktif mana pun.
+                  </CardDescription>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button 
+                    type="button"
+                    onClick={handleScanOrphanedContents} 
+                    disabled={isScanningOrphans}
+                    className="bg-primary hover:bg-primary/90 text-white font-bold rounded-full text-xs px-5 h-9 flex items-center gap-2 shadow-xs"
+                  >
+                    {isScanningOrphans ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    {isScanningOrphans ? 'Memindai Database...' : 'Pindai Dokumen Terasing'}
+                  </Button>
+
+                  {orphanedContents.length > 0 && (
+                    <Button 
+                      type="button"
+                      onClick={handlePurgeOrphanedContents} 
+                      disabled={isPurgingOrphans}
+                      className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full text-xs px-5 h-9 flex items-center gap-2 shadow-md"
+                    >
+                      {isPurgingOrphans ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      {isPurgingOrphans ? 'Bersihkan...' : `Hapus Permanen (${orphanedContents.length})`}
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+
+              <div className="space-y-4">
+                {orphanedContents.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-3 opacity-80" />
+                    <h3 className="font-bold text-slate-700 text-sm">Tidak Ada Dokumen Terasing Terdeteksi</h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                      Klik tombol <strong>"Pindai Dokumen Terasing"</strong> di atas untuk memindai database utama dan cluster server dari sisa-sisa dokumen konten lama.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between bg-amber-50 border border-amber-200 p-3 rounded-2xl text-xs text-amber-900">
+                      <span className="font-bold flex items-center gap-1.5">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        Ditemukan {orphanedContents.length} dokumen konten lama tanpa pemilik aktif:
+                      </span>
+                      <span className="text-[11px] font-semibold bg-amber-200/60 px-2.5 py-0.5 rounded-full">
+                        Siap Dibersihkan
+                      </span>
+                    </div>
+
+                    <div className="rounded-2xl border overflow-hidden max-h-[450px] overflow-y-auto">
+                      <Table>
+                        <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                          <TableRow>
+                            <TableHead className="text-xs font-bold">Lokasi Server</TableHead>
+                            <TableHead className="text-xs font-bold">Dokumen ID</TableHead>
+                            <TableHead className="text-xs font-bold">Tenant ID Lama</TableHead>
+                            <TableHead className="text-xs font-bold">Key / Field</TableHead>
+                            <TableHead className="text-xs font-bold">Pratinjau Isi</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {orphanedContents.map((item, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50/50">
+                              <TableCell className="text-xs font-bold text-primary">
+                                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20 text-[10px]">
+                                  {item.serverLabel}
+                                </span>
+                              </TableCell>
+                              <TableCell className="font-mono text-[11px] text-slate-600">{item.docId}</TableCell>
+                              <TableCell className="text-xs text-amber-700 font-semibold">{item.tenantId}</TableCell>
+                              <TableCell className="text-xs font-bold">{item.key}</TableCell>
+                              <TableCell className="text-xs text-slate-500 truncate max-w-[250px]" title={item.value}>
+                                {item.value}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
           </TabsContent>
 
           {/* ==========================================
