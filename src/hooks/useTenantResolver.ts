@@ -24,12 +24,12 @@ export function useTenantResolver(tenantSlug: string) {
         const subSnap = await getDocs(qSubdomain);
         
         if (!subSnap.empty) {
-          foundTenant = subSnap.docs[0].data() as Tenant;
+          foundTenant = { ...(subSnap.docs[0].data() as Tenant), firestoreDocId: subSnap.docs[0].id };
         } else {
           const tenantDocRef = doc(db, 'tenants', tenantSlug);
           const tenantSnap = await getDoc(tenantDocRef);
           if (tenantSnap.exists()) {
-            foundTenant = tenantSnap.data() as Tenant;
+            foundTenant = { ...(tenantSnap.data() as Tenant), firestoreDocId: tenantSnap.id };
           }
         }
 
@@ -72,13 +72,11 @@ export function useTenantResolver(tenantSlug: string) {
             foundTenant.visitorCount = newCount;
             
             try {
-              // Try updating by primary doc ID or query by subdomain
-              const targetDocId = foundTenant.tenantId || foundTenant.subdomain;
+              const targetDocId = (foundTenant as any).firestoreDocId || foundTenant.tenantId || foundTenant.subdomain;
               await updateDoc(doc(db, 'tenants', targetDocId), {
                 visitorCount: increment(1)
               });
             } catch (vErr) {
-              // Fallback query update if primary doc ID update fails
               try {
                 const qSub = query(collection(db, 'tenants'), where('subdomain', '==', foundTenant.subdomain));
                 const snapSub = await getDocs(qSub);

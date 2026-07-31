@@ -47,26 +47,28 @@ export default function DynamicTenantPage({ params }: PageProps) {
           const subSnap = await getDocs(qSubdomain);
           
           if (!subSnap.empty) {
-            foundTenant = subSnap.docs[0].data() as Tenant;
-            if (foundTenant.tenantId) possibleTenantIds.push(foundTenant.tenantId);
-            if (foundTenant.readableId) possibleTenantIds.push(foundTenant.readableId);
-            if (foundTenant.email) {
-              const emailId = foundTenant.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            const data = subSnap.docs[0].data() as Tenant;
+            foundTenant = { ...data, firestoreDocId: subSnap.docs[0].id };
+            if (data.tenantId) possibleTenantIds.push(data.tenantId);
+            if (data.readableId) possibleTenantIds.push(data.readableId);
+            if (data.email) {
+              const emailId = data.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
               possibleTenantIds.push(emailId);
             }
-            activeTenantId = foundTenant.tenantId || activeTenantId;
+            activeTenantId = data.tenantId || activeTenantId;
           } else {
             const tenantDocRef = doc(db, 'tenants', tenantSlug);
             const tenantSnap = await getDoc(tenantDocRef);
             if (tenantSnap.exists()) {
-              foundTenant = tenantSnap.data() as Tenant;
-              if (foundTenant.tenantId) possibleTenantIds.push(foundTenant.tenantId);
-              if (foundTenant.readableId) possibleTenantIds.push(foundTenant.readableId);
-              if (foundTenant.email) {
-                const emailId = foundTenant.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+              const data = tenantSnap.data() as Tenant;
+              foundTenant = { ...data, firestoreDocId: tenantSnap.id };
+              if (data.tenantId) possibleTenantIds.push(data.tenantId);
+              if (data.readableId) possibleTenantIds.push(data.readableId);
+              if (data.email) {
+                const emailId = data.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
                 possibleTenantIds.push(emailId);
               }
-              activeTenantId = foundTenant.tenantId || activeTenantId;
+              activeTenantId = data.tenantId || activeTenantId;
             }
           }
         } catch (tErr) {}
@@ -109,9 +111,21 @@ export default function DynamicTenantPage({ params }: PageProps) {
           const sessionKey = `visited_tenant_${validTenant.subdomain}`;
           if (typeof window !== 'undefined' && !sessionStorage.getItem(sessionKey)) {
             sessionStorage.setItem(sessionKey, 'true');
-            updateDoc(doc(db, 'tenants', validTenant.tenantId), {
+            
+            const docIdToUpdate = (validTenant as any).firestoreDocId || validTenant.tenantId || validTenant.subdomain;
+            updateDoc(doc(db, 'tenants', docIdToUpdate), {
               visitorCount: increment(1)
-            }).catch(() => {});
+            }).catch(async () => {
+              try {
+                const qSub = query(collection(db, 'tenants'), where('subdomain', '==', validTenant.subdomain));
+                const snapSub = await getDocs(qSub);
+                if (!snapSub.empty) {
+                  await updateDoc(doc(db, 'tenants', snapSub.docs[0].id), {
+                    visitorCount: increment(1)
+                  });
+                }
+              } catch (e) {}
+            });
           }
         } catch (vErr) {}
 

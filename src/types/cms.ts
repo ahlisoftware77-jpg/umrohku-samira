@@ -30,6 +30,7 @@ export const TenantSchema = z.object({
   subdomain: z.string(),
   dbServerId: z.string().optional(),
   visitorCount: z.number().default(0).optional(),
+  firestoreDocId: z.string().optional(),
   limits: TenantLimitsSchema,
 });
 export type Tenant = z.infer<typeof TenantSchema>;
