@@ -1319,6 +1319,7 @@ service cloud.firestore {
                 tenantId: contentTenantId || 'Tanpa Tenant ID',
                 sectionId: data.sectionId || '-',
                 key: data.key || '-',
+                rawValue: data.value,
                 value: typeof data.value === 'object' ? JSON.stringify(data.value) : String(data.value || ''),
                 createdAt: createdAtFormatted,
                 serverId,
@@ -1341,6 +1342,7 @@ service cloud.firestore {
                 tenantId: contentTenantId,
                 sectionId: data.sectionId || '-',
                 key: data.key || '-',
+                rawValue: data.value,
                 value: typeof data.value === 'object' ? JSON.stringify(data.value) : String(data.value || ''),
                 createdAt: createdAtFormatted,
                 serverId,
@@ -1379,24 +1381,77 @@ service cloud.firestore {
     }
   };
 
-  // Purge All Orphaned Contents Permanently
-  const handlePurgeOrphanedContents = async () => {
-    if (orphanedContents.length === 0) return;
-    if (!confirm(`Apakah Anda yakin ingin menghapus ${orphanedContents.length} dokumen konten terasing ini secara permanen? Tindakan ini akan mengosongkan sampah dokumen lama.`)) return;
+  // Move Misplaced Contents (Sisa Migrasi) to Target Cluster DB and Purge Old Copy
+  const handleSyncMisplacedContents = async () => {
+    const misplacedItems = orphanedContents.filter(i => i.status === 'misplaced');
+    if (misplacedItems.length === 0) {
+      alert('Tidak ada dokumen sisa migrasi yang perlu dipindahkan.');
+      return;
+    }
+
+    if (!confirm(`Apakah Anda yakin ingin memindahkan ${misplacedItems.length} dokumen sisa migrasi ke Database Cluster tujuan, lalu membersihkan salinan lamanya?`)) return;
 
     try {
       setIsPurgingOrphans(true);
       let successCount = 0;
 
-      for (const item of orphanedContents) {
+      for (const item of misplacedItems) {
+        try {
+          // Resolve target cluster DB instance
+          const activeTenantInfo = tenants.find(t => t.tenantId === item.tenantId || t.subdomain === item.tenantId);
+          const targetServerConfig = dbServers.find(s => s.serverId === activeTenantInfo?.dbServerId);
+          const targetDbInstance = targetServerConfig 
+            ? getDynamicFirebaseInstance(targetServerConfig).db 
+            : db;
+
+          // 1. Copy document to Target Cluster DB
+          const targetDocRef = doc(targetDbInstance, 'contents', item.docId);
+          await setDoc(targetDocRef, {
+            contentId: item.docId,
+            tenantId: item.tenantId,
+            sectionId: item.sectionId,
+            key: item.key,
+            value: item.rawValue !== undefined ? item.rawValue : item.value,
+            updatedAt: new Date(),
+          }, { merge: true });
+
+          // 2. Delete old copy from source DB (e.g. DB Utama)
+          await deleteDoc(doc(item.instanceDb, 'contents', item.docId));
+          successCount++;
+        } catch (e) {
+          console.warn('Failed moving misplaced content:', item.docId, e);
+        }
+      }
+
+      alert(`✅ Berhasil memindahkan & merapikan ${successCount} dari ${misplacedItems.length} dokumen konten ke Server Database Cluster tujuan.`);
+      // Refresh scan
+    } catch (err: any) {
+      console.error('Failed syncing misplaced contents:', err);
+      alert('Gagal memindahkan dokumen sisa migrasi.');
+    } finally {
+      setIsPurgingOrphans(false);
+    }
+  };
+  // Purge All Orphaned Contents Permanently (Truly Orphaned documents whose tenant accounts were deleted)
+  const handlePurgeOrphanedContents = async () => {
+    const trulyOrphaned = orphanedContents.filter(i => i.status === 'orphaned');
+    const targetItems = trulyOrphaned.length > 0 ? trulyOrphaned : orphanedContents;
+    if (targetItems.length === 0) return;
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${targetItems.length} dokumen konten terasing ini secara permanen? Tindakan ini akan mengosongkan sampah dokumen lama.`)) return;
+
+    try {
+      setIsPurgingOrphans(true);
+      let successCount = 0;
+
+      for (const item of targetItems) {
         try {
           await deleteDoc(doc(item.instanceDb, 'contents', item.docId));
           successCount++;
         } catch (e) {}
       }
 
-      alert(`✅ Berhasil menghapus ${successCount} dari ${orphanedContents.length} dokumen konten terasing secara permanen.`);
-      setOrphanedContents([]);
+      alert(`✅ Berhasil menghapus ${successCount} dari ${targetItems.length} dokumen konten terasing secara permanen.`);
+      handleScanOrphanedContents();
     } catch (err: any) {
       console.error('Failed purging orphans:', err);
       alert('Gagal membersihkan dokumen terasing.');
@@ -2617,7 +2672,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   </CardDescription>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button 
                     type="button"
                     onClick={handleScanOrphanedContents} 
@@ -2628,6 +2683,19 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     {isScanningOrphans ? 'Memindai Database...' : 'Pindai Dokumen Terasing'}
                   </Button>
 
+                  {orphanedContents.some(i => i.status === 'misplaced') && (
+                    <Button 
+                      type="button"
+                      onClick={handleSyncMisplacedContents} 
+                      disabled={isPurgingOrphans}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-xs px-5 h-9 flex items-center gap-2 shadow-md"
+                      title="Pindahkan seluruh dokumen sisa migrasi ke Server Cluster terhubung (misal: umroh2) lalu bersihkan salinan di DB Utama"
+                    >
+                      {isPurgingOrphans ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}
+                      {isPurgingOrphans ? 'Memindahkan...' : `Pindahkan Sisa Migrasi ke Cluster DB (${orphanedContents.filter(i => i.status === 'misplaced').length})`}
+                    </Button>
+                  )}
+
                   {orphanedContents.length > 0 && (
                     <Button 
                       type="button"
@@ -2636,7 +2704,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full text-xs px-5 h-9 flex items-center gap-2 shadow-md"
                     >
                       {isPurgingOrphans ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      {isPurgingOrphans ? 'Bersihkan...' : `Hapus Permanen (${orphanedContents.length})`}
+                      {isPurgingOrphans ? 'Bersihkan...' : `Hapus Permanen Terasing (${orphanedContents.length})`}
                     </Button>
                   )}
                 </div>
