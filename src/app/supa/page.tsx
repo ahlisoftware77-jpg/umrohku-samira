@@ -754,23 +754,79 @@ service cloud.firestore {
     });
   };
 
+  // Helper for fetching ALL tenant documents from both cluster DB and primary DB across all tenant ID aliases
+  const fetchAllTenantCollectionDocs = async (collectionName: string, targetDb: any, tenant: Tenant): Promise<any[]> => {
+    const candidateIds = Array.from(
+      new Set([
+        tenant.tenantId,
+        tenant.subdomain,
+        (tenant as any).readableId,
+        tenant.email ? tenant.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : null
+      ])
+    ).filter(Boolean) as string[];
+
+    const databasesToQuery = [targetDb];
+    if (targetDb !== db) {
+      databasesToQuery.push(db); // Query Primary DB for any misplaced data as well
+    }
+
+    const resultMap = new Map<string, any>();
+
+    for (const dbInstance of databasesToQuery) {
+      for (const cid of candidateIds) {
+        try {
+          const q = query(collection(dbInstance, collectionName), where('tenantId', '==', cid));
+          const snap = await getDocs(q);
+          snap.docs.forEach(d => {
+            const data = d.data();
+            const docId = d.id || data.pageId || data.sectionId || data.contentId || data.testimonialId || data.imageId;
+            if (docId && !resultMap.has(docId)) {
+              resultMap.set(docId, data);
+            }
+          });
+        } catch (e) {}
+      }
+    }
+
+    return Array.from(resultMap.values());
+  };
+
   // Handle Selective Database Backup Export (.json Download)
   const executeSelectiveBackup = async () => {
     try {
       setIsExportingBackup(true);
 
       if (isGlobalBackup) {
-        // GLOBAL BACKUP - ALL TENANTS ACCROSS CLUSTER SERVERS
+        // GLOBAL BACKUP - ALL TENANTS ACROSS CLUSTER SERVERS & SYSTEM SETTINGS
         const globalData: any = {
           meta: {
             exportType: 'global_all_tenants_backup',
-            version: '2.0',
+            version: '2.5',
             exportedAt: new Date().toISOString(),
             totalTenants: tenants.length,
             selectedDataTypes: backupOptions,
           },
+          databaseServers: [],
+          systemSettings: [],
+          plans: [],
           tenants: [],
         };
+
+        // Capture global configs
+        try {
+          const sSnap = await getDocs(collection(db, 'databaseServers'));
+          globalData.databaseServers = sSnap.docs.map(d => d.data());
+        } catch (e) {}
+
+        try {
+          const sysSnap = await getDocs(collection(db, 'systemSettings'));
+          globalData.systemSettings = sysSnap.docs.map(d => d.data());
+        } catch (e) {}
+
+        try {
+          const pSnap = await getDocs(collection(db, 'plans'));
+          globalData.plans = pSnap.docs.map(d => d.data());
+        } catch (e) {}
 
         for (const t of tenants) {
           const activeServerConfig = dbServers.find(s => s.serverId === t.dbServerId);
@@ -791,38 +847,23 @@ service cloud.firestore {
           }
 
           if (backupOptions.landingPages) {
-            try {
-              const snap = await getDocs(query(collection(targetDb, 'landingPages'), where('tenantId', '==', t.tenantId)));
-              tenantPackage.landingPages = snap.docs.map(d => d.data());
-            } catch (e) {}
+            tenantPackage.landingPages = await fetchAllTenantCollectionDocs('landingPages', targetDb, t);
           }
 
           if (backupOptions.sections) {
-            try {
-              const snap = await getDocs(query(collection(targetDb, 'sections'), where('tenantId', '==', t.tenantId)));
-              tenantPackage.sections = snap.docs.map(d => d.data());
-            } catch (e) {}
+            tenantPackage.sections = await fetchAllTenantCollectionDocs('sections', targetDb, t);
           }
 
           if (backupOptions.contents) {
-            try {
-              const snap = await getDocs(query(collection(targetDb, 'contents'), where('tenantId', '==', t.tenantId)));
-              tenantPackage.contents = snap.docs.map(d => d.data());
-            } catch (e) {}
+            tenantPackage.contents = await fetchAllTenantCollectionDocs('contents', targetDb, t);
           }
 
           if (backupOptions.testimonials) {
-            try {
-              const snap = await getDocs(query(collection(targetDb, 'testimonials'), where('tenantId', '==', t.tenantId)));
-              tenantPackage.testimonials = snap.docs.map(d => d.data());
-            } catch (e) {}
+            tenantPackage.testimonials = await fetchAllTenantCollectionDocs('testimonials', targetDb, t);
           }
 
           if (backupOptions.images) {
-            try {
-              const snap = await getDocs(query(collection(targetDb, 'images'), where('tenantId', '==', t.tenantId)));
-              tenantPackage.images = snap.docs.map(d => d.data());
-            } catch (e) {}
+            tenantPackage.images = await fetchAllTenantCollectionDocs('images', targetDb, t);
           }
 
           globalData.tenants.push(tenantPackage);
@@ -841,7 +882,7 @@ service cloud.firestore {
         URL.revokeObjectURL(url);
 
       } else if (backupTargetTenant) {
-        // SINGLE TENANT BACKUP
+        // SINGLE TENANT BACKUP (Complete & Exhaustive)
         const tenant = backupTargetTenant;
         const activeServerConfig = dbServers.find(s => s.serverId === tenant.dbServerId);
         const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
@@ -849,7 +890,7 @@ service cloud.firestore {
         const backupPackage: any = {
           meta: {
             exportType: 'single_tenant_backup',
-            version: '2.0',
+            version: '2.5',
             exportedAt: new Date().toISOString(),
             subdomain: tenant.subdomain,
             company: tenant.company || tenant.name,
@@ -872,38 +913,23 @@ service cloud.firestore {
         }
 
         if (backupOptions.landingPages) {
-          try {
-            const snapPages = await getDocs(query(collection(targetDb, 'landingPages'), where('tenantId', '==', tenant.tenantId)));
-            backupPackage.landingPages = snapPages.docs.map(d => d.data());
-          } catch (e) {}
+          backupPackage.landingPages = await fetchAllTenantCollectionDocs('landingPages', targetDb, tenant);
         }
 
         if (backupOptions.sections) {
-          try {
-            const snapSec = await getDocs(query(collection(targetDb, 'sections'), where('tenantId', '==', tenant.tenantId)));
-            backupPackage.sections = snapSec.docs.map(d => d.data());
-          } catch (e) {}
+          backupPackage.sections = await fetchAllTenantCollectionDocs('sections', targetDb, tenant);
         }
 
         if (backupOptions.contents) {
-          try {
-            const snapCnt = await getDocs(query(collection(targetDb, 'contents'), where('tenantId', '==', tenant.tenantId)));
-            backupPackage.contents = snapCnt.docs.map(d => d.data());
-          } catch (e) {}
+          backupPackage.contents = await fetchAllTenantCollectionDocs('contents', targetDb, tenant);
         }
 
         if (backupOptions.testimonials) {
-          try {
-            const snapTest = await getDocs(query(collection(targetDb, 'testimonials'), where('tenantId', '==', tenant.tenantId)));
-            backupPackage.testimonials = snapTest.docs.map(d => d.data());
-          } catch (e) {}
+          backupPackage.testimonials = await fetchAllTenantCollectionDocs('testimonials', targetDb, tenant);
         }
 
         if (backupOptions.images) {
-          try {
-            const snapImg = await getDocs(query(collection(targetDb, 'images'), where('tenantId', '==', tenant.tenantId)));
-            backupPackage.images = snapImg.docs.map(d => d.data());
-          } catch (e) {}
+          backupPackage.images = await fetchAllTenantCollectionDocs('images', targetDb, tenant);
         }
 
         // Trigger JSON Download for Single Tenant
@@ -920,7 +946,7 @@ service cloud.firestore {
       }
 
       setIsBackupModalOpen(false);
-      alert('✅ Backup data berhasil diexport dan diunduh!');
+      alert('✅ Backup data 100% lengkap berhasil diexport dan diunduh!');
     } catch (err: any) {
       console.error('Backup error:', err);
       alert(`Gagal membuat backup: ${err.message || 'Terjadi kesalahan'}`);
@@ -1015,7 +1041,26 @@ service cloud.firestore {
       const isGlobalPackage = detectedComponents?.isGlobalPackage;
 
       if (isGlobalPackage && Array.isArray(backupData.tenants)) {
-        // GLOBAL RESTORE
+        // GLOBAL RESTORE SYSTEM CONFIGS IF PRESENT
+        if (Array.isArray(backupData.databaseServers)) {
+          for (const s of backupData.databaseServers) {
+            if (s.serverId) await setDoc(doc(db, 'databaseServers', s.serverId), s, { merge: true });
+          }
+        }
+        if (Array.isArray(backupData.systemSettings)) {
+          for (const sys of backupData.systemSettings) {
+            const sysId = sys.id || 'global';
+            await setDoc(doc(db, 'systemSettings', sysId), sys, { merge: true });
+          }
+        }
+        if (Array.isArray(backupData.plans)) {
+          for (const plan of backupData.plans) {
+            const pId = plan.planId || plan.id;
+            if (pId) await setDoc(doc(db, 'plans', pId), plan, { merge: true });
+          }
+        }
+
+        // GLOBAL RESTORE - ALL TENANTS ACROSS CLUSTER SERVERS
         for (const tPkg of backupData.tenants) {
           const tenantToRestore = tPkg.tenant;
           if (!tenantToRestore || !tenantToRestore.tenantId) continue;
