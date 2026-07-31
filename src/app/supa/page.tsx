@@ -511,23 +511,54 @@ service cloud.firestore {
     const processAndSetTenants = () => {
       const tenantMap = new Map<string, Tenant>();
 
-      // 1. Map tenants collection first
+      // 1. Map tenants collection first with robust deduplication by email, tenantId & subdomain
       rawTenants.forEach(t => {
         const emailKey = (t.email || '').toLowerCase().trim();
-        const tenantKey = t.tenantId || emailKey;
-        if (emailKey && !tenantMap.has(emailKey)) {
-          tenantMap.set(emailKey, t);
-        } else if (tenantKey && !tenantMap.has(tenantKey)) {
-          tenantMap.set(tenantKey, t);
+        const tenantKey = t.tenantId;
+        const subKey = (t.subdomain || '').toLowerCase().trim();
+
+        // Determine if this tenant entry already exists in the map
+        const existingKey = Array.from(tenantMap.keys()).find(k => {
+          const item = tenantMap.get(k);
+          if (!item) return false;
+          const matchEmail = emailKey && (item.email || '').toLowerCase().trim() === emailKey;
+          const matchId = tenantKey && item.tenantId === tenantKey;
+          const matchSub = subKey && (item.subdomain || '').toLowerCase().trim() === subKey;
+          return matchEmail || matchId || matchSub;
+        });
+
+        if (existingKey) {
+          // Merge data to preserve active dbServerId
+          const existing = tenantMap.get(existingKey)!;
+          tenantMap.set(existingKey, {
+            ...existing,
+            ...t,
+            dbServerId: t.dbServerId || existing.dbServerId || 'default'
+          });
+        } else {
+          const primaryKey = emailKey || tenantKey || subKey || `tenant_${Date.now()}`;
+          tenantMap.set(primaryKey, { ...t, dbServerId: t.dbServerId || 'default' });
         }
       });
 
       // 2. Map users collection as fallback for any missing tenant profiles
       rawUsers.forEach(u => {
         const emailKey = (u.email || '').toLowerCase().trim();
-        const userKey = u.userId || u.tenantId || emailKey;
-        if (emailKey && !tenantMap.has(emailKey)) {
-          tenantMap.set(emailKey, {
+        const userKey = u.userId || u.tenantId || u.id;
+        const subKey = (u.subdomain || u.readableId || '').toLowerCase().trim();
+
+        const exists = Array.from(tenantMap.keys()).some(k => {
+          const item = tenantMap.get(k);
+          if (!item) return false;
+          const matchEmail = emailKey && (item.email || '').toLowerCase().trim() === emailKey;
+          const matchId = userKey && (item.tenantId === userKey || item.readableId === userKey);
+          const matchSub = subKey && (item.subdomain || '').toLowerCase().trim() === subKey;
+          return matchEmail || matchId || matchSub;
+        });
+
+        if (!exists) {
+          const primaryKey = emailKey || userKey || `user_${Date.now()}`;
+          tenantMap.set(primaryKey, {
             tenantId: u.tenantId || u.userId || u.readableId || u.id,
             readableId: u.readableId || u.email,
             name: u.name || u.email?.split('@')[0] || 'Mitra Baru',
@@ -536,6 +567,7 @@ service cloud.firestore {
             plan: 'free',
             status: 'active',
             subdomain: u.subdomain || u.readableId || u.email?.split('@')[0] || 'mitra',
+            dbServerId: u.dbServerId || 'default',
             visitorCount: 0,
             limits: {
               landingPages: 1,
