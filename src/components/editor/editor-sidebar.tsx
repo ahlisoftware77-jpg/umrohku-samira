@@ -1563,7 +1563,7 @@ export default function EditorSidebar() {
   };
 
   return (
-    <aside className="w-80 h-full border-r bg-white shadow-sm flex flex-col z-30 shrink-0">
+    <aside className="w-full md:w-80 h-full border-r bg-white shadow-sm flex flex-col z-30 shrink-0">
       {/* Editor top controls: Undo/Redo & Save indicator */}
       <div className="h-14 border-b flex items-center justify-between px-4 bg-muted/30">
         <div className="flex gap-2">
@@ -1649,14 +1649,14 @@ export default function EditorSidebar() {
                 </span>
               </div>
 
-              <CardContent className="p-4 flex-1 overflow-y-auto">
+              <CardContent className="p-4 flex-1 overflow-y-auto pb-20 md:pb-4">
                 {renderSectionFields()}
               </CardContent>
             </Card>
           ) : (
             <>
               {/* Sections List */}
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 pb-20 md:pb-2">
                 {/* Preset Website Layout Templates Selector */}
                 <div className="p-3 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10 rounded-2xl space-y-2 mb-3 shadow-sm">
                   <div className="flex items-center justify-between">

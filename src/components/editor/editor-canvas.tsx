@@ -135,7 +135,7 @@ export default function EditorCanvas() {
   return (
     <div 
       style={themeStyles} 
-      className="flex-1 h-full min-h-0 overflow-y-auto bg-muted/20 p-4 md:p-8 flex justify-center scrollbar-thin"
+      className="flex-1 h-full min-h-0 overflow-y-auto bg-muted/20 p-2 md:p-8 pb-20 md:pb-8 flex justify-center scrollbar-thin"
     >
       {/* Dynamic branding overrides for canvas */}
       <style jsx global>{`

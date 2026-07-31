@@ -34,7 +34,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye } from 'lucide-react';
+import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye, PenLine, Monitor } from 'lucide-react';
 import { Tenant, LandingPage, Section, Content, SectionType, SYSTEM_PLANS } from '@/types/cms';
 
 function getReadableIdFromEmail(emailAddress: string): string {
@@ -115,6 +115,9 @@ export default function TenantDashboardPage() {
 
   // Tenant Profile state for displaying dashboard info
   const [tenantProfile, setTenantProfile] = useState<Tenant | null>(null);
+
+  // Mobile responsive tab switcher: 'edit' | 'preview'
+  const [mobileTab, setMobileTab] = useState<'edit' | 'preview'>('edit');
 
   // Handle Sign In / Up
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -782,16 +785,16 @@ export default function TenantDashboardPage() {
   return (
     <div className="h-screen bg-muted/20 flex flex-col overflow-hidden">
       {/* Editor Navbar header */}
-      <header className="h-16 bg-white border-b flex items-center justify-between px-6 z-40 shrink-0">
-        <div className="flex items-center gap-3">
-          <Layout className="h-6 w-6 text-primary" />
-          <h1 className="font-headline font-bold text-lg text-primary">SAMIRA Builder</h1>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md font-bold uppercase">
+      <header className="h-14 md:h-16 bg-white border-b flex items-center justify-between px-3 md:px-6 z-40 shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <Layout className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" />
+          <h1 className="font-headline font-bold text-base md:text-lg text-primary whitespace-nowrap">SAMIRA Builder</h1>
+          <span className="text-[10px] md:text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md font-bold uppercase hidden sm:block">
             {profile?.role}
           </span>
           
           {tenantProfile && (
-            <div className="hidden md:flex items-center gap-3 ml-4 border-l pl-4">
+            <div className="hidden lg:flex items-center gap-3 ml-4 border-l pl-4">
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-slate-800 leading-none">
                   {tenantProfile.name} {tenantProfile.company ? `(${tenantProfile.company})` : ''}
@@ -802,7 +805,7 @@ export default function TenantDashboardPage() {
                   rel="noreferrer"
                   className="text-xs text-primary hover:underline flex items-center gap-1 mt-1 font-medium"
                 >
-                  Lihat Subdomain: umrohku-samira.my.id/{tenantProfile.subdomain}
+                  Lihat: umrohku-samira.my.id/{tenantProfile.subdomain}
                 </a>
               </div>
 
@@ -817,14 +820,14 @@ export default function TenantDashboardPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 md:gap-3">
           {(profile?.role === 'super_admin' || user?.email === 'triyadi72@gmail.com') && (
             <Link href="/supa">
               <Button 
                 variant="outline" 
-                className="rounded-full text-xs font-bold border-amber-500 text-amber-600 hover:bg-amber-500 hover:text-white flex items-center gap-2 h-10 px-5 shadow-sm"
+                className="rounded-full text-xs font-bold border-amber-500 text-amber-600 hover:bg-amber-500 hover:text-white hidden md:flex items-center gap-2 h-9 px-4 shadow-sm"
               >
-                <ShieldCheck className="h-4 w-4" /> Portal Super Admin
+                <ShieldCheck className="h-4 w-4" /> <span className="hidden lg:block">Portal Super Admin</span>
               </Button>
             </Link>
           )}
@@ -833,17 +836,17 @@ export default function TenantDashboardPage() {
             <Button
               onClick={() => setShowShareModal(true)}
               variant="outline"
-              className="rounded-full text-xs font-bold border-primary/30 text-primary hover:bg-primary hover:text-white flex items-center gap-1.5 h-10 px-4 shadow-sm"
+              className="rounded-full text-xs font-bold border-primary/30 text-primary hover:bg-primary hover:text-white hidden sm:flex items-center gap-1.5 h-9 px-3 shadow-sm"
             >
-              <Share2 className="h-4 w-4" /> Bagikan Subdomain
+              <Share2 className="h-4 w-4" /> <span className="hidden lg:block">Bagikan</span>
             </Button>
           )}
 
           <Button 
             onClick={handlePublish}
-            className="bg-primary text-white hover:bg-accent hover:text-accent-foreground font-bold px-6 h-10 rounded-full flex gap-1.5"
+            className="bg-primary text-white hover:bg-accent hover:text-accent-foreground font-bold px-4 md:px-6 h-9 rounded-full flex gap-1.5 text-xs md:text-sm"
           >
-            <Check className="h-4 w-4" /> Terbitkan
+            <Check className="h-4 w-4" /> <span className="hidden sm:block">Terbitkan</span>
           </Button>
 
           {profile?.role !== 'super_admin' && user?.email !== 'triyadi72@gmail.com' && (
@@ -854,16 +857,16 @@ export default function TenantDashboardPage() {
                 setDeletePassword('');
                 setDeleteError('');
               }}
-              className="rounded-full text-xs font-bold border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-1.5 h-10 px-4 shadow-sm"
+              className="rounded-full text-xs font-bold border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hidden md:flex items-center gap-1.5 h-9 px-3 shadow-sm"
             >
-              <Trash2 className="h-4 w-4" /> Hapus Akun
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
           
           <Button 
             variant="ghost" 
             size="icon" 
-            className="rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            className="rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-9 w-9"
             onClick={async () => {
               await signOut(auth);
               if (typeof window !== 'undefined') {
@@ -880,9 +883,51 @@ export default function TenantDashboardPage() {
       </header>
 
       {/* Editor Main Workspace Body */}
-      <div className="flex-1 flex overflow-hidden">
-        <EditorSidebar />
-        <EditorCanvas />
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Sidebar: full screen on mobile when mobileTab='edit', hidden when mobileTab='preview' */}
+        <div className={`
+          h-full flex flex-col
+          md:w-80 md:shrink-0 md:block
+          ${mobileTab === 'edit' ? 'flex w-full' : 'hidden'}
+          md:flex
+        `}>
+          <EditorSidebar />
+        </div>
+
+        {/* Canvas: full screen on mobile when mobileTab='preview', hidden when mobileTab='edit' */}
+        <div className={`
+          h-full flex-1 min-w-0
+          ${mobileTab === 'preview' ? 'flex' : 'hidden'}
+          md:flex
+        `}>
+          <EditorCanvas />
+        </div>
+      </div>
+
+      {/* Mobile Bottom Tab Bar – only visible on mobile/tablet */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg flex">
+        <button
+          onClick={() => setMobileTab('edit')}
+          className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-bold transition-colors ${
+            mobileTab === 'edit'
+              ? 'text-primary bg-primary/5 border-t-2 border-primary'
+              : 'text-muted-foreground hover:bg-muted/50'
+          }`}
+        >
+          <PenLine className="h-5 w-5" />
+          Edit Konten
+        </button>
+        <button
+          onClick={() => setMobileTab('preview')}
+          className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-bold transition-colors ${
+            mobileTab === 'preview'
+              ? 'text-primary bg-primary/5 border-t-2 border-primary'
+              : 'text-muted-foreground hover:bg-muted/50'
+          }`}
+        >
+          <Monitor className="h-5 w-5" />
+          Pratinjau Web
+        </button>
       </div>
 
       {/* Modal Dialog Hapus Akun Mandiri */}
