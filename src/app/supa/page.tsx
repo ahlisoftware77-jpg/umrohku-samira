@@ -121,8 +121,8 @@ export default function SuperAdminPage() {
   const [confirmPinInput, setConfirmPinInput] = useState('');
   const [changePinError, setChangePinError] = useState('');
 
-  // Column Visibility state for Tenant Table
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+  // Column Visibility state for Tenant Table (Persisted in LocalStorage)
+  const defaultColumns = {
     mitra: true,
     userUid: true,
     tenantId: true,
@@ -134,10 +134,28 @@ export default function SuperAdminPage() {
     views: true,
     status: true,
     actions: true,
+  };
+
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('supa_tenant_table_columns');
+      if (saved) {
+        try {
+          return { ...defaultColumns, ...JSON.parse(saved) };
+        } catch (e) {}
+      }
+    }
+    return defaultColumns;
   });
 
   const toggleColumn = (colKey: string) => {
-    setVisibleColumns(prev => ({ ...prev, [colKey]: !prev[colKey] }));
+    setVisibleColumns(prev => {
+      const updated = { ...prev, [colKey]: !prev[colKey] };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('supa_tenant_table_columns', JSON.stringify(updated));
+      }
+      return updated;
+    });
   };
 
   const [isSavingSettings, setIsSavingSettings] = useState(false);
