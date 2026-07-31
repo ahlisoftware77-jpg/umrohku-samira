@@ -64,32 +64,35 @@ export function useTenantResolver(tenantSlug: string) {
         activeTenantId = foundTenant.tenantId;
 
         // Auto-increment visitor counter across dynamic database server cluster
-        if (foundTenant && (foundTenant.tenantId || foundTenant.subdomain)) {
-          const sessionKey = `visited_tenant_${foundTenant.subdomain}`;
-          if (typeof window !== 'undefined' && !sessionStorage.getItem(sessionKey)) {
+        let targetDb = db;
+        if (foundTenant && foundTenant.dbServerId && foundTenant.dbServerId !== 'default') {
+          try {
+            const storedServers = localStorage.getItem('database_servers');
+            if (storedServers) {
+              const servers: any[] = JSON.parse(storedServers);
+              const serverConfig = servers.find(s => s.serverId === foundTenant.dbServerId);
+              if (serverConfig) {
+                targetDb = getDynamicFirebaseInstance(serverConfig).db;
+              }
+            }
+          } catch (e) {}
+        }
+
+        // Handle Visitor Counter Increment
+        if (foundTenant && typeof window !== 'undefined') {
+          const sessionKey = `visited_tenant_${foundTenant.tenantId}`;
+          const alreadyVisited = sessionStorage.getItem(sessionKey);
+          
+          if (!alreadyVisited) {
             sessionStorage.setItem(sessionKey, 'true');
             const newCount = (foundTenant.visitorCount || 0) + 1;
             foundTenant.visitorCount = newCount;
             
             try {
-              let activeDb = db;
-              if (foundTenant.dbServerId && foundTenant.dbServerId !== 'default') {
-                try {
-                  const storedServers = localStorage.getItem('database_servers');
-                  if (storedServers) {
-                    const servers: any[] = JSON.parse(storedServers);
-                    const serverConfig = servers.find(s => s.serverId === foundTenant.dbServerId);
-                    if (serverConfig) {
-                      activeDb = getDynamicFirebaseInstance(serverConfig).db;
-                    }
-                  }
-                } catch (e) {}
-              }
-
               const targetDocId = (foundTenant as any).firestoreDocId || foundTenant.tenantId || foundTenant.subdomain;
               const incrementOp = { visitorCount: increment(1) };
-              await updateDoc(doc(activeDb, 'tenants', targetDocId), incrementOp);
-              if (activeDb !== db) {
+              await updateDoc(doc(targetDb, 'tenants', targetDocId), incrementOp);
+              if (targetDb !== db) {
                 await updateDoc(doc(db, 'tenants', targetDocId), incrementOp).catch(() => {});
               }
             } catch (vErr) {}
@@ -98,7 +101,7 @@ export function useTenantResolver(tenantSlug: string) {
         
         const isDefaultTenant = tenantSlug.toLowerCase() === 'default';
         
-        // Try to fetch custom contact information from contents collection
+        // Try to fetch custom contact information from contents collection using targetDb instance
         let phone = '';
         let address = '';
         let mapEmbedUrl = '';
@@ -106,7 +109,7 @@ export function useTenantResolver(tenantSlug: string) {
         let email = '';
 
         try {
-          const contentsRef = collection(db, 'contents');
+          const contentsRef = collection(targetDb, 'contents');
           const qContent = query(contentsRef, where('tenantId', '==', activeTenantId));
           const contentSnap = await getDocs(qContent);
           
