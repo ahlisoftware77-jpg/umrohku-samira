@@ -226,6 +226,7 @@ export const cmsService = {
     let tenantEmail = 'info@samiratravel.co.id';
     let tenantCompany = 'Mitra Samira Travel';
     let tenantName = 'Mitra';
+    let tenantPhone = '';
     
     try {
       const tenantSnap = await getDoc(tenantDocRef);
@@ -234,6 +235,7 @@ export const cmsService = {
         if (tenantData.email) tenantEmail = tenantData.email;
         if (tenantData.company) tenantCompany = tenantData.company;
         if (tenantData.name) tenantName = tenantData.name;
+        if (tenantData.phone) tenantPhone = tenantData.phone;
       }
     } catch (err) {
       console.error('Failed to pre-fetch tenant details for seeding:', err);
@@ -344,7 +346,7 @@ export const cmsService = {
             badgeText: 'Hubungi Kami & Konsultasi Gratis',
             title: 'Konsultasi Perjalanan Umrah & Haji Anda',
             description: 'Tim konsultan profesional kami siap melayani pertanyaan dan bantuan pendaftaran 24 jam.',
-            phone: '', // Empty phone so they enter their own
+            phone: tenantPhone,
             email: tenantEmail,
             hours: 'Senin - Sabtu: 08.30 - 17.30 WIB',
             address: tenantCompany,

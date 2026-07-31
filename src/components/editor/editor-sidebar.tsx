@@ -1729,21 +1729,28 @@ export default function EditorSidebar() {
                 ))}
               </div>
 
-              {/* Add New Section Controls */}
-              <div className="border-t pt-4 space-y-2">
+              {/* Add New Section Controls (Compact Sleek Dropdown Select) */}
+              <div className="border-t pt-3 space-y-2">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tambah Seksi Baru</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {sectionTypesList.map(item => (
-                    <Button 
-                      key={item.type}
-                      variant="outline"
-                      size="sm" 
-                      onClick={() => addSection(item.type)}
-                      className="text-xs justify-start h-9 rounded-xl border border-muted-foreground/10 hover:bg-primary hover:text-white"
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1" /> {item.label}
-                    </Button>
-                  ))}
+                <div className="flex gap-2">
+                  <select 
+                    id="add-section-select"
+                    defaultValue=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        addSection(e.target.value as SectionType);
+                        e.target.value = '';
+                      }
+                    }}
+                    className="flex-1 h-9 rounded-xl border border-input bg-background px-3 py-1.5 text-xs font-medium text-primary shadow-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="" disabled>-- Pilih Seksi Yang Ingin Ditambahkan --</option>
+                    {sectionTypesList.map(item => (
+                      <option key={item.type} value={item.type}>
+                        + {item.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </>
