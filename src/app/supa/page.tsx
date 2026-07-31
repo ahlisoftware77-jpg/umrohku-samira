@@ -1493,7 +1493,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   <TableHeader>
                     <TableRow>
                       <TableHead>Mitra / Perusahaan</TableHead>
-                      <TableHead>ID Tenant (Firestore)</TableHead>
+                      <TableHead>User UID (Firestore)</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Subdomain</TableHead>
                       <TableHead>Server DB</TableHead>
@@ -1513,7 +1513,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           </div>
                         </TableCell>
                         <TableCell>
-                          <code className="text-xs bg-slate-100 px-2 py-1 rounded-md text-slate-700 font-mono font-bold select-all border border-slate-200 block w-fit">
+                          <code className="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-primary font-mono font-bold select-all border border-slate-200 block w-fit shadow-xs" title="User UID Firebase & Firestore Tenant ID">
                             {t.tenantId}
                           </code>
                         </TableCell>
