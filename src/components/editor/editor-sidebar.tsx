@@ -277,24 +277,57 @@ export default function EditorSidebar() {
               />
             </div>
 
-            <div className="space-y-2 border-t pt-3 mt-3">
+            <div className="space-y-3 border-t pt-3 mt-3">
               <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                <span>Gambar Dokumentasi (Server Media)</span>
+                <span>Galeri Slide Foto (Multi-Gambar)</span>
                 <ImageIcon className="h-3.5 w-3.5 text-accent" />
               </Label>
-              {activeSectionContent.imageUrl && (
-                <div className="relative aspect-video rounded-xl overflow-hidden border bg-muted mb-2">
-                  <img src={activeSectionContent.imageUrl} alt="About Us" className="w-full h-full object-cover" />
-                </div>
-              )}
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => openMediaPicker((url) => handleFieldChange('imageUrl', url))}
-                className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-9"
-              >
-                <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar (Server)
-              </Button>
+
+              {/* Display list of current images in carousel */}
+              {(() => {
+                const currentImages: string[] = Array.isArray(activeSectionContent.images) && activeSectionContent.images.length > 0
+                  ? activeSectionContent.images
+                  : (activeSectionContent.imageUrl ? [activeSectionContent.imageUrl] : []);
+
+                return (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {currentImages.map((imgUrl, imgIdx) => (
+                        <div key={imgIdx} className="relative aspect-video rounded-xl overflow-hidden border bg-muted group">
+                          <img src={imgUrl} alt={`Slide ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = currentImages.filter((_, i) => i !== imgIdx);
+                              handleFieldChange('images', updated);
+                              if (updated.length > 0) handleFieldChange('imageUrl', updated[0]);
+                              else handleFieldChange('imageUrl', '');
+                            }}
+                            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                            title="Hapus foto ini"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => openMediaPicker((url) => {
+                        const newUrls = Array.isArray(url) ? url : [url];
+                        const updated = [...currentImages, ...newUrls];
+                        handleFieldChange('images', updated);
+                        if (updated.length > 0) handleFieldChange('imageUrl', updated[0]);
+                      })}
+                      className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-9"
+                    >
+                      <Upload className="h-3.5 w-3.5" /> + Tambah Slide Foto (Multi-Select)
+                    </Button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );

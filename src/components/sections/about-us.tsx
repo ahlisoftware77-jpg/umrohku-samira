@@ -73,11 +73,13 @@ export default function AboutUs({ data }: { data?: Record<string, any> }) {
     { src: '/images/b2.jpeg', alt: 'Dokumentasi Samira 2' }
   ];
 
-  const aboutImages = data?.imageUrl
-    ? [{ src: data.imageUrl, alt: 'Dokumentasi About Us' }]
-    : (data?.images && Array.isArray(data.images) && data.images.length > 0
-        ? data.images.map((src: string, idx: number) => ({ src, alt: `Slide ${idx + 1}` }))
-        : defaultImages);
+  const rawImages: string[] = Array.isArray(data?.images) && data.images.length > 0
+    ? data.images
+    : (data?.imageUrl ? [data.imageUrl] : []);
+
+  const aboutImages = rawImages.length > 0
+    ? rawImages.map((src: string, idx: number) => ({ src, alt: `Dokumentasi ${idx + 1}` }))
+    : defaultImages;
 
   React.useEffect(() => {
     setIsMounted(true);
