@@ -427,12 +427,14 @@ export const useCmsStore = create<CmsState>((set, get) => {
         });
 
         // 4. Save contents
-        // IMPORTANT: Filter out Data URLs (base64) from array fields before saving.
-        // Data URLs can be hundreds of KB each and will cause Firestore 1MB doc size errors.
-        // They are already stored separately in the 'images' collection.
+        // IMPORTANT: Filter out Data URLs (base64) from array fields & flatten any nested arrays before saving.
+        // Nested arrays cause Firestore WriteBatch.set() to crash with invalid data error.
         const sanitizeValue = (value: any): any => {
           if (Array.isArray(value)) {
-            const filtered = value.filter((item: any) => {
+            // Flat 1D array by recursively unwrapping nested arrays
+            const flat = value.flat(Infinity);
+            const filtered = flat.filter((item: any) => {
+              if (item === undefined || item === null) return false;
               if (typeof item === 'string' && item.startsWith('data:')) return false; // strip Data URLs
               return true;
             });
