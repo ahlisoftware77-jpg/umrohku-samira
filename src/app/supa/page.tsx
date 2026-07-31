@@ -58,7 +58,8 @@ import {
   SlidersHorizontal,
   CheckSquare,
   Square,
-  Search
+  Search,
+  Calendar
 } from 'lucide-react';
 import { Tenant, TenantPlan, TenantStatus, SYSTEM_PLANS, DatabaseServerConfig, BuilderPlan } from '@/types/cms';
 
@@ -133,6 +134,7 @@ export default function SuperAdminPage() {
     serverDb: true,
     paket: true,
     views: true,
+    createdAt: true,
     status: true,
     actions: true,
   };
@@ -1633,6 +1635,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                         { key: 'serverDb', label: 'Server DB' },
                         { key: 'paket', label: 'Paket' },
                         { key: 'views', label: 'Pengunjung (Views)' },
+                        { key: 'createdAt', label: 'Tgl Pendaftaran' },
                         { key: 'status', label: 'Status' },
                         { key: 'actions', label: 'Aksi Kontrol' },
                       ].map(col => (
@@ -1681,6 +1684,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       {visibleColumns.serverDb && <TableHead>Server DB</TableHead>}
                       {visibleColumns.paket && <TableHead>Paket</TableHead>}
                       {visibleColumns.views && <TableHead>Pengunjung (Views)</TableHead>}
+                      {visibleColumns.createdAt && <TableHead>Tgl Pendaftaran</TableHead>}
                       {visibleColumns.status && <TableHead>Status</TableHead>}
                       {visibleColumns.actions && <TableHead className="text-right">Aksi Kontrol</TableHead>}
                     </TableRow>
@@ -1775,6 +1779,20 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           <TableCell className="text-sm font-extrabold text-primary">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                               <Eye className="h-3.5 w-3.5 text-amber-500" /> {(t.visitorCount || 0).toLocaleString()}
+                            </span>
+                          </TableCell>
+                        )}
+                        {visibleColumns.createdAt && (
+                          <TableCell className="text-xs text-slate-600 font-medium whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1 bg-slate-100/80 px-2.5 py-1 rounded-md border border-slate-200">
+                              <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                              {t.createdAt 
+                                ? new Date((t.createdAt as any)?.seconds ? (t.createdAt as any).seconds * 1000 : t.createdAt).toLocaleDateString('id-ID', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })
+                                : '-'}
                             </span>
                           </TableCell>
                         )}
