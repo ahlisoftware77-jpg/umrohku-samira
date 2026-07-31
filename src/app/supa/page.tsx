@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuthHandler } from '@/hooks/useAuth';
-import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
+import { auth, db, getDynamicFirebaseInstance } from '@/lib/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { 
   collection, 
   getDocs, 
@@ -629,9 +630,21 @@ service cloud.firestore {
     }
   };
 
-  // Handle Reset Password (simulated/triggers alert)
-  const handleResetPassword = (tenant: Tenant) => {
-    alert(`Tautan reset sandi akun ${tenant.email} telah diproses (Wrappers Auth).`);
+  // Handle Reset Password Email Trigger
+  const handleResetPassword = async (tenant: Tenant) => {
+    if (!tenant.email) {
+      alert('Email tenant tidak valid.');
+      return;
+    }
+    if (!confirm(`Kirim email reset kata sandi resmi Firebase ke "${tenant.email}"?`)) return;
+
+    try {
+      await sendPasswordResetEmail(auth, tenant.email);
+      alert(`✅ Tautan reset kata sandi telah berhasil dikirim oleh Firebase ke email: ${tenant.email}`);
+    } catch (err: any) {
+      console.error('Reset password error:', err);
+      alert(`Gagal mengirim email reset: ${err.message || 'Terjadi kesalahan'}`);
+    }
   };
 
   // Handle Tenant Database Backup Export (JSON Download)
