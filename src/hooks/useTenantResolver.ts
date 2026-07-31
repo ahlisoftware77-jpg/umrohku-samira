@@ -64,17 +64,31 @@ export function useTenantResolver(tenantSlug: string) {
         activeTenantId = foundTenant.tenantId;
 
         // Auto-increment visitor counter once per browser session per subdomain
-        if (foundTenant.tenantId) {
+        if (foundTenant && (foundTenant.tenantId || foundTenant.subdomain)) {
           const sessionKey = `visited_tenant_${foundTenant.subdomain}`;
           if (typeof window !== 'undefined' && !sessionStorage.getItem(sessionKey)) {
             sessionStorage.setItem(sessionKey, 'true');
             const newCount = (foundTenant.visitorCount || 0) + 1;
             foundTenant.visitorCount = newCount;
+            
             try {
-              await updateDoc(doc(db, 'tenants', foundTenant.tenantId), {
+              // Try updating by primary doc ID or query by subdomain
+              const targetDocId = foundTenant.tenantId || foundTenant.subdomain;
+              await updateDoc(doc(db, 'tenants', targetDocId), {
                 visitorCount: increment(1)
               });
-            } catch (vErr) {}
+            } catch (vErr) {
+              // Fallback query update if primary doc ID update fails
+              try {
+                const qSub = query(collection(db, 'tenants'), where('subdomain', '==', foundTenant.subdomain));
+                const snapSub = await getDocs(qSub);
+                if (!snapSub.empty) {
+                  await updateDoc(doc(db, 'tenants', snapSub.docs[0].id), {
+                    visitorCount: increment(1)
+                  });
+                }
+              } catch (e) {}
+            }
           }
         }
         

@@ -104,11 +104,15 @@ export default function DynamicTenantPage({ params }: PageProps) {
         const validTenant: Tenant = foundTenant;
         setTenantData(validTenant);
 
-        // Increment visitor count
+        // Auto-increment visitor counter once per browser session
         try {
-          updateDoc(doc(db, 'tenants', validTenant.tenantId), {
-            views: increment(1)
-          }).catch(() => {});
+          const sessionKey = `visited_tenant_${validTenant.subdomain}`;
+          if (typeof window !== 'undefined' && !sessionStorage.getItem(sessionKey)) {
+            sessionStorage.setItem(sessionKey, 'true');
+            updateDoc(doc(db, 'tenants', validTenant.tenantId), {
+              visitorCount: increment(1)
+            }).catch(() => {});
+          }
         } catch (vErr) {}
 
         // 2. Fetch landingPage document for ANY of possibleTenantIds
