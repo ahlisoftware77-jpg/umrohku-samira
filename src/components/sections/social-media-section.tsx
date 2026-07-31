@@ -2,7 +2,17 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Facebook, Instagram, Youtube, Send, Share2, Sparkles, MessageCircle } from 'lucide-react';
+import { 
+  Facebook, 
+  Instagram, 
+  Youtube, 
+  Send, 
+  Sparkles, 
+  MessageCircle, 
+  Users, 
+  ArrowUpRight, 
+  Flame 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SocialMediaSectionProps {
@@ -11,67 +21,82 @@ interface SocialMediaSectionProps {
 
 export default function SocialMediaSection({ data }: SocialMediaSectionProps) {
   const badgeText = data?.badgeText || 'Komunitas & Media Sosial';
-  const title = data?.title || 'Terhubung Bersama Kami di Media Sosial';
-  const description = data?.description || 'Dapatkan informasi terbaru mengenai jadwal keberangkatan, galeri kegiatan jamaah, tips ibadah umrah & haji, serta promo spesial langsung dari media sosial kami.';
+  const title = data?.title || 'Bergabung dalam Komunitas & Media Sosial';
+  const description = data?.description || 'Dapatkan informasi jadwal keberangkatan terbaru, kajian singkat, galeri momen Tanah Suci, serta kesempatan berkonsultasi langsung dengan jamaah & alumni.';
 
   const socials = [
     {
-      name: 'Facebook',
-      url: data?.facebookUrl || 'https://facebook.com',
-      icon: <Facebook className="w-6 h-6" />,
-      color: 'from-blue-600 to-blue-800 text-white',
-      bgLight: 'bg-blue-50 text-blue-600 border-blue-200',
-      handle: '@samiratravel'
+      name: 'WhatsApp Group',
+      category: 'Komunitas VIP',
+      url: data?.whatsappUrl || data?.whatsappGroup || 'https://wa.me/6283815862300',
+      icon: <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />,
+      color: 'from-emerald-500 to-green-600 text-white',
+      badge: '25K+ Jamaah',
+      badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      handle: 'Grup WA Jamaah',
+      desc: 'Info jadwal & konsultasi langsung'
     },
     {
       name: 'Instagram',
+      category: 'Galeri Visual',
       url: data?.instagramUrl || 'https://instagram.com',
-      icon: <Instagram className="w-6 h-6" />,
+      icon: <Instagram className="w-5 h-5 sm:w-6 sm:h-6" />,
       color: 'from-pink-500 via-purple-500 to-orange-400 text-white',
-      bgLight: 'bg-pink-50 text-pink-600 border-pink-200',
-      handle: '@samiratravel_official'
+      badge: 'Official HD',
+      badgeColor: 'bg-pink-100 text-pink-800 border-pink-300',
+      handle: '@samiratravel_official',
+      desc: 'Foto & Reel dokumentasi harian'
     },
     {
       name: 'TikTok',
+      category: 'Video Singkat',
       url: data?.tiktokUrl || 'https://tiktok.com',
       icon: (
-        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6 fill-current" viewBox="0 0 24 24">
           <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.82.56-1.33 1.52-1.33 2.52.01.95.49 1.88 1.27 2.41 1.05.73 2.51.72 3.53-.05.74-.54 1.19-1.42 1.25-2.35.05-3.64.01-7.29.02-10.93z"/>
         </svg>
       ),
-      color: 'from-gray-900 to-black text-white',
-      bgLight: 'bg-gray-100 text-gray-900 border-gray-300',
-      handle: '@samiratravel'
+      color: 'from-gray-900 via-slate-800 to-black text-white',
+      badge: 'Trending',
+      badgeColor: 'bg-gray-100 text-gray-800 border-gray-300',
+      handle: '@samiratravel',
+      desc: 'Liputan kegiatan & tips umrah'
     },
     {
       name: 'YouTube',
+      category: 'Dokumenter',
       url: data?.youtubeUrl || 'https://youtube.com',
-      icon: <Youtube className="w-6 h-6" />,
+      icon: <Youtube className="w-5 h-5 sm:w-6 sm:h-6" />,
       color: 'from-red-600 to-rose-700 text-white',
-      bgLight: 'bg-red-50 text-red-600 border-red-200',
-      handle: 'Samira Travel Official'
+      badge: 'Vlog Full HD',
+      badgeColor: 'bg-red-100 text-red-800 border-red-300',
+      handle: 'Samira Travel Official',
+      desc: 'Manasik lengkap & kajian religi'
     },
     {
-      name: 'Telegram / Komunitas',
+      name: 'Telegram Channel',
+      category: 'Kajian & Broadcast',
       url: data?.telegramUrl || 'https://t.me',
-      icon: <Send className="w-6 h-6" />,
-      color: 'from-sky-500 to-blue-500 text-white',
-      bgLight: 'bg-sky-50 text-sky-600 border-sky-200',
-      handle: 'Channel Sahabat Samira'
+      icon: <Send className="w-5 h-5 sm:w-6 sm:h-6" />,
+      color: 'from-sky-500 to-blue-600 text-white',
+      badge: 'Broadcast',
+      badgeColor: 'bg-sky-100 text-sky-800 border-sky-300',
+      handle: 'Sahabat Samira Travel',
+      desc: 'Pengumuman promo & doa harian'
     }
   ];
 
   return (
-    <section id="sosmed" className="py-16 md:py-24 bg-gradient-to-b from-white via-slate-50/50 to-white overflow-hidden relative">
-      <div className="container mx-auto px-4 relative z-10">
+    <section id="sosmed" className="py-14 sm:py-20 md:py-28 bg-gradient-to-b from-slate-50/80 via-white to-slate-50/80 overflow-hidden relative w-full max-w-full">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-6xl relative z-10">
         
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-12 md:mb-16">
           <motion.span 
             initial={{ opacity: 0, y: -10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4"
+            className="inline-flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/20 px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-3 shadow-2xs"
           >
             <Sparkles className="w-3.5 h-3.5 text-accent" /> {badgeText}
           </motion.span>
@@ -80,7 +105,7 @@ export default function SocialMediaSection({ data }: SocialMediaSectionProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-3xl md:text-5xl font-headline font-extrabold text-primary mb-4 leading-tight"
+            className="text-2xl sm:text-4xl md:text-5xl font-headline font-extrabold text-primary mb-3 leading-tight"
           >
             {title}
           </motion.h2>
@@ -89,14 +114,61 @@ export default function SocialMediaSection({ data }: SocialMediaSectionProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="text-muted-foreground text-sm md:text-base leading-relaxed"
+            className="text-muted-foreground text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl mx-auto font-medium"
           >
             {description}
           </motion.p>
         </div>
 
-        {/* Social Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+        {/* ── BANNER BANNER KOMUNITAS UTAMA (VIP COMMUNITY BANNER) ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-8 sm:mb-12 bg-gradient-to-r from-primary via-[#0f3057] to-primary rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-white relative overflow-hidden shadow-xl border border-primary/40"
+        >
+          {/* Subtle background glows */}
+          <div className="absolute -top-24 -right-24 w-72 h-72 bg-accent/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className="bg-accent text-accent-foreground font-extrabold text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
+                  <Flame className="w-3 h-3" /> Komunitas VIP Jamaah
+                </span>
+                <span className="bg-white/10 backdrop-blur-md text-white/90 text-[10px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <Users className="w-3 h-3 text-emerald-400" /> 25.000+ Member Aktif
+                </span>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-headline font-extrabold text-white mb-2 leading-tight">
+                Bergabung dalam Komunitas WhatsApp & Telegram Jamaah
+              </h3>
+              <p className="text-white/80 text-xs sm:text-sm font-light leading-relaxed">
+                Dapatkan broadcast jadwal manasik, panduan doa Umrah/Haji harian, info kuota promo langsung, serta tempat silaturahmi sesama alumni jamaah.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto shrink-0">
+              <Button asChild className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-xs sm:text-sm h-11 px-5 rounded-xl shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-emerald-700 transition-all border border-emerald-400/40">
+                <a href={data?.whatsappUrl || data?.whatsappGroup || 'https://wa.me/6283815862300'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
+                  <MessageCircle className="w-4 h-4" /> Join Grup WA Jamaah
+                </a>
+              </Button>
+
+              <Button asChild variant="outline" className="bg-white/10 text-white hover:bg-white/20 border-white/20 font-bold text-xs sm:text-sm h-11 px-4 rounded-xl transition-all">
+                <a href={data?.telegramUrl || 'https://t.me'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
+                  <Send className="w-4 h-4" /> Telegram Channel
+                </a>
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── GRID CHANNEL MEDIA SOSIAL (FLEXIBLE RESPONSIVE CARDS) ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4 md:gap-6">
           {socials.map((item, index) => (
             <motion.a
               key={index}
@@ -106,30 +178,36 @@ export default function SocialMediaSection({ data }: SocialMediaSectionProps) {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="group relative bg-white rounded-3xl p-6 border border-border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between overflow-hidden"
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              className="group relative bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-slate-200/80 shadow-2xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer hover:border-primary/40"
             >
-              <div className="flex items-center justify-between mb-6">
-                <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${item.color} shadow-md group-hover:scale-110 transition-transform duration-300`}>
+              {/* Top Row: Icon & Badge */}
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className={`p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br ${item.color} shadow-md group-hover:scale-110 transition-transform duration-300 shrink-0`}>
                   {item.icon}
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 group-hover:bg-primary group-hover:text-white transition-colors">
-                  Ikuti
+                <span className={`text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${item.badgeColor} truncate shrink-0`}>
+                  {item.badge}
                 </span>
               </div>
 
-              <div>
-                <h3 className="font-headline font-bold text-base text-primary mb-1 group-hover:text-accent transition-colors">
+              {/* Channel Info */}
+              <div className="mb-3">
+                <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">
+                  {item.category}
+                </span>
+                <h4 className="font-headline font-extrabold text-xs sm:text-base text-primary leading-tight group-hover:text-accent transition-colors truncate">
                   {item.name}
-                </h3>
-                <p className="text-xs text-muted-foreground truncate">
+                </h4>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5 font-medium">
                   {item.handle}
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-primary opacity-80 group-hover:opacity-100">
-                <span>Kunjungi Profil</span>
-                <Share2 className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              {/* Bottom Visit Link */}
+              <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] sm:text-xs font-bold text-primary opacity-80 group-hover:opacity-100 transition-opacity">
+                <span>Kunjungi</span>
+                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </div>
             </motion.a>
           ))}
