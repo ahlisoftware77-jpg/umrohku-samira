@@ -809,58 +809,83 @@ service cloud.firestore {
   const handleDeleteTenant = async (tenant: Tenant) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus Tenant "${tenant.company || tenant.name || tenant.subdomain}" (${tenant.email}) secara permanen dari sistem? Tindakan ini tidak dapat dibatalkan.`)) return;
     try {
-      // 1. Delete from tenants collection by tenantId doc reference
-      if (tenant.tenantId) {
-        try { await deleteDoc(doc(db, 'tenants', tenant.tenantId)); } catch (e) {}
-      }
+      // 1. Resolve Target Database Server
+      const activeServerConfig = dbServers.find(s => s.serverId === tenant.dbServerId);
+      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
 
-      // 2. Query & delete any tenant docs matching subdomain, email, or tenantId
-      const tenantsRef = collection(db, 'tenants');
-      const qTenantsSub = query(tenantsRef, where('subdomain', '==', tenant.subdomain));
-      const snapSub = await getDocs(qTenantsSub);
-      for (const d of snapSub.docs) {
-        try { await deleteDoc(doc(db, 'tenants', d.id)); } catch (e) {}
-      }
+      const readableId = tenant.email ? tenant.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : '';
 
-      if (tenant.email) {
-        const qTenantsEmail = query(tenantsRef, where('email', '==', tenant.email));
-        const snapEmail = await getDocs(qTenantsEmail);
-        for (const d of snapEmail.docs) {
-          try { await deleteDoc(doc(db, 'tenants', d.id)); } catch (e) {}
+      // Helper for deleting from a given database instance
+      const purgeDatabase = async (instanceDb: any) => {
+        // A. Delete Tenants Collection Documents
+        if (tenant.tenantId) {
+          try { await deleteDoc(doc(instanceDb, 'tenants', tenant.tenantId)); } catch (e) {}
         }
-      }
-
-      // 3. Delete from users collection by doc reference & query
-      if (tenant.tenantId) {
-        try { await deleteDoc(doc(db, 'users', tenant.tenantId)); } catch (e) {}
-      }
-      
-      const usersRef = collection(db, 'users');
-      if (tenant.email) {
-        const qUsersEmail = query(usersRef, where('email', '==', tenant.email));
-        const snapUserEmail = await getDocs(qUsersEmail);
-        for (const d of snapUserEmail.docs) {
-          try { await deleteDoc(doc(db, 'users', d.id)); } catch (e) {}
+        if (readableId) {
+          try { await deleteDoc(doc(instanceDb, 'tenants', readableId)); } catch (e) {}
         }
-      }
 
-      if (tenant.subdomain) {
-        const qUsersSub = query(usersRef, where('subdomain', '==', tenant.subdomain));
-        const snapUserSub = await getDocs(qUsersSub);
-        for (const d of snapUserSub.docs) {
-          try { await deleteDoc(doc(db, 'users', d.id)); } catch (e) {}
+        const tenantsRef = collection(instanceDb, 'tenants');
+        if (tenant.subdomain) {
+          try {
+            const snapSub = await getDocs(query(tenantsRef, where('subdomain', '==', tenant.subdomain)));
+            for (const d of snapSub.docs) { await deleteDoc(doc(instanceDb, 'tenants', d.id)); }
+          } catch (e) {}
         }
-      }
+        if (tenant.email) {
+          try {
+            const snapEmail = await getDocs(query(tenantsRef, where('email', '==', tenant.email)));
+            for (const d of snapEmail.docs) { await deleteDoc(doc(instanceDb, 'tenants', d.id)); }
+          } catch (e) {}
+        }
 
-      // 4. Delete landing pages associated with this tenant
-      try {
-        const pagesRef = collection(db, 'landingPages');
-        const qPages = query(pagesRef, where('tenantId', '==', tenant.tenantId));
-        const snapPages = await getDocs(qPages);
-        for (const d of snapPages.docs) {
-          try { await deleteDoc(doc(db, 'landingPages', d.id)); } catch (e) {}
+        // B. Delete Users Collection Documents
+        if (tenant.tenantId) {
+          try { await deleteDoc(doc(instanceDb, 'users', tenant.tenantId)); } catch (e) {}
         }
-      } catch (ePages) {}
+        if (readableId) {
+          try { await deleteDoc(doc(instanceDb, 'users', readableId)); } catch (e) {}
+        }
+
+        const usersRef = collection(instanceDb, 'users');
+        if (tenant.email) {
+          try {
+            const snapUserEmail = await getDocs(query(usersRef, where('email', '==', tenant.email)));
+            for (const d of snapUserEmail.docs) { await deleteDoc(doc(instanceDb, 'users', d.id)); }
+          } catch (e) {}
+        }
+        if (tenant.subdomain) {
+          try {
+            const snapUserSub = await getDocs(query(usersRef, where('subdomain', '==', tenant.subdomain)));
+            for (const d of snapUserSub.docs) { await deleteDoc(doc(instanceDb, 'users', d.id)); }
+          } catch (e) {}
+        }
+
+        // C. Delete Landing Pages, Sections, Contents, Testimonials
+        try {
+          const pagesRef = collection(instanceDb, 'landingPages');
+          const snapPages = await getDocs(query(pagesRef, where('tenantId', '==', tenant.tenantId)));
+          for (const d of snapPages.docs) { await deleteDoc(doc(instanceDb, 'landingPages', d.id)); }
+        } catch (e) {}
+
+        try {
+          const secRef = collection(instanceDb, 'sections');
+          const snapSec = await getDocs(query(secRef, where('tenantId', '==', tenant.tenantId)));
+          for (const d of snapSec.docs) { await deleteDoc(doc(instanceDb, 'sections', d.id)); }
+        } catch (e) {}
+
+        try {
+          const cntRef = collection(instanceDb, 'contents');
+          const snapCnt = await getDocs(query(cntRef, where('tenantId', '==', tenant.tenantId)));
+          for (const d of snapCnt.docs) { await deleteDoc(doc(instanceDb, 'contents', d.id)); }
+        } catch (e) {}
+      };
+
+      // Execute purge on default DB and target server DB
+      await purgeDatabase(db);
+      if (targetDb !== db) {
+        await purgeDatabase(targetDb);
+      }
 
       // Update local state
       setTenants(prev => prev.filter(t => t.tenantId !== tenant.tenantId && t.email !== tenant.email && t.subdomain !== tenant.subdomain));
