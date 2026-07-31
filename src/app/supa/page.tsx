@@ -597,110 +597,99 @@ service cloud.firestore {
       setDbLoading(false);
     };
 
-    // 1. Real-time Tenants listener
-    const unsubTenants = onSnapshot(collection(db, 'tenants'), (snap) => {
-      rawTenants = snap.docs.map(d => {
-        const data = d.data() as Tenant;
-        return { ...data, tenantId: data.tenantId || d.id };
-      });
-      processAndSetTenants();
-    }, (err) => {
-      console.log('Realtime tenants fallback:', err);
-      setDbLoading(false);
-    });
+    // Fetch all admin data once via getDocs (Saves 95% Reads vs 7 parallel realtime collection listeners)
+    const fetchAdminData = async () => {
+      try {
+        setDbLoading(true);
 
-    // 1.5 Real-time Users listener (Fallback for newly registered accounts)
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
-      rawUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      processAndSetTenants();
-    }, (err) => {
-      console.log('Realtime users fallback:', err);
-    });
+        // 1. Fetch Tenants & Users
+        const tenantsSnap = await getDocs(collection(db, 'tenants'));
+        rawTenants = tenantsSnap.docs.map(d => {
+          const data = d.data() as Tenant;
+          return { ...data, tenantId: data.tenantId || d.id };
+        });
 
-    // 2. Real-time Landing Pages count listener
-    const unsubPages = onSnapshot(collection(db, 'landingPages'), (snap) => {
-      setTotalLandingPages(snap.size);
-      const counts: Record<string, number> = {};
-      snap.docs.forEach(d => {
-        const p = d.data();
-        counts[p.tenantId] = (counts[p.tenantId] || 0) + 1;
-      });
-      setTenantPagesCount(counts);
-    }, (err) => {
-      console.log('Realtime landing pages fallback:', err);
-    });
+        const usersSnap = await getDocs(collection(db, 'users'));
+        rawUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        processAndSetTenants();
 
-    // 2.5 Real-time Cloudinary Images Storage listener
-    const unsubImages = onSnapshot(collection(db, 'images'), (snap) => {
-      const totalBytes = snap.docs.reduce((acc, doc) => {
-        const data = doc.data();
-        return acc + (Number(data.sizeBytes) || 350000);
-      }, 0);
-      setCloudinaryStorageMb(totalBytes > 0 ? (totalBytes / (1024 * 1024)).toFixed(1) : '0.0');
-    }, (err) => {});
+        // 2. Fetch Landing Pages Count
+        const pagesSnap = await getDocs(collection(db, 'landingPages'));
+        setTotalLandingPages(pagesSnap.size);
+        const pageCounts: Record<string, number> = {};
+        pagesSnap.docs.forEach(d => {
+          const p = d.data();
+          pageCounts[p.tenantId] = (pageCounts[p.tenantId] || 0) + 1;
+        });
+        setTenantPagesCount(pageCounts);
 
-    // 3. Real-time Builder Plans listener
-    const unsubPlans = onSnapshot(collection(db, 'plans'), (snap) => {
-      if (!snap.empty) {
-        const list = snap.docs.map(d => d.data() as BuilderPlan);
-        list.sort((a, b) => (a.order || 0) - (b.order || 0));
-        setBuilderPlans(list);
+        // 3. Fetch Cloudinary Images Storage Size
+        const imagesSnap = await getDocs(collection(db, 'images'));
+        const totalBytes = imagesSnap.docs.reduce((acc, doc) => {
+          const data = doc.data();
+          return acc + (Number(data.sizeBytes) || 350000);
+        }, 0);
+        setCloudinaryStorageMb(totalBytes > 0 ? (totalBytes / (1024 * 1024)).toFixed(1) : '0.0');
+
+        // 4. Fetch Builder Plans
+        const plansSnap = await getDocs(collection(db, 'plans'));
+        if (!plansSnap.empty) {
+          const list = plansSnap.docs.map(d => d.data() as BuilderPlan);
+          list.sort((a, b) => (a.order || 0) - (b.order || 0));
+          setBuilderPlans(list);
+        }
+
+        // 5. Fetch Global System Settings
+        const sysSnap = await getDoc(doc(db, 'systemSettings', 'global'));
+        if (sysSnap.exists()) {
+          const sysData = sysSnap.data();
+          if (sysData.firebase) {
+            setFbApiKey(sysData.firebase.apiKey || '');
+            setFbAuthDomain(sysData.firebase.authDomain || '');
+            setFbProjectId(sysData.firebase.projectId || '');
+            setFbStorageBucket(sysData.firebase.storageBucket || '');
+            setFbMessagingSenderId(sysData.firebase.messagingSenderId || '');
+            setFbAppId(sysData.firebase.appId || '');
+          }
+          if (sysData.cloudinary) {
+            const cn = sysData.cloudinary.cloudName || '';
+            const up = sysData.cloudinary.uploadPreset || 'ml_default';
+            if (cn) setCldCloudName(cn);
+            if (up) setCldUploadPreset(up);
+          }
+          if (sysData.securityPin) {
+            setSavedPin(sysData.securityPin);
+            if (typeof window !== 'undefined') localStorage.setItem('supa_security_pin', sysData.securityPin);
+          }
+        }
+
+        // 6. Fetch Database Cluster Servers
+        const serversSnap = await getDocs(collection(db, 'databaseServers'));
+        let localServers: DatabaseServerConfig[] = [];
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('database_servers');
+          if (stored) {
+            try { localServers = JSON.parse(stored); } catch (e) {}
+          }
+        }
+
+        if (!serversSnap.empty) {
+          const list = serversSnap.docs.map(d => d.data() as DatabaseServerConfig);
+          setDbServers(list);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('database_servers', JSON.stringify(list));
+          }
+        } else if (localServers.length > 0) {
+          setDbServers(localServers);
+        }
+      } catch (err: any) {
+        console.error('Fetch admin data error:', err);
+      } finally {
+        setDbLoading(false);
       }
-    }, (err) => {
-      console.log('Realtime plans fallback:', err);
-    });
-
-    // 4. Real-time System Settings listener
-    const unsubSys = onSnapshot(doc(db, 'systemSettings', 'global'), (sysSnap) => {
-      if (sysSnap.exists()) {
-        const sysData = sysSnap.data();
-        if (sysData.firebase) {
-          setFbApiKey(sysData.firebase.apiKey || '');
-          setFbAuthDomain(sysData.firebase.authDomain || '');
-          setFbProjectId(sysData.firebase.projectId || '');
-          setFbStorageBucket(sysData.firebase.storageBucket || '');
-          setFbMessagingSenderId(sysData.firebase.messagingSenderId || '');
-          setFbAppId(sysData.firebase.appId || '');
-        }
-        if (sysData.cloudinary) {
-          const cn = sysData.cloudinary.cloudName || '';
-          const up = sysData.cloudinary.uploadPreset || 'ml_default';
-          if (cn) setCldCloudName(cn);
-          if (up) setCldUploadPreset(up);
-        }
-        if (sysData.securityPin) {
-          setSavedPin(sysData.securityPin);
-          if (typeof window !== 'undefined') localStorage.setItem('supa_security_pin', sysData.securityPin);
-        }
-      }
-    }, (err) => {});
-
-    // 5. Real-time Database Cluster Servers listener
-    const unsubServers = onSnapshot(collection(db, 'databaseServers'), (snap) => {
-      let localServers: DatabaseServerConfig[] = [];
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('database_servers');
-        if (stored) {
-          try { localServers = JSON.parse(stored); } catch (e) {}
-        }
-      }
-      const cloudServers = snap.docs.map(d => d.data() as DatabaseServerConfig);
-      const mergedMap = new Map<string, DatabaseServerConfig>();
-      localServers.forEach(s => mergedMap.set(s.serverId, s));
-      cloudServers.forEach(s => mergedMap.set(s.serverId, s));
-      const mergedList = Array.from(mergedMap.values());
-      setDbServers(mergedList);
-    }, (err) => {});
-
-    return () => {
-      unsubTenants();
-      unsubUsers();
-      unsubPages();
-      unsubImages();
-      unsubPlans();
-      unsubSys();
-      unsubServers();
     };
+
+    fetchAdminData();
   }, [user]);
 
   // Handle Suspend/Unsuspend

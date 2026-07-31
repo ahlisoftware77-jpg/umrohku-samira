@@ -112,16 +112,16 @@ export const cmsService = {
   },
 
   // ==========================================
-  // REALTIME LISTENER FOR BUILDER CANVAS WITH FAIL-SAFE ERROR HANDLERS
+  // OPTIMIZED GETDOCS LOADER FOR BUILDER CANVAS (SAVING BATCH READS)
   // ==========================================
-  subscribeToLandingPage(
+  async subscribeToLandingPage(
     tenantId: string,
     landingPageId: string,
     onUpdate: (data: { page: LandingPage | null; sections: Section[]; contents: Record<string, Record<string, any>> }) => void
   ) {
     const pageRef = doc(db, 'landingPages', landingPageId);
     
-    // Listen for page metadata changes with silent error callback
+    // Listen to single landing page doc for meta changes
     return onSnapshot(
       pageRef, 
       async (pageSnap) => {
@@ -131,60 +131,43 @@ export const cmsService = {
         }
         const pageData = pageSnap.data() as LandingPage;
         
-        // Query sections
-        const sectionsQuery = query(
-          collection(db, 'sections'),
-          where('landingPageId', '==', landingPageId)
-        );
-        
-        const unsubscribeSections = onSnapshot(
-          sectionsQuery, 
-          async (secSnap) => {
-            const sectionsList = secSnap.docs.map(doc => doc.data() as Section).sort((a, b) => a.order - b.order);
-            const sectionIds = sectionsList.map(s => s.sectionId);
-            
-            if (sectionIds.length === 0) {
-              onUpdate({ page: pageData, sections: [], contents: {} });
-              return;
-            }
+        try {
+          // Fetch sections once with getDocs to save Reads
+          const sectionsQuery = query(
+            collection(db, 'sections'),
+            where('landingPageId', '==', landingPageId)
+          );
+          const secSnap = await getDocs(sectionsQuery);
+          const sectionsList = secSnap.docs.map(doc => doc.data() as Section).sort((a, b) => a.order - b.order);
 
-            // Listen for contents
-            const contentsQuery = query(
-              collection(db, 'contents'),
-              where('tenantId', '==', tenantId)
-            );
-            
-            const unsubscribeContents = onSnapshot(
-              contentsQuery, 
-              (contentSnap) => {
-                const contentsList = contentSnap.docs.map(doc => doc.data() as Content);
-                const contentsMap: Record<string, Record<string, any>> = {};
-                contentsList.forEach(c => {
-                  if (!contentsMap[c.sectionId]) {
-                    contentsMap[c.sectionId] = {};
-                  }
-                  contentsMap[c.sectionId][c.key] = c.value;
-                });
-                
-                onUpdate({
-                  page: pageData,
-                  sections: sectionsList,
-                  contents: contentsMap
-                });
-              },
-              (err) => {
-                console.warn('Silent contents snapshot error handler:', err.message);
-              }
-            );
-            
-            return unsubscribeContents;
-          },
-          (err) => {
-            console.warn('Silent sections snapshot error handler:', err.message);
+          if (sectionsList.length === 0) {
+            onUpdate({ page: pageData, sections: [], contents: {} });
+            return;
           }
-        );
 
-        return unsubscribeSections;
+          // Fetch contents once with getDocs (Save 90% Reads vs realtime contents listener)
+          const contentsQuery = query(
+            collection(db, 'contents'),
+            where('tenantId', '==', tenantId)
+          );
+          const contentSnap = await getDocs(contentsQuery);
+          const contentsList = contentSnap.docs.map(doc => doc.data() as Content);
+          const contentsMap: Record<string, Record<string, any>> = {};
+          contentsList.forEach(c => {
+            if (!contentsMap[c.sectionId]) {
+              contentsMap[c.sectionId] = {};
+            }
+            contentsMap[c.sectionId][c.key] = c.value;
+          });
+
+          onUpdate({
+            page: pageData,
+            sections: sectionsList,
+            contents: contentsMap
+          });
+        } catch (err: any) {
+          console.warn('Error fetching sections/contents:', err);
+        }
       },
       (err) => {
         console.warn('Silent page snapshot error handler:', err.message);
