@@ -47,51 +47,11 @@ export const useAuthHandler = () => {
             }
             setProfile(data);
           } else {
-            const defaultProfile: UserProfile = {
-              userId: firebaseUser.uid,
-              tenantId: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              role: defaultRole,
-              createdAt: new Date().toISOString(),
-            };
-
-            const defaultTenant = {
-              tenantId: firebaseUser.uid,
-              readableId,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Mitra',
-              company: 'Travel Umrah',
-              email: firebaseUser.email || '',
-              plan: 'free',
-              status: 'active',
-              subdomain: readableId,
-              limits: {
-                landingPages: 1,
-                storageMb: 50,
-                uploadLimitKb: 2048,
-                visitorLimit: 10000,
-              },
-              createdAt: new Date().toISOString(),
-            };
-
-            try {
-              // Primary UID document writes
-              await setDoc(uidRef, defaultProfile);
-              await setDoc(doc(db, 'tenants', firebaseUser.uid), defaultTenant);
-            } catch (sErr) {
-              console.log('Auto-creating UID profile fallback:', sErr);
-            }
-            setProfile(defaultProfile);
+            // Profile doc does not exist (account deleted or not registered)
+            setProfile(null);
           }
         } catch (error) {
-          // Fail-Safe Fallback: Set valid user profile in memory so dashboard works seamlessly
-          const fallbackProfile: UserProfile = {
-            userId: firebaseUser.uid,
-            tenantId: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            role: defaultRole,
-            createdAt: new Date(),
-          };
-          setProfile(fallbackProfile);
+          setProfile(null);
         }
       } else {
         setProfile(null);
