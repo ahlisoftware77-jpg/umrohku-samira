@@ -1833,13 +1833,15 @@ service cloud.firestore {
         } catch (e) {}
       }
 
-      setBuilderPlans(prev => {
-        const exists = prev.some(p => p.planId === planObj.planId);
-        let updated = exists 
-          ? prev.map(p => p.planId === planObj.planId ? planObj : p)
-          : [...prev, planObj];
-        return updated.sort((a, b) => (a.order || 0) - (b.order || 0));
-      });
+      // Re-fetch fresh plans directly from Firestore for 100% UI synchronization
+      const plansSnap = await getDocs(collection(db, 'plans'));
+      if (!plansSnap.empty) {
+        const plansList = plansSnap.docs.map(doc => doc.data() as BuilderPlan);
+        plansList.sort((a, b) => (a.order || 0) - (b.order || 0));
+        setBuilderPlans(plansList);
+      } else {
+        setBuilderPlans(prev => prev.map(p => p.planId === planObj.planId ? planObj : p));
+      }
 
       setIsPlanModalOpen(false);
       alert(`✅ Paket Layanan Builder "${planObj.name}" berhasil disimpan!`);
@@ -4115,7 +4117,18 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   <form onSubmit={handleSaveBuilderPlan} className="py-4 space-y-4 text-xs">
                     <div className="space-y-1">
                       <Label className="font-bold">Nama Paket</Label>
-                      <Input value={bPlanName} onChange={(e) => setBPlanName(e.target.value)} placeholder="Contoh: Paket Pro Agent" required />
+                      <Input 
+                        value={bPlanName} 
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBPlanName(val);
+                          if (!bPlanBadge || bPlanBadge === bPlanName.toUpperCase()) {
+                            setBPlanBadge(val.toUpperCase());
+                          }
+                        }} 
+                        placeholder="Contoh: Paket Pro Agent" 
+                        required 
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
