@@ -1674,7 +1674,11 @@ export default function EditorSidebar() {
         </div>
       </div>
 
-      <Tabs defaultValue="sections" className="flex-1 flex flex-col overflow-hidden">
+      <Tabs 
+        value={activeTab} 
+        onValueChange={(val) => setActiveTab(val as 'sections' | 'theme' | 'seo')} 
+        className="flex-1 flex flex-col overflow-hidden"
+      >
         <TabsList className="grid grid-cols-3 mx-2 mt-2">
           <TabsTrigger value="sections" className="text-xs flex gap-1"><LayoutGrid className="h-3.5 w-3.5" /> Seksi</TabsTrigger>
           <TabsTrigger value="theme" className="text-xs flex gap-1"><Palette className="h-3.5 w-3.5" /> Tema</TabsTrigger>
@@ -1684,7 +1688,10 @@ export default function EditorSidebar() {
         {/* ====================================================
             SECTIONS TAB
             ==================================================== */}
-        <TabsContent value="sections" className="flex-1 flex flex-col overflow-hidden p-3 space-y-4">
+        <TabsContent 
+          value="sections" 
+          className={`flex-1 flex flex-col overflow-hidden p-3 space-y-4 data-[state=inactive]:hidden ${activeTab === 'sections' ? 'flex' : 'hidden'}`}
+        >
           
           {/* Active Edit Fields (If Section Selected) */}
           {activeSectionId ? (
@@ -1855,7 +1862,10 @@ export default function EditorSidebar() {
         {/* ====================================================
             THEME TAB (Ultra-Pro Design)
             ==================================================== */}
-        <TabsContent value="theme" className="flex-1 overflow-y-auto mt-0 pt-3 px-4 pb-24 md:pb-6 space-y-4">
+        <TabsContent 
+          value="theme" 
+          className={`flex-1 overflow-y-auto mt-0 pt-3 px-4 pb-24 md:pb-6 space-y-4 data-[state=inactive]:hidden ${activeTab === 'theme' ? 'block' : 'hidden'}`}
+        >
           {/* Header */}
           <div className="border-b pb-3 space-y-1">
             <h3 className="font-extrabold text-sm text-primary uppercase tracking-wider flex items-center gap-2">
@@ -2022,7 +2032,10 @@ export default function EditorSidebar() {
         {/* ====================================================
             SEO TAB (Ultra-Pro Design with Live Google SERP Preview)
             ==================================================== */}
-        <TabsContent value="seo" className="flex-1 overflow-y-auto mt-0 pt-3 px-4 pb-24 md:pb-6 space-y-4">
+        <TabsContent 
+          value="seo" 
+          className={`flex-1 overflow-y-auto mt-0 pt-3 px-4 pb-24 md:pb-6 space-y-4 data-[state=inactive]:hidden ${activeTab === 'seo' ? 'block' : 'hidden'}`}
+        >
           {/* Header */}
           <div className="border-b pb-3 space-y-1">
             <h3 className="font-extrabold text-sm text-primary uppercase tracking-wider flex items-center gap-2">
