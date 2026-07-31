@@ -165,18 +165,25 @@ export default function BuilderLandingPage() {
           >
             <Link
               href="/dashboard?mode=register"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 h-13 px-8 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm md:text-base shadow-lg shadow-amber-500/25 transition-all hover:scale-105"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 h-14 px-8 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm md:text-base shadow-xl shadow-amber-500/25 transition-all hover:scale-105"
             >
               <Zap className="w-5 h-5 fill-slate-950" /> Buat Website Sekarang (Gratis)
             </Link>
 
             <a
-              href={`https://wa.me/${waNumber}?text=${waMessage}`}
+              href={`https://api.whatsapp.com/send?phone=${waNumber}&text=${waMessage}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-13 px-6 rounded-2xl border border-amber-300 bg-white hover:bg-amber-50 text-slate-900 font-semibold text-sm transition-colors shadow-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 h-14 px-7 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 hover:shadow-emerald-500/50 border border-emerald-400/40 transition-all transform hover:scale-105 active:scale-95 group relative overflow-hidden"
             >
-              <MessageSquare className="w-4 h-4 text-emerald-600" /> Tanya Konsultan Builder
+              <span className="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-1000 ease-out" />
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/30">
+                <MessageSquare className="w-4 h-4 text-white animate-pulse" />
+              </div>
+              <div className="text-left leading-tight">
+                <span className="block text-[10px] text-emerald-100 font-bold uppercase tracking-wider">Konsultasi Gratis WA</span>
+                <span className="block text-xs md:text-sm font-extrabold">Tanya Konsultan Builder</span>
+              </div>
             </a>
           </motion.div>
 
@@ -257,7 +264,7 @@ export default function BuilderLandingPage() {
               </div>
               <h3 className="text-lg font-bold text-slate-950 mb-2">Subdomain Kustom Pemilik Akun</h3>
               <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                Dapatkan nama alamat web resmi kustom Anda sendiri (contoh: <code className="text-amber-800 font-bold bg-amber-100 px-1 rounded">namamitra.samiratravel.id</code>).
+                Dapatkan nama alamat web resmi gratis kustom Anda sendiri (contoh: <code className="text-amber-800 font-bold bg-amber-100 px-1.5 py-0.5 rounded">umrohku-samira.my.id/namamitra</code>).
               </p>
             </Card>
 
@@ -283,6 +290,54 @@ export default function BuilderLandingPage() {
               </p>
             </Card>
 
+          </div>
+        </div>
+      </section>
+
+      {/* High-Impact Subdomain Clarification Section (Singkat Padat Jelas) */}
+      <section className="py-16 bg-gradient-to-br from-slate-950 via-primary to-slate-900 text-white relative z-10 border-y border-amber-500/30 shadow-2xl overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="container mx-auto px-4 max-w-4xl relative z-10">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="w-20 h-20 rounded-3xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 shrink-0 shadow-lg">
+              <Globe className="w-10 h-10 animate-pulse" />
+            </div>
+
+            <div className="space-y-4 text-center md:text-left flex-1">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-extrabold text-[11px] uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Seputar Subdomain Website Anda
+              </div>
+              
+              <h3 className="text-2xl md:text-3xl font-headline font-bold text-white leading-tight">
+                Apa itu Subdomain & Kenapa Sangat Praktis Bagi Agen?
+              </h3>
+
+              <p className="text-slate-300 text-xs md:text-sm leading-relaxed font-medium">
+                <strong className="text-amber-300 underline decoration-amber-400">Subdomain</strong> adalah alamat identitas resmi website Anda (contoh: <code className="bg-amber-400/20 text-amber-300 font-mono px-2 py-0.5 rounded-md border border-amber-400/30">umrohku-samira.my.id/namamitra</code>) yang <strong className="text-emerald-400">langsung aktif 100% secara gratis</strong> begitu mendaftar tanpa sewa domain terpisah!
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1 hover:border-amber-400/40 transition-colors">
+                  <span className="text-xs font-extrabold text-amber-400 block flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" /> 1. Bebas Pilih Nama
+                  </span>
+                  <p className="text-[11px] text-slate-300 leading-tight">Gunakan nama travel/agen Anda sendiri (misal: <code className="text-amber-300 font-mono">/salma_travel</code>).</p>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1 hover:border-emerald-400/40 transition-colors">
+                  <span className="text-xs font-extrabold text-emerald-400 block flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> 2. Langsung Aktif 24/7
+                  </span>
+                  <p className="text-[11px] text-slate-300 leading-tight">Bisa langsung disebar ke calon jamaah di WA, TikTok, Instagram & brosur.</p>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1 hover:border-amber-400/40 transition-colors">
+                  <span className="text-xs font-extrabold text-amber-400 block flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" /> 3. Bebas Biaya Sewa
+                  </span>
+                  <p className="text-[11px] text-slate-300 leading-tight">Hemat biaya jutaan rupiah tanpa repot urus koding atau sewa hosting.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -385,6 +440,25 @@ export default function BuilderLandingPage() {
           </Link>
         </div>
       </section>
+
+      {/* Floating WhatsApp Consultant Quick Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <a
+          href={`https://api.whatsapp.com/send?phone=${waNumber}&text=${waMessage}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 p-3 px-5 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 text-white font-extrabold text-xs shadow-2xl shadow-emerald-600/50 hover:shadow-emerald-500/80 border border-emerald-400/50 transition-all transform hover:scale-110 active:scale-95 group"
+          title="Tanya Konsultan Builder via WhatsApp"
+        >
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/30">
+            <MessageSquare className="w-4 h-4 text-white animate-pulse" />
+          </div>
+          <div className="text-left leading-tight hidden sm:block">
+            <span className="block text-[9px] text-emerald-100 uppercase tracking-wider font-bold">Konsultasi WA</span>
+            <span className="block text-xs font-extrabold">Tanya Konsultan Builder</span>
+          </div>
+        </a>
+      </div>
 
       {/* Simple Footer */}
       <footer className="py-8 border-t border-slate-200 text-center text-xs text-slate-500 relative z-10 bg-white">
