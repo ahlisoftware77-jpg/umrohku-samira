@@ -177,6 +177,7 @@ export default function TenantDashboardPage() {
             name: name || 'Mitra',
             company: company || name || 'Mitra Travel',
             email,
+            subdomain: cleanSubdomain,
             role: 'owner',
             createdAt: new Date().toISOString(),
           };
