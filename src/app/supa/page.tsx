@@ -49,7 +49,8 @@ import {
   RefreshCw,
   Terminal,
   ShieldCheck,
-  Download
+  Download,
+  Upload
 } from 'lucide-react';
 import { Tenant, TenantPlan, TenantStatus, SYSTEM_PLANS, DatabaseServerConfig, BuilderPlan } from '@/types/cms';
 
@@ -691,6 +692,96 @@ service cloud.firestore {
     }
   };
 
+  // Handle Restore Database Tenant from JSON File Upload
+  const handleRestoreTenant = async (e: React.ChangeEvent<HTMLInputElement>, targetTenant?: Tenant) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fileText = await file.text();
+      const backupData = JSON.parse(fileText);
+
+      if (!backupData || (!backupData.tenant && !backupData.sections)) {
+        alert('File backup JSON tidak valid atau rusak!');
+        e.target.value = '';
+        return;
+      }
+
+      const tenantToRestore = targetTenant || backupData.tenant;
+      if (!tenantToRestore || !tenantToRestore.tenantId) {
+        alert('Data ID tenant tidak ditemukan di dalam berkas backup!');
+        e.target.value = '';
+        return;
+      }
+
+      const confirmMsg = `Konfirmasi Pemulihan (Restore) Database:\n\nApakah Anda yakin ingin memulihkan data untuk tenant "${tenantToRestore.company || tenantToRestore.subdomain}"?\nData seksi & isi konten lama di server akan ditimpa dengan berkas backup ini.`;
+      if (!confirm(confirmMsg)) {
+        e.target.value = '';
+        return;
+      }
+
+      const activeServerConfig = dbServers.find(s => s.serverId === tenantToRestore.dbServerId);
+      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+      // 1. Restore Tenant Document
+      if (backupData.tenant) {
+        await setDoc(doc(targetDb, 'tenants', tenantToRestore.tenantId), backupData.tenant, { merge: true });
+        await setDoc(doc(db, 'tenants', tenantToRestore.tenantId), backupData.tenant, { merge: true });
+      }
+
+      // 2. Restore User Document
+      if (backupData.user) {
+        await setDoc(doc(targetDb, 'users', tenantToRestore.tenantId), backupData.user, { merge: true });
+        await setDoc(doc(db, 'users', tenantToRestore.tenantId), backupData.user, { merge: true });
+      }
+
+      // 3. Restore Landing Pages
+      if (Array.isArray(backupData.landingPages)) {
+        for (const p of backupData.landingPages) {
+          if (p.pageId) {
+            await setDoc(doc(targetDb, 'landingPages', p.pageId), p, { merge: true });
+          }
+        }
+      }
+
+      // 4. Restore Sections
+      if (Array.isArray(backupData.sections)) {
+        for (const s of backupData.sections) {
+          if (s.sectionId) {
+            await setDoc(doc(targetDb, 'sections', s.sectionId), s, { merge: true });
+          }
+        }
+      }
+
+      // 5. Restore Contents
+      if (Array.isArray(backupData.contents)) {
+        for (const c of backupData.contents) {
+          if (c.sectionId && c.key) {
+            const contentDocId = `${tenantToRestore.tenantId}_${c.sectionId}_${c.key}`;
+            await setDoc(doc(targetDb, 'contents', contentDocId), c, { merge: true });
+          }
+        }
+      }
+
+      // 6. Restore Testimonials
+      if (Array.isArray(backupData.testimonials)) {
+        for (const t of backupData.testimonials) {
+          if (t.testimonialId) {
+            await setDoc(doc(targetDb, 'testimonials', t.testimonialId), t, { merge: true });
+          }
+        }
+      }
+
+      alert(`✅ RESTORE SUKSES! Seluruh data database tenant "${tenantToRestore.company || tenantToRestore.subdomain}" berhasil dipulihkan.`);
+      loadAdminData();
+    } catch (err: any) {
+      console.error('Restore error:', err);
+      alert(`Gagal memulihkan database dari file: ${err.message || 'Format JSON tidak cocok'}`);
+    } finally {
+      e.target.value = '';
+    }
+  };
+
   // Handle Delete Thoroughly (by tenantId, subdomain, and email)
   const handleDeleteTenant = async (tenant: Tenant) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus Tenant "${tenant.company || tenant.name || tenant.subdomain}" (${tenant.email}) secara permanen dari sistem? Tindakan ini tidak dapat dibatalkan.`)) return;
@@ -1198,7 +1289,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
       </header>
 
       {/* Main Board Container */}
-      <main className="flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto space-y-6">
+      <main className="flex-1 p-6 md:p-8 max-w-[98%] w-full mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <div className="flex items-center gap-3">
@@ -1276,9 +1367,23 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
               ========================================== */}
           <TabsContent value="tenants" className="space-y-6">
             <Card className="rounded-3xl border shadow-none bg-white p-6">
-              <CardHeader className="px-0 pt-0">
-                <CardTitle className="text-xl font-headline font-bold text-primary">Manajemen Tenant Terdaftar</CardTitle>
-                <CardDescription className="text-xs">Ubah paket, status aktif, atau edit batas operasional dari setiap akun tenant.</CardDescription>
+              <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-headline font-bold text-primary">Manajemen Tenant Terdaftar</CardTitle>
+                  <CardDescription className="text-xs">Ubah paket, status aktif, backup/restore data, atau edit batas operasional dari setiap akun tenant.</CardDescription>
+                </div>
+
+                <label className="cursor-pointer">
+                  <input 
+                    type="file" 
+                    accept=".json" 
+                    onChange={(e) => handleRestoreTenant(e)}
+                    className="hidden" 
+                  />
+                  <div className="rounded-full text-xs font-bold border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-2 h-9 px-4 shadow-sm">
+                    <Upload className="h-4 w-4" /> Pulihkan / Restore dari Berkas (.json)
+                  </div>
+                </label>
               </CardHeader>
               
               {dbLoading ? (
@@ -1353,6 +1458,17 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           <Button size="icon" variant="outline" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50" onClick={() => handleBackupTenant(t)} title="Backup Database Tenant (.json)">
                             <Download className="h-4 w-4" />
                           </Button>
+                          <label className="cursor-pointer">
+                            <input 
+                              type="file" 
+                              accept=".json" 
+                              onChange={(e) => handleRestoreTenant(e, t)}
+                              className="hidden" 
+                            />
+                            <div className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-purple-50 text-purple-600 shadow-sm transition-colors" title="Restore / Pulihkan Database Tenant (.json)">
+                              <Upload className="h-4 w-4" />
+                            </div>
+                          </label>
                           <Button size="icon" variant="outline" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteTenant(t)} title="Hapus Permanen">
                             <Trash2 className="h-4 w-4" />
                           </Button>
