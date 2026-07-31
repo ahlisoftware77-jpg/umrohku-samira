@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { BuilderPlan } from '@/types/cms';
@@ -10,7 +10,6 @@ import {
   Sparkles, 
   Globe, 
   Zap, 
-  ArrowRight, 
   ShieldCheck, 
   CheckCircle2, 
   MessageSquare, 
@@ -18,7 +17,9 @@ import {
   BookOpen, 
   Clock, 
   Check,
-  Loader2
+  Loader2,
+  ChevronRight,
+  Star
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
@@ -77,7 +78,6 @@ export default function BuilderLandingPage() {
           setPlans(defaultPlans.filter(p => !p.isHidden));
         }
       } catch (err) {
-        // Quiet fallback to default plans for unauthenticated public visitors
         setPlans(defaultPlans.filter(p => !p.isHidden));
       } finally {
         setLoadingPlans(false);
@@ -86,17 +86,53 @@ export default function BuilderLandingPage() {
     fetchPlans();
   }, []);
 
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950">
-      
-      {/* Background Subtle Glows */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-amber-400/20 via-amber-200/10 to-transparent rounded-full blur-3xl pointer-events-none z-0" />
+  // Animation Variants
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.12,
+        delayChildren: 0.05
+      }
+    }
+  };
 
-      {/* Top Floating Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-amber-200/60 shadow-sm">
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } 
+    }
+  };
+
+  const scaleUpVariants: Variants = {
+    hidden: { opacity: 0, scale: 0.92 },
+    visible: { 
+      opacity: 1, 
+      scale: 1, 
+      transition: { duration: 0.5, ease: 'easeOut' } 
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950 overflow-x-hidden">
+      
+      {/* Background Animated Subtle Glows */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-amber-400/20 via-amber-200/10 to-transparent rounded-full blur-3xl pointer-events-none z-0 animate-pulse duration-1000" />
+      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-emerald-400/10 rounded-full blur-3xl pointer-events-none z-0" />
+
+      {/* Top Floating Navbar with Entrance Motion */}
+      <motion.header 
+        initial={{ y: -80, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-amber-200/60 shadow-sm"
+      >
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-bold font-headline shadow-md shadow-amber-500/20">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-bold font-headline shadow-md shadow-amber-500/20 group-hover:scale-110 transition-transform">
               S
             </div>
             <div>
@@ -114,58 +150,58 @@ export default function BuilderLandingPage() {
             </Link>
             <Link 
               href="/dashboard?mode=register"
-              className="inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all hover:scale-105"
+              className="inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
             >
               <Zap className="w-3.5 h-3.5" /> Buat Website Gratis
             </Link>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 z-10">
         <div className="container mx-auto px-4 text-center max-w-4xl">
           
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs uppercase tracking-wider mb-6 shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100/90 border border-amber-300 text-amber-900 font-extrabold text-xs uppercase tracking-wider mb-6 shadow-sm hover:shadow transition-shadow"
           >
-            <Sparkles className="w-4 h-4 text-amber-600 animate-pulse" />
+            <Sparkles className="w-4 h-4 text-amber-600 animate-spin" style={{ animationDuration: '6s' }} />
             Platform Landing Page Umrah #1 Untuk Mitra & Agen
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-3xl md:text-6xl font-headline font-bold text-slate-950 tracking-tight leading-tight mb-6"
+            transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
+            className="text-3xl md:text-6xl font-headline font-extrabold text-slate-950 tracking-tight leading-tight mb-6"
           >
             Miliki Website Umrah Profesional <br className="hidden sm:block" />
-            <span className="text-amber-600 underline decoration-amber-300 decoration-wavy">
+            <span className="text-amber-600 underline decoration-amber-300 decoration-wavy bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 bg-clip-text text-transparent">
               Hanya Dalam 1 Menit
             </span>
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
             className="text-slate-700 text-base md:text-xl leading-relaxed max-w-2xl mx-auto mb-8 font-medium"
           >
             Tingkatkan kepercayaan calon jamaah! Lengkap dengan E-Katalog 2025/2026 interaktif, paket ibadah, form konsultasi WA, dan subdomain gratis atas nama Anda.
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <Link
               href="/dashboard?mode=register"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 h-14 px-8 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm md:text-base shadow-xl shadow-amber-500/25 transition-all hover:scale-105"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 h-14 px-8 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm md:text-base shadow-xl shadow-amber-500/25 transition-all hover:scale-105 active:scale-95"
             >
               <Zap className="w-5 h-5 fill-slate-950" /> Buat Website Sekarang (Gratis)
             </Link>
@@ -187,115 +223,150 @@ export default function BuilderLandingPage() {
             </a>
           </motion.div>
 
-          {/* Social Proof Stats */}
-          <div className="mt-12 pt-8 border-t border-amber-200/80 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-amber-600">1 Menit</p>
-              <p className="text-xs text-slate-600 font-medium">Proses Aktivasi Langsung</p>
+          {/* Social Proof Stats with Staggered Transition */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.4 }}
+            className="mt-12 pt-8 border-t border-amber-200/80 grid grid-cols-2 md:grid-cols-4 gap-4 text-center"
+          >
+            <div className="p-3 rounded-2xl hover:bg-white/60 transition-colors">
+              <p className="text-2xl md:text-3xl font-extrabold text-amber-600">1 Menit</p>
+              <p className="text-xs text-slate-600 font-semibold">Proses Aktivasi Langsung</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-emerald-600">100%</p>
-              <p className="text-xs text-slate-600 font-medium">Integrasi WhatsApp Anda</p>
+            <div className="p-3 rounded-2xl hover:bg-white/60 transition-colors">
+              <p className="text-2xl md:text-3xl font-extrabold text-emerald-600">100%</p>
+              <p className="text-xs text-slate-600 font-semibold">Integrasi WhatsApp Anda</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-amber-600">47 Halaman</p>
-              <p className="text-xs text-slate-600 font-medium">E-Katalog Flipbook 2025</p>
+            <div className="p-3 rounded-2xl hover:bg-white/60 transition-colors">
+              <p className="text-2xl md:text-3xl font-extrabold text-amber-600">47 Halaman</p>
+              <p className="text-xs text-slate-600 font-semibold">E-Katalog Flipbook 2025</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-emerald-600">Rp 0,-</p>
-              <p className="text-xs text-slate-600 font-medium">Paket Mulai Bebas Biaya</p>
+            <div className="p-3 rounded-2xl hover:bg-white/60 transition-colors">
+              <p className="text-2xl md:text-3xl font-extrabold text-emerald-600">Rp 0,-</p>
+              <p className="text-xs text-slate-600 font-semibold">Paket Mulai Bebas Biaya</p>
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </section>
 
-      {/* Feature Showcase Grid */}
+      {/* Feature Showcase Grid with Scroll Reveal */}
       <section className="py-20 bg-white relative z-10 border-y border-amber-200/60 shadow-sm">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-2xl md:text-4xl font-headline font-bold text-slate-950 mb-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-2xl mx-auto mb-16"
+          >
+            <h2 className="text-2xl md:text-4xl font-headline font-extrabold text-slate-950 mb-4">
               Segala Yang Anda Butuhkan Untuk Memasarkan Umrah
             </h2>
             <p className="text-slate-600 text-sm md:text-base font-medium">
               Didesain khusus untuk memenuhi kebutuhan agen & biro perjalanan umrah agar lebih cepat closing.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
             
             {/* Feature 1 */}
-            <Card className="bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5">
-                <Clock className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-950 mb-2">Langsung Siap Pakai Dalam 1 Menit</h3>
-              <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                Begitu mendaftar, sistem otomatis membuatkan 8 seksi lengkap (Hero, Paket, E-Katalog, Peta, Form WA, dll).
-              </p>
-            </Card>
+            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
+              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <Clock className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-950 mb-2">Langsung Siap Pakai Dalam 1 Menit</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Begitu mendaftar, sistem otomatis membuatkan 8 seksi lengkap (Hero, Paket, E-Katalog, Peta, Form WA, dll).
+                </p>
+              </Card>
+            </motion.div>
 
             {/* Feature 2 */}
-            <Card className="bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5">
-                <MessageSquare className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-950 mb-2">Terintegrasi Chat WhatsApp</h3>
-              <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                Semua calon jamaah yang mengisi form atau mengklik tombol konsultasi akan langsung masuk ke WhatsApp HP Anda.
-              </p>
-            </Card>
+            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
+              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <MessageSquare className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-950 mb-2">Terintegrasi Chat WhatsApp</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Semua calon jamaah yang mengisi form atau mengklik tombol konsultasi akan langsung masuk ke WhatsApp HP Anda.
+                </p>
+              </Card>
+            </motion.div>
 
             {/* Feature 3 */}
-            <Card className="bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5">
-                <BookOpen className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-950 mb-2">E-Katalog Flipbook 47 Halaman</h3>
-              <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                Sudah termasuk viewer buku katalog interaktif 2025/2026 yang dapat di-flip dan di-download dalam bentuk PDF.
-              </p>
-            </Card>
+            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
+              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-950 mb-2">E-Katalog Flipbook 47 Halaman</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Sudah termasuk viewer buku katalog interaktif 2025/2026 yang dapat di-flip dan di-download dalam bentuk PDF.
+                </p>
+              </Card>
+            </motion.div>
 
             {/* Feature 4 */}
-            <Card className="bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5">
-                <Globe className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-950 mb-2">Subdomain Kustom Pemilik Akun</h3>
-              <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                Dapatkan nama alamat web resmi gratis kustom Anda sendiri (contoh: <code className="text-amber-800 font-bold bg-amber-100 px-1.5 py-0.5 rounded">umrohku-samira.my.id/namamitra</code>).
-              </p>
-            </Card>
+            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
+              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-950 mb-2">Subdomain Kustom Pemilik Akun</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Dapatkan nama alamat web resmi gratis kustom Anda sendiri (contoh: <code className="text-amber-800 font-bold bg-amber-100 px-1.5 py-0.5 rounded">umrohku-samira.my.id/namamitra</code>).
+                </p>
+              </Card>
+            </motion.div>
 
             {/* Feature 5 */}
-            <Card className="bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5">
-                <Layout className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-950 mb-2">CMS Visual Live Editor</h3>
-              <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                Ubah judul, warna, deskripsi, foto, dan susunan seksi secara langsung di layar editor drag & drop yang sangat mudah.
-              </p>
-            </Card>
+            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
+              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <Layout className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-950 mb-2">CMS Visual Live Editor</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Ubah judul, warna, deskripsi, foto, dan susunan seksi secara langsung di layar editor drag & drop yang sangat mudah.
+                </p>
+              </Card>
+            </motion.div>
 
             {/* Feature 6 */}
-            <Card className="bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-950 mb-2">Akses Publik 100% Bebas Hambatan</h3>
-              <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                Website Anda dapat diakses oleh siapapun di seluruh dunia 24/7 tanpa perlu login dengan performa tinggi.
-              </p>
-            </Card>
+            <motion.div variants={itemVariants} whileHover={{ y: -8, transition: { duration: 0.2 } }}>
+              <Card className="h-full bg-slate-50 border-amber-200/80 text-slate-900 rounded-3xl p-6 hover:border-amber-400 hover:shadow-xl transition-all duration-300 shadow-sm relative overflow-hidden group">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-950 mb-2">Akses Publik 100% Bebas Hambatan</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Website Anda dapat diakses oleh siapapun di seluruh dunia 24/7 tanpa perlu login dengan performa tinggi.
+                </p>
+              </Card>
+            </motion.div>
 
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* High-Impact Subdomain Clarification Section (Singkat Padat Jelas) */}
-      <section className="py-16 bg-gradient-to-br from-slate-950 via-primary to-slate-900 text-white relative z-10 border-y border-amber-500/30 shadow-2xl overflow-hidden">
+      {/* High-Impact Subdomain Clarification Section with Scale Entrance */}
+      <motion.section 
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+        className="py-16 bg-gradient-to-br from-slate-950 via-primary to-slate-900 text-white relative z-10 border-y border-amber-500/30 shadow-2xl overflow-hidden"
+      >
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="container mx-auto px-4 max-w-4xl relative z-10">
@@ -318,42 +389,48 @@ export default function BuilderLandingPage() {
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1 hover:border-amber-400/40 transition-colors">
+                <motion.div whileHover={{ scale: 1.03 }} className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1 hover:border-amber-400/40 transition-colors">
                   <span className="text-xs font-extrabold text-amber-400 block flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" /> 1. Bebas Pilih Nama
                   </span>
                   <p className="text-[11px] text-slate-300 leading-tight">Gunakan nama travel/agen Anda sendiri (misal: <code className="text-amber-300 font-mono">/salma_travel</code>).</p>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1 hover:border-emerald-400/40 transition-colors">
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.03 }} className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1 hover:border-emerald-400/40 transition-colors">
                   <span className="text-xs font-extrabold text-emerald-400 block flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> 2. Langsung Aktif 24/7
                   </span>
                   <p className="text-[11px] text-slate-300 leading-tight">Bisa langsung disebar ke calon jamaah di WA, TikTok, Instagram & brosur.</p>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1 hover:border-amber-400/40 transition-colors">
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.03 }} className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1 hover:border-amber-400/40 transition-colors">
                   <span className="text-xs font-extrabold text-amber-400 block flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" /> 3. Bebas Biaya Sewa
                   </span>
                   <p className="text-[11px] text-slate-300 leading-tight">Hemat biaya jutaan rupiah tanpa repot urus koding atau sewa hosting.</p>
-                </div>
+                </motion.div>
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Pricing / Plan Table Section */}
+      {/* Pricing / Plan Table Section with Animated Cards */}
       <section className="py-20 relative z-10">
         <div className="container mx-auto px-4 max-w-4xl">
           
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-4xl font-headline font-bold text-slate-950 mb-3">
+          <motion.div 
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-2xl md:text-4xl font-headline font-extrabold text-slate-950 mb-3">
               Pilih Paket Layanan Website Anda
             </h2>
             <p className="text-slate-600 text-sm font-medium">
               Mulai gratis sekarang dan tingkatkan fitur sesuai kebutuhan bisnis travel Anda.
             </p>
-          </div>
+          </motion.div>
 
           {loadingPlans ? (
             <div className="py-16 flex items-center justify-center flex-col">
@@ -361,21 +438,29 @@ export default function BuilderLandingPage() {
               <p className="text-xs text-slate-500 font-medium">Memuat paket layanan terbaru...</p>
             </div>
           ) : (
-            <div className={`grid grid-cols-1 ${plans.length > 2 ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-8 items-stretch`}>
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-60px' }}
+              className={`grid grid-cols-1 ${plans.length > 2 ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-8 items-stretch`}
+            >
               {plans.map((p) => {
                 const isPopular = p.isPopular;
                 return (
-                  <div 
+                  <motion.div 
                     key={p.planId}
+                    variants={itemVariants}
+                    whileHover={{ y: -8, transition: { duration: 0.25 } }}
                     className={`rounded-3xl p-8 flex flex-col justify-between shadow-xl relative overflow-hidden transition-all duration-300 ${
                       isPopular 
-                        ? 'bg-amber-50/90 border-2 border-amber-400 shadow-2xl' 
+                        ? 'bg-amber-50/90 border-2 border-amber-400 shadow-2xl ring-4 ring-amber-400/20' 
                         : 'bg-white border border-amber-200/90'
                     }`}
                   >
                     {isPopular && (
-                      <div className="absolute top-0 right-0 bg-amber-500 text-slate-950 font-bold text-[10px] uppercase tracking-wider px-4 py-1 rounded-bl-xl shadow-md">
-                        PALING POPULER
+                      <div className="absolute top-0 right-0 bg-amber-500 text-slate-950 font-extrabold text-[10px] uppercase tracking-wider px-4 py-1.5 rounded-bl-xl shadow-md flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-slate-950" /> PALING POPULER
                       </div>
                     )}
 
@@ -388,7 +473,7 @@ export default function BuilderLandingPage() {
                       <h3 className="text-2xl font-bold text-slate-950 mb-2">{p.name}</h3>
                       <p className="text-xs text-slate-600 mb-6">{p.description}</p>
 
-                      <div className={`text-3xl font-bold mb-6 ${isPopular ? 'text-amber-700' : 'text-slate-950'}`}>
+                      <div className={`text-3xl font-extrabold mb-6 ${isPopular ? 'text-amber-700' : 'text-slate-950'}`}>
                         {p.price} <span className="text-xs font-normal text-slate-500">{p.period}</span>
                       </div>
 
@@ -405,27 +490,33 @@ export default function BuilderLandingPage() {
                     <div className="pt-8">
                       <Link
                         href="/dashboard?mode=register"
-                        className={`w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl font-bold text-xs transition-all ${
+                        className={`w-full inline-flex items-center justify-center gap-2 h-12 rounded-2xl font-extrabold text-xs transition-all ${
                           isPopular 
-                            ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 hover:scale-[1.02]' 
-                            : 'bg-slate-900 hover:bg-slate-800 text-white shadow-md'
+                            ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-95' 
+                            : 'bg-slate-900 hover:bg-slate-800 text-white shadow-md active:scale-95'
                         }`}
                       >
-                        {isPopular ? <Zap className="w-4 h-4" /> : null} Pilih Paket Ini
+                        {isPopular ? <Zap className="w-4 h-4 fill-slate-950" /> : null} Pilih Paket Ini <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           )}
         </div>
       </section>
 
       {/* Final Call To Action */}
-      <section className="py-20 bg-gradient-to-b from-amber-100/60 to-slate-50 border-t border-amber-200/80 text-center relative z-10">
+      <motion.section 
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7 }}
+        className="py-20 bg-gradient-to-b from-amber-100/60 to-slate-50 border-t border-amber-200/80 text-center relative z-10"
+      >
         <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-3xl md:text-5xl font-headline font-bold text-slate-950 mb-6">
+          <h2 className="text-3xl md:text-5xl font-headline font-extrabold text-slate-950 mb-6">
             Siap Melipatgandakan Pendaftaran Umrah Anda?
           </h2>
           <p className="text-slate-700 text-sm md:text-base leading-relaxed mb-8 font-medium">
@@ -434,15 +525,20 @@ export default function BuilderLandingPage() {
 
           <Link
             href="/dashboard?mode=register"
-            className="inline-flex items-center justify-center gap-2.5 h-14 px-10 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-base shadow-2xl shadow-amber-500/30 transition-all hover:scale-105"
+            className="inline-flex items-center justify-center gap-2.5 h-14 px-10 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-base shadow-2xl shadow-amber-500/30 transition-all hover:scale-105 active:scale-95"
           >
             <Zap className="w-5 h-5 fill-slate-950" /> Buat Website Umrah Anda Sekarang
           </Link>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Floating WhatsApp Consultant Quick Button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* Floating WhatsApp Consultant Quick Button with Hover Lift & Pulse */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+        className="fixed bottom-6 right-6 z-50"
+      >
         <a
           href={`https://api.whatsapp.com/send?phone=${waNumber}&text=${waMessage}`}
           target="_blank"
@@ -451,14 +547,14 @@ export default function BuilderLandingPage() {
           title="Tanya Konsultan Builder via WhatsApp"
         >
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/30">
-            <MessageSquare className="w-4 h-4 text-white animate-pulse" />
+            <MessageSquare className="w-4 h-4 text-white animate-bounce" />
           </div>
           <div className="text-left leading-tight hidden sm:block">
             <span className="block text-[9px] text-emerald-100 uppercase tracking-wider font-bold">Konsultasi WA</span>
             <span className="block text-xs font-extrabold">Tanya Konsultan Builder</span>
           </div>
         </a>
-      </div>
+      </motion.div>
 
       {/* Simple Footer */}
       <footer className="py-8 border-t border-slate-200 text-center text-xs text-slate-500 relative z-10 bg-white">
