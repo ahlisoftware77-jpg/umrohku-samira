@@ -511,54 +511,36 @@ service cloud.firestore {
     const processAndSetTenants = () => {
       const tenantMap = new Map<string, Tenant>();
 
-      // 1. Map tenants collection first with robust deduplication by email, tenantId & subdomain
+      // 1. Map tenants collection first, prioritizing documents with active dbServerId or higher visitorCount
       rawTenants.forEach(t => {
-        const emailKey = (t.email || '').toLowerCase().trim();
-        const tenantKey = t.tenantId;
         const subKey = (t.subdomain || '').toLowerCase().trim();
+        const emailKey = (t.email || '').toLowerCase().trim();
+        const dedupeKey = subKey || emailKey || t.tenantId;
 
-        // Determine if this tenant entry already exists in the map
-        const existingKey = Array.from(tenantMap.keys()).find(k => {
-          const item = tenantMap.get(k);
-          if (!item) return false;
-          const matchEmail = emailKey && (item.email || '').toLowerCase().trim() === emailKey;
-          const matchId = tenantKey && item.tenantId === tenantKey;
-          const matchSub = subKey && (item.subdomain || '').toLowerCase().trim() === subKey;
-          return matchEmail || matchId || matchSub;
-        });
+        if (!dedupeKey) return;
 
-        if (existingKey) {
-          // Merge data to preserve active dbServerId
-          const existing = tenantMap.get(existingKey)!;
-          tenantMap.set(existingKey, {
-            ...existing,
-            ...t,
-            dbServerId: t.dbServerId || existing.dbServerId || 'default'
-          });
+        if (!tenantMap.has(dedupeKey)) {
+          tenantMap.set(dedupeKey, t);
         } else {
-          const primaryKey = emailKey || tenantKey || subKey || `tenant_${Date.now()}`;
-          tenantMap.set(primaryKey, { ...t, dbServerId: t.dbServerId || 'default' });
+          const existing = tenantMap.get(dedupeKey)!;
+          // Prefer document with custom dbServerId, or higher visitorCount
+          const existingIsCustom = existing.dbServerId && existing.dbServerId !== 'default';
+          const newIsCustom = t.dbServerId && t.dbServerId !== 'default';
+
+          if ((newIsCustom && !existingIsCustom) || ((t.visitorCount || 0) > (existing.visitorCount || 0))) {
+            tenantMap.set(dedupeKey, { ...existing, ...t });
+          }
         }
       });
 
       // 2. Map users collection as fallback for any missing tenant profiles
       rawUsers.forEach(u => {
+        const subKey = (u.subdomain || '').toLowerCase().trim();
         const emailKey = (u.email || '').toLowerCase().trim();
-        const userKey = u.userId || u.tenantId || u.id;
-        const subKey = (u.subdomain || u.readableId || '').toLowerCase().trim();
+        const dedupeKey = subKey || emailKey || u.userId || u.tenantId;
 
-        const exists = Array.from(tenantMap.keys()).some(k => {
-          const item = tenantMap.get(k);
-          if (!item) return false;
-          const matchEmail = emailKey && (item.email || '').toLowerCase().trim() === emailKey;
-          const matchId = userKey && (item.tenantId === userKey || item.readableId === userKey);
-          const matchSub = subKey && (item.subdomain || '').toLowerCase().trim() === subKey;
-          return matchEmail || matchId || matchSub;
-        });
-
-        if (!exists) {
-          const primaryKey = emailKey || userKey || `user_${Date.now()}`;
-          tenantMap.set(primaryKey, {
+        if (dedupeKey && !tenantMap.has(dedupeKey)) {
+          tenantMap.set(dedupeKey, {
             tenantId: u.tenantId || u.userId || u.readableId || u.id,
             readableId: u.readableId || u.email,
             name: u.name || u.email?.split('@')[0] || 'Mitra Baru',
@@ -567,7 +549,6 @@ service cloud.firestore {
             plan: 'free',
             status: 'active',
             subdomain: u.subdomain || u.readableId || u.email?.split('@')[0] || 'mitra',
-            dbServerId: u.dbServerId || 'default',
             visitorCount: 0,
             limits: {
               landingPages: 1,
@@ -584,36 +565,12 @@ service cloud.firestore {
       setDbLoading(false);
     };
 
-    // 1. Real-time Tenants listener across all database servers
-    const unsubTenants = onSnapshot(collection(db, 'tenants'), async (snap) => {
-      const primaryTenants = snap.docs.map(d => {
+    // 1. Real-time Tenants listener
+    const unsubTenants = onSnapshot(collection(db, 'tenants'), (snap) => {
+      rawTenants = snap.docs.map(d => {
         const data = d.data() as Tenant;
         return { ...data, tenantId: data.tenantId || d.id };
       });
-
-      // Fetch live visitorCount from target cluster DB if tenant is on another server
-      const updatedTenants = await Promise.all(primaryTenants.map(async (t) => {
-        if (t.dbServerId && t.dbServerId !== 'default') {
-          try {
-            const stored = typeof window !== 'undefined' ? localStorage.getItem('database_servers') : null;
-            if (stored) {
-              const servers: DatabaseServerConfig[] = JSON.parse(stored);
-              const serverConfig = servers.find(s => s.serverId === t.dbServerId);
-              if (serverConfig) {
-                const targetDb = getDynamicFirebaseInstance(serverConfig).db;
-                const tSnap = await getDoc(doc(targetDb, 'tenants', t.tenantId));
-                if (tSnap.exists()) {
-                  const targetData = tSnap.data() as Tenant;
-                  return { ...t, ...targetData, dbServerId: t.dbServerId };
-                }
-              }
-            }
-          } catch (e) {}
-        }
-        return t;
-      }));
-
-      rawTenants = updatedTenants;
       processAndSetTenants();
     }, (err) => {
       console.log('Realtime tenants fallback:', err);
