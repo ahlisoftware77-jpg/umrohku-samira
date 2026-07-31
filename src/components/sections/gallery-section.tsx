@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { X, Maximize2, ChevronLeft, ChevronRight, ImageIcon, Search } from 'lucide-react';
+import { X, Maximize2, ChevronLeft, ChevronRight, ImageIcon, Search, Hand } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Agent } from '@/lib/agents';
 import { db } from '@/lib/firebase';
@@ -120,7 +120,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
     if (url.includes('res.cloudinary.com')) {
       const parts = url.split('/upload/');
       if (parts.length === 2) {
-        return `${parts[0]}/upload/c_scale,w_800,q_auto,f_auto/${parts[1]}`;
+        return `${parts[0]}/upload/c_scale,w_1200,q_auto,f_auto/${parts[1]}`;
       }
     }
     return url;
@@ -216,15 +216,26 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
 
   const handlePrev = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (selectedIndex === null) return;
+    if (selectedIndex === null || filteredItems.length === 0) return;
     setSelectedIndex((prev) => (prev !== null ? (prev - 1 + filteredItems.length) % filteredItems.length : 0));
   };
 
   const handleNext = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (selectedIndex === null) return;
+    if (selectedIndex === null || filteredItems.length === 0) return;
     setSelectedIndex((prev) => (prev !== null ? (prev + 1) % filteredItems.length : 0));
   };
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (selectedIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'ArrowRight') handleNext();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIndex, filteredItems.length]);
 
   const selectedImage = selectedIndex !== null ? filteredItems[selectedIndex] ?? null : null;
 
@@ -352,51 +363,69 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
         )}
       </div>
 
-      {/* Lightbox Slider Dialog with Spring transitions */}
+      {/* ── ENLARGED FULLSCREEN LIGHTBOX DIALOG WITH SWIPE GESTURE SUPPORT ── */}
       <Dialog open={selectedIndex !== null} onOpenChange={(open) => !open && setSelectedIndex(null)}>
-        <DialogContent className="max-w-[95vw] md:max-w-[85vw] p-0 overflow-hidden border-none bg-black/95 backdrop-blur-xl">
-          <DialogHeader className="absolute top-4 right-4 z-50">
-             <DialogTitle className="sr-only">Detail Foto Dokumentasi</DialogTitle>
-             <DialogDescription className="sr-only">
-               Menampilkan foto dokumentasi dalam mode resolusi penuh dengan navigasi untuk melihat gambar lainnya.
-             </DialogDescription>
-             <button 
-              onClick={() => setSelectedIndex(null)}
-              className="p-2 sm:p-2.5 rounded-full bg-white/10 text-white hover:bg-accent hover:text-accent-foreground transition-all duration-300 shadow-xl border border-white/20"
-             >
-               <X className="w-5 h-5 sm:w-6 sm:h-6" />
-               <span className="sr-only">Tutup</span>
-             </button>
-          </DialogHeader>
+        <DialogContent className="w-screen max-w-none h-screen max-h-none p-0 overflow-hidden border-none bg-black/98 backdrop-blur-2xl rounded-none flex flex-col justify-between select-none">
           
-          <div className="relative w-full h-[70vh] md:h-[80vh] flex items-center justify-center p-3 sm:p-4 md:p-8">
+          {/* Top Control Bar: Photo Counter, Swipe Hint, Close Button */}
+          <div className="absolute top-0 left-0 right-0 z-50 p-4 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+            <DialogHeader className="p-0 m-0">
+              <DialogTitle className="text-xs sm:text-sm font-bold text-white/90 flex items-center gap-2">
+                <span className="bg-accent/20 text-accent px-3 py-1 rounded-full text-xs font-extrabold border border-accent/30">
+                  {selectedIndex !== null ? `${selectedIndex + 1} / ${filteredItems.length}` : ''}
+                </span>
+                <span className="hidden sm:inline text-white/60 text-xs">· Swipe ⬅️ ➡️ untuk melihat foto lain</span>
+              </DialogTitle>
+              <DialogDescription className="sr-only">Tampilan Foto Dokumentasi HD Resolusi Penuh</DialogDescription>
+            </DialogHeader>
+
+            <button 
+              onClick={() => setSelectedIndex(null)}
+              className="p-2 sm:p-2.5 rounded-full bg-white/10 hover:bg-rose-600 text-white transition-all duration-300 shadow-xl border border-white/20"
+            >
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="sr-only">Tutup</span>
+            </button>
+          </div>
+
+          {/* Main Swipable Image Preview Container */}
+          <div className="relative w-full flex-1 flex items-center justify-center p-1 sm:p-4 overflow-hidden">
             <AnimatePresence mode="wait">
               {selectedImage && (
                 <motion.div
                   key={selectedImage.image}
-                  initial={{ opacity: 0, scale: 0.95, x: 20 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, x: -20 }}
-                  transition={{ type: "spring", damping: 25, stiffness: 180 }}
-                  className="relative w-full h-full flex flex-col items-center justify-center"
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.7}
+                  onDragEnd={(e, { offset, velocity }) => {
+                    const swipeThreshold = 50;
+                    if (offset.x < -swipeThreshold || velocity.x < -300) {
+                      handleNext();
+                    } else if (offset.x > swipeThreshold || velocity.x > 300) {
+                      handlePrev();
+                    }
+                  }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  className="relative w-full h-[80vh] sm:h-[84vh] md:h-[88vh] flex items-center justify-center cursor-grab active:cursor-grabbing touch-pan-y"
                 >
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={selectedImage.image}
-                      alt={selectedImage.title}
-                      fill
-                      className="object-contain"
-                      priority
-                      quality={95}
-                    />
-                  </div>
-                  
-                  {/* Photo details caption */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-4 sm:p-6 text-center text-white">
-                    <span className="text-[10px] text-accent uppercase font-bold tracking-widest">
+                  <Image
+                    src={selectedImage.image}
+                    alt={selectedImage.title}
+                    fill
+                    className="object-contain p-1 sm:p-3 md:p-6"
+                    priority
+                    quality={95}
+                  />
+
+                  {/* Photo Caption Overlay at Bottom */}
+                  <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-6 sm:right-6 bg-black/75 backdrop-blur-md p-3 sm:p-5 rounded-2xl text-center text-white border border-white/10 shadow-2xl pointer-events-none">
+                    <span className="text-[10px] sm:text-xs text-accent uppercase font-extrabold tracking-widest block mb-0.5">
                       {selectedImage.title}
                     </span>
-                    <p className="text-xs md:text-sm text-white/80 mt-1 max-w-xl mx-auto font-light leading-relaxed">
+                    <p className="text-[11px] sm:text-xs md:text-sm text-white/90 font-light leading-relaxed max-w-2xl mx-auto line-clamp-2">
                       {selectedImage.description}
                     </p>
                   </div>
@@ -404,13 +433,13 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
               )}
             </AnimatePresence>
 
-            {/* Left and Right Nav Buttons */}
-            <div className="absolute inset-0 flex items-center justify-between px-2 sm:px-4 pointer-events-none">
+            {/* Left and Right Nav Floating Buttons (Desktop & Touch) */}
+            <div className="absolute inset-0 flex items-center justify-between px-2 sm:px-6 pointer-events-none z-30">
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={handlePrev}
-                className="bg-white/10 hover:bg-accent hover:text-accent-foreground text-white rounded-full h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 shadow-2xl pointer-events-auto border border-white/10"
+                className="bg-white/15 hover:bg-accent hover:text-accent-foreground text-white rounded-full h-11 w-11 sm:h-14 sm:w-14 md:h-16 md:w-16 shadow-2xl pointer-events-auto border border-white/20 transition-all hover:scale-110 active:scale-95"
               >
                 <ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                 <span className="sr-only">Sebelumnya</span>
@@ -419,12 +448,18 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                 variant="ghost" 
                 size="icon" 
                 onClick={handleNext}
-                className="bg-white/10 hover:bg-accent hover:text-accent-foreground text-white rounded-full h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 shadow-2xl pointer-events-auto border border-white/10"
+                className="bg-white/15 hover:bg-accent hover:text-accent-foreground text-white rounded-full h-10 w-10 sm:h-14 sm:w-14 md:h-16 md:w-16 shadow-2xl pointer-events-auto border border-white/20 transition-all hover:scale-110 active:scale-95"
               >
                 <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                 <span className="sr-only">Selanjutnya</span>
               </Button>
             </div>
+          </div>
+
+          {/* Bottom Mobile Swipe Hint Bar */}
+          <div className="sm:hidden pb-3 text-center text-white/50 text-[10px] flex items-center justify-center gap-1">
+            <Hand className="w-3 h-3 animate-pulse" />
+            <span>Usap (Swipe) foto ke kiri / kanan untuk mengganti foto</span>
           </div>
         </DialogContent>
       </Dialog>
