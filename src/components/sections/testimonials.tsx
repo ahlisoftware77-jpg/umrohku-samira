@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Star, Quote } from 'lucide-react';
+import Link from 'next/link';
+import { Star, Quote, Sparkles, ArrowRight } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { motion } from 'framer-motion';
 import {
@@ -143,6 +144,10 @@ export default function Testimonials({ agent, data }: TestimonialsProps) {
     ...(dbFormatted.length === 0 && customEditorTestimonials.length === 0 ? customerTestimonials.map(t => ({ ...t, avatarUrl: null })) : [])
   ];
 
+  // Limit landing page carousel to maximum 10 items
+  const displayTestimonialsList = activeTestimonialsList.slice(0, 10);
+  const hasMoreTestimonials = activeTestimonialsList.length > 10;
+
   const onSelect = useCallback(() => {
     if (!api) return;
     setCurrent(api.selectedScrollSnap());
@@ -245,7 +250,7 @@ export default function Testimonials({ agent, data }: TestimonialsProps) {
               className="w-full"
             >
               <CarouselContent>
-                {activeTestimonialsList.map((testimonial, index) => (
+                {displayTestimonialsList.map((testimonial, index) => (
                   <CarouselItem key={index}>
                     <div className="space-y-3 md:space-y-8 p-1">
                       <div className="flex text-accent gap-0.5 md:gap-1 justify-center lg:justify-start">
@@ -288,7 +293,7 @@ export default function Testimonials({ agent, data }: TestimonialsProps) {
             </Carousel>
 
             <div className="flex gap-1.5 mt-6 md:mt-12 justify-center lg:justify-start">
-              {activeTestimonialsList.map((_, idx) => (
+              {displayTestimonialsList.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => api?.scrollTo(idx)}
@@ -297,6 +302,20 @@ export default function Testimonials({ agent, data }: TestimonialsProps) {
                 />
               ))}
             </div>
+
+            {/* If testimonials count exceeds 10, show 'Lihat Selengkapnya Testimoni' link */}
+            {hasMoreTestimonials && (
+              <div className="mt-8 md:mt-10 flex justify-center lg:justify-start">
+                <Link
+                  href={`/testimoni/${agent?.tenantId || agent?.slug || 'mitra'}?view=all`}
+                  className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-accent text-accent-foreground font-extrabold text-xs md:text-sm shadow-xl hover:bg-white hover:text-primary transition-all duration-300 transform hover:scale-105"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Lihat Selengkapnya Testimoni ({activeTestimonialsList.length})
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
