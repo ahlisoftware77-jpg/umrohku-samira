@@ -126,39 +126,39 @@ export default function SocialMediaSection({ data }: SocialMediaSectionProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-8 sm:mb-12 bg-gradient-to-r from-primary via-[#0f3057] to-primary rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-white relative overflow-hidden shadow-xl border border-primary/40"
+          className="mb-8 sm:mb-12 bg-gradient-to-br from-[#0a1e3b] via-[#0f2a4a] to-[#071527] rounded-2xl sm:rounded-3xl p-6 sm:p-9 text-white relative overflow-hidden shadow-2xl border-2 border-amber-400/40"
         >
-          {/* Subtle background glows */}
-          <div className="absolute -top-24 -right-24 w-72 h-72 bg-accent/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          {/* Subtle background glows for high depth & luxury feel */}
+          <div className="absolute -top-24 -right-24 w-80 h-80 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 sm:gap-8">
             <div className="max-w-2xl">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="bg-accent text-accent-foreground font-extrabold text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
-                  <Flame className="w-3 h-3" /> Komunitas VIP Jamaah
+              <div className="flex items-center gap-2.5 mb-3 flex-wrap">
+                <span className="bg-amber-400 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 fill-slate-950" /> Komunitas VIP Jamaah
                 </span>
-                <span className="bg-white/10 backdrop-blur-md text-white/90 text-[10px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                  <Users className="w-3 h-3 text-emerald-400" /> 25.000+ Member Aktif
+                <span className="bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 font-extrabold text-xs px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                  <Users className="w-3.5 h-3.5 text-emerald-300" /> 25.000+ Member Aktif
                 </span>
               </div>
 
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-headline font-extrabold text-white mb-2 leading-tight">
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-headline font-black text-white mb-3 leading-tight drop-shadow-md">
                 Bergabung dalam Komunitas WhatsApp & Telegram Jamaah
               </h3>
-              <p className="text-white/80 text-xs sm:text-sm font-light leading-relaxed">
+              <p className="text-slate-100 text-sm sm:text-base font-medium leading-relaxed drop-shadow-xs">
                 Dapatkan broadcast jadwal manasik, panduan doa Umrah/Haji harian, info kuota promo langsung, serta tempat silaturahmi sesama alumni jamaah.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto shrink-0">
-              <Button asChild className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-xs sm:text-sm h-11 px-5 rounded-xl shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-emerald-700 transition-all border border-emerald-400/40">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto shrink-0">
+              <Button asChild className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-green-600 text-white font-extrabold text-xs sm:text-sm h-12 px-6 rounded-xl shadow-lg shadow-emerald-600/35 hover:from-emerald-600 hover:to-emerald-700 hover:scale-105 border border-emerald-300/40 transition-all">
                 <a href={data?.whatsappUrl || data?.whatsappGroup || 'https://wa.me/6283815862300'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
-                  <MessageCircle className="w-4 h-4" /> Join Grup WA Jamaah
+                  <MessageCircle className="w-4 h-4 fill-white/20" /> Join Grup WA Jamaah
                 </a>
               </Button>
 
-              <Button asChild variant="outline" className="bg-white/10 text-white hover:bg-white/20 border-white/20 font-bold text-xs sm:text-sm h-11 px-4 rounded-xl transition-all">
+              <Button asChild className="bg-sky-600 hover:bg-sky-500 text-white border border-sky-400/50 font-extrabold text-xs sm:text-sm h-12 px-5 rounded-xl shadow-md transition-all hover:scale-105">
                 <a href={data?.telegramUrl || 'https://t.me'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
                   <Send className="w-4 h-4" /> Telegram Channel
                 </a>
