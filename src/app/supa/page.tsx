@@ -1507,7 +1507,8 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     <TableRow>
                       <TableHead>Mitra / Perusahaan</TableHead>
                       <TableHead>User UID (Auth)</TableHead>
-                      <TableHead>ID Tenant (Readable ID)</TableHead>
+                      <TableHead>Tenant ID (Firestore)</TableHead>
+                      <TableHead>Readable ID (Alias)</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Subdomain</TableHead>
                       <TableHead>Server DB</TableHead>
@@ -1527,12 +1528,17 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           </div>
                         </TableCell>
                         <TableCell>
-                          <code className="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-primary font-mono font-bold select-all border border-slate-200 block w-fit shadow-xs" title="User UID (Firebase Auth ID)">
+                          <code className="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-slate-800 font-mono font-bold select-all border border-slate-200 block w-fit shadow-xs" title="User UID (Firebase Auth ID)">
                             {t.tenantId}
                           </code>
                         </TableCell>
                         <TableCell>
-                          <code className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md font-mono font-bold select-all border border-purple-200 block w-fit shadow-xs" title="Readable Tenant ID (Subdomain / Email Alias)">
+                          <code className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md font-mono font-bold select-all border border-blue-200 block w-fit shadow-xs" title="Tenant ID (Firestore Document ID)">
+                            {t.tenantId}
+                          </code>
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md font-mono font-bold select-all border border-purple-200 block w-fit shadow-xs" title="Readable ID (Subdomain / Email Alias)">
                             {t.readableId || t.subdomain || (t.email ? t.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : '-')}
                           </code>
                         </TableCell>
