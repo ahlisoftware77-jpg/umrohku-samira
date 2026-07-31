@@ -350,6 +350,7 @@ export const cmsService = {
             email: tenantEmail,
             hours: 'Senin - Sabtu: 08.30 - 17.30 WIB',
             address: tenantCompany,
+            officePusatMapUrl: 'https://www.google.com/maps?q=Samira%20Travel%20-%20Kantor%20Pusat&t=&z=15&ie=UTF8&iwloc=&output=embed',
           };
         } else if (type === 'cta') {
           contentObj = {

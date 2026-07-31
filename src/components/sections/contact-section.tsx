@@ -60,7 +60,7 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
     pusat: {
       name: 'Kantor Pusat Samira Travel',
       address: rawPusatAddress,
-      embedUrl: cleanOfficePusatMapUrl || (pusatQueryText ? `https://www.google.com/maps?q=${encodeURIComponent(pusatQueryText)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '')
+      embedUrl: cleanOfficePusatMapUrl || 'https://www.google.com/maps?q=Samira%20Travel%20-%20Kantor%20Pusat&t=&z=15&ie=UTF8&iwloc=&output=embed'
     },
     mitra: {
       name: agent?.displayName || 'Kantor Cabang Mitra',
