@@ -1493,7 +1493,8 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   <TableHeader>
                     <TableRow>
                       <TableHead>Mitra / Perusahaan</TableHead>
-                      <TableHead>User UID (Firestore)</TableHead>
+                      <TableHead>User UID (Auth)</TableHead>
+                      <TableHead>ID Tenant (Readable ID)</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Subdomain</TableHead>
                       <TableHead>Server DB</TableHead>
@@ -1513,8 +1514,13 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           </div>
                         </TableCell>
                         <TableCell>
-                          <code className="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-primary font-mono font-bold select-all border border-slate-200 block w-fit shadow-xs" title="User UID Firebase & Firestore Tenant ID">
+                          <code className="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-primary font-mono font-bold select-all border border-slate-200 block w-fit shadow-xs" title="User UID (Firebase Auth ID)">
                             {t.tenantId}
+                          </code>
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md font-mono font-bold select-all border border-purple-200 block w-fit shadow-xs" title="Readable Tenant ID (Subdomain / Email Alias)">
+                            {t.readableId || t.subdomain || (t.email ? t.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : '-')}
                           </code>
                         </TableCell>
                         <TableCell className="text-sm">{t.email}</TableCell>
