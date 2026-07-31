@@ -70,6 +70,7 @@ export default function SuperAdminPage() {
   const [tenantPagesCount, setTenantPagesCount] = useState<Record<string, number>>({});
   const [totalLandingPages, setTotalLandingPages] = useState<number>(0);
   const [cloudinaryStorageMb, setCloudinaryStorageMb] = useState<string>('0.0');
+  const [totalImagesCount, setTotalImagesCount] = useState<number>(0);
 
   // Builder Plans state
   const [builderPlans, setBuilderPlans] = useState<BuilderPlan[]>([]);
@@ -392,11 +393,39 @@ service cloud.firestore {
         setTenantPagesCount(counts);
       } catch (pErr) {}
 
-      // 2.5 Fetch Cloudinary Images Storage
+      // 2.5 Fetch Cloudinary Images Storage across primary DB and all cluster servers
       try {
-        const imgSnap = await getDocs(collection(db, 'images'));
-        const totalBytes = imgSnap.docs.reduce((acc, doc) => acc + (Number(doc.data().sizeBytes) || 350000), 0);
-        setCloudinaryStorageMb(totalBytes > 0 ? (totalBytes / (1024 * 1024)).toFixed(1) : '0.0');
+        const dbsToQuery = [db];
+        for (const s of dbServers) {
+          if (s.status === 'active') {
+            try {
+              const cDb = getDynamicFirebaseInstance(s).db;
+              if (cDb && cDb !== db) dbsToQuery.push(cDb);
+            } catch (e) {}
+          }
+        }
+
+        let grandTotalBytes = 0;
+        let imgCount = 0;
+        const processedIds = new Set<string>();
+
+        for (const instance of dbsToQuery) {
+          try {
+            const snap = await getDocs(collection(instance, 'images'));
+            snap.docs.forEach(d => {
+              const data = d.data();
+              const id = d.id || data.imageId;
+              if (id && !processedIds.has(id)) {
+                processedIds.add(id);
+                grandTotalBytes += Number(data.sizeBytes) || 350000;
+                imgCount += 1;
+              }
+            });
+          } catch (e) {}
+        }
+
+        setCloudinaryStorageMb(grandTotalBytes > 0 ? (grandTotalBytes / (1024 * 1024)).toFixed(1) : '0.0');
+        setTotalImagesCount(imgCount);
       } catch (imgErr) {}
 
       // 3. Fetch Builder Plans (Fail-Safe)
@@ -629,13 +658,38 @@ service cloud.firestore {
         });
         setTenantPagesCount(pageCounts);
 
-        // 3. Fetch Cloudinary Images Storage Size
-        const imagesSnap = await getDocs(collection(db, 'images'));
-        const totalBytes = imagesSnap.docs.reduce((acc, doc) => {
-          const data = doc.data();
-          return acc + (Number(data.sizeBytes) || 350000);
-        }, 0);
-        setCloudinaryStorageMb(totalBytes > 0 ? (totalBytes / (1024 * 1024)).toFixed(1) : '0.0');
+        // 3. Fetch Cloudinary Images Storage Size across all active cluster databases
+        const dbsToQuery = [db];
+        for (const s of dbServers) {
+          if (s.status === 'active') {
+            try {
+              const cDb = getDynamicFirebaseInstance(s).db;
+              if (cDb && cDb !== db) dbsToQuery.push(cDb);
+            } catch (e) {}
+          }
+        }
+
+        let grandTotalBytes = 0;
+        let imgCount = 0;
+        const processedIds = new Set<string>();
+
+        for (const instance of dbsToQuery) {
+          try {
+            const snap = await getDocs(collection(instance, 'images'));
+            snap.docs.forEach(d => {
+              const data = d.data();
+              const id = d.id || data.imageId;
+              if (id && !processedIds.has(id)) {
+                processedIds.add(id);
+                grandTotalBytes += Number(data.sizeBytes) || 350000;
+                imgCount += 1;
+              }
+            });
+          } catch (e) {}
+        }
+
+        setCloudinaryStorageMb(grandTotalBytes > 0 ? (grandTotalBytes / (1024 * 1024)).toFixed(1) : '0.0');
+        setTotalImagesCount(imgCount);
 
         // 4. Fetch Builder Plans
         const plansSnap = await getDocs(collection(db, 'plans'));
@@ -2106,8 +2160,11 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
             <CardContent className="p-6 flex items-center gap-4">
               <div className="bg-green-500/10 p-3.5 rounded-2xl text-green-600"><HardDrive className="h-6 w-6" /></div>
               <div>
-                <p className="text-xs text-muted-foreground">Storage Cloudinary</p>
+                <p className="text-xs text-muted-foreground">Storage Cloudinary Server</p>
                 <h4 className="text-2xl font-bold text-primary">{cloudinaryStorageMb} MB</h4>
+                <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
+                  {totalImagesCount.toLocaleString()} Berkas Gambar Terunggah
+                </p>
               </div>
             </CardContent>
           </Card>
