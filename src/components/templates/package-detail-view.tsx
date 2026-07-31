@@ -177,9 +177,9 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
   const image = PlaceHolderImages.find(p => p.id === pkg.imageId);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f5f5f7] pb-16 lg:pb-0">
+    <div className="flex flex-col min-h-screen bg-[#f5f5f7] pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden relative">
       <Header agent={agent} />
-      <main className="flex-1 pt-16 sm:pt-20">
+      <main className="flex-1 pt-16 sm:pt-20 w-full max-w-full overflow-x-hidden">
 
         {/* ── HERO BANNER ── */}
         <div className="relative h-[380px] sm:h-[48vh] md:h-[65vh] w-full overflow-hidden">

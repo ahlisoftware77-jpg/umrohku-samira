@@ -37,8 +37,8 @@ const bankAccounts = [
 
 export default function PaymentInfo() {
   return (
-    <section className="py-16 bg-muted/30">
-      <div className="container mx-auto px-4">
+    <section className="py-12 md:py-16 bg-muted/30 overflow-hidden w-full max-w-full">
+      <div className="container mx-auto px-4 max-w-full overflow-hidden">
         <div className="text-center mb-12">
           <p className="text-accent font-bold uppercase tracking-widest text-sm mb-2">Informasi Transaksi</p>
           <h2 className="text-2xl md:text-4xl font-headline font-bold text-primary">Metode Pembayaran Resmi</h2>

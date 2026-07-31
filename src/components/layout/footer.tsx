@@ -26,23 +26,23 @@ export default function Footer({ agent: providedAgent }: FooterProps) {
   const prefix = agentSlug === 'default' ? '' : `/${agentSlug}`;
   
   return (
-    <footer className="bg-primary text-primary-foreground overflow-hidden">
-      <div className="container mx-auto py-12 md:py-16 px-4">
+    <footer className="bg-primary text-primary-foreground overflow-hidden w-full max-w-full">
+      <div className="container mx-auto py-10 md:py-16 px-4 max-w-full overflow-hidden">
         <motion.div 
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 1.5, ease: "easeOut" }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-8"
         >
           <div className="space-y-4 text-center sm:text-left">
             <Link href={`${prefix}/`} className="flex items-center justify-center sm:justify-start">
-              <div className="relative h-20 md:h-28 w-64 md:w-80">
+              <div className="relative h-16 md:h-28 w-48 sm:w-64 md:w-80 max-w-full">
                 <Image
                   src="/images/Logo Umroh new season.png"
                   alt="SAMIRA Logo"
                   fill
-                  className="object-contain object-left"
+                  className="object-contain object-center sm:object-left"
                 />
               </div>
             </Link>

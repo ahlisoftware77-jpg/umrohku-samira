@@ -53,18 +53,18 @@ export default function Header({ agent: providedAgent }: HeaderProps) {
 
   return (
     <header className={cn(
-      "fixed top-0 z-50 w-full transition-all duration-500 px-4",
+      "fixed top-0 z-50 w-full max-w-full overflow-x-clip transition-all duration-500 px-3 sm:px-4",
       isSolid 
         ? "bg-background shadow-xl py-2 border-b border-border/50" 
-        : "bg-transparent py-4 md:py-6"
+        : "bg-transparent py-3 md:py-6"
     )}>
-      <div className="container mx-auto flex items-center justify-between">
-        <Link href={`${prefix}/`} className="flex items-center group">
+      <div className="container mx-auto flex items-center justify-between max-w-full">
+        <Link href={`${prefix}/`} className="flex items-center group shrink-0">
           <div className={cn(
             "relative transition-all duration-300",
             isSolid 
-              ? "h-14 md:h-16 w-44 md:w-60" 
-              : "h-16 md:h-24 w-52 md:w-80"
+              ? "h-10 sm:h-14 md:h-16 w-32 sm:w-44 md:w-60" 
+              : "h-12 sm:h-16 md:h-24 w-36 sm:w-52 md:w-80"
           )}>
             <Image
               src="/images/Logo Umroh new season.png"
