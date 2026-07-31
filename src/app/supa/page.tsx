@@ -2231,83 +2231,83 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col">
       {/* Admin Navbar */}
-      <header className="h-16 bg-white border-b flex items-center justify-between px-8 z-40 shrink-0">
-        <div className="flex items-center gap-3">
-          <Settings className="h-6 w-6 text-primary" />
-          <h1 className="font-headline font-bold text-lg text-primary">SAMIRA CMS Super Admin</h1>
+      <header className="h-14 sm:h-16 bg-white border-b flex items-center justify-between px-3.5 sm:px-8 z-40 shrink-0 shadow-xs">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
+          <h1 className="font-headline font-bold text-xs sm:text-lg text-primary truncate max-w-[160px] sm:max-w-none">SAMIRA Super Admin</h1>
         </div>
         
-        <div className="flex items-center gap-4">
-          <p className="text-sm font-semibold text-muted-foreground hidden sm:block">Admin: <span className="text-primary">{user?.email}</span></p>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <p className="text-xs sm:text-sm font-semibold text-muted-foreground hidden lg:block">Admin: <span className="text-primary">{user?.email}</span></p>
           <Link href="/dashboard">
-            <Button variant="outline" className="rounded-full font-bold border-primary text-primary hover:bg-primary hover:text-white flex items-center gap-2">
-              <Layout className="h-4 w-4" /> Akses Dashboard CMS
+            <Button variant="outline" className="rounded-full font-bold border-primary text-primary hover:bg-primary hover:text-white flex items-center gap-1.5 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9">
+              <Layout className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Akses </span>Dashboard
             </Button>
           </Link>
         </div>
       </header>
 
       {/* Main Board Container */}
-      <main className="flex-1 p-6 md:p-8 max-w-[98%] w-full mx-auto space-y-6">
-        <div className="flex justify-between items-center">
+      <main className="flex-1 p-3.5 sm:p-6 md:p-8 max-w-[98%] w-full mx-auto space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-3xl font-headline font-bold text-primary">Dashboard Kontrol</h2>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <h2 className="text-xl sm:text-3xl font-headline font-bold text-primary">Dashboard Kontrol</h2>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-green-100 text-green-700 border border-green-200">
                 <span className="h-2 w-2 rounded-full bg-green-600 animate-ping"></span> Realtime Active
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">Kelola tenant, paket limitasi, dan pantau performa seluruh web builder.</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Kelola tenant, paket limitasi, dan pantau performa seluruh web builder.</p>
           </div>
           
-          <Button onClick={loadAdminData} className="bg-primary text-white rounded-full font-bold h-10 px-6">
+          <Button onClick={loadAdminData} className="bg-primary text-white rounded-full font-bold h-9 sm:h-10 px-5 sm:px-6 text-xs sm:text-sm w-full sm:w-auto shadow-sm">
             Segarkan Data
           </Button>
         </div>
 
         {/* Top metrics grids */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="rounded-2xl border shadow-sm">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-primary/10 p-3.5 rounded-2xl text-primary"><Users className="h-6 w-6" /></div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Tenant</p>
-                <h4 className="text-2xl font-bold text-primary">{tenants.length}</h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-6">
+          <Card className="rounded-2xl border shadow-sm bg-white">
+            <CardContent className="p-3.5 sm:p-6 flex items-center gap-2.5 sm:gap-4">
+              <div className="bg-primary/10 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl text-primary shrink-0"><Users className="h-5 w-5 sm:h-6 sm:w-6" /></div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Total Tenant</p>
+                <h4 className="text-lg sm:text-2xl font-bold text-primary truncate">{tenants.length}</h4>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="rounded-2xl border shadow-sm">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-accent/10 p-3.5 rounded-2xl text-accent"><Layout className="h-6 w-6" /></div>
-              <div>
-                <p className="text-xs text-muted-foreground">Landing Page</p>
-                <h4 className="text-2xl font-bold text-primary">
+          <Card className="rounded-2xl border shadow-sm bg-white">
+            <CardContent className="p-3.5 sm:p-6 flex items-center gap-2.5 sm:gap-4">
+              <div className="bg-accent/10 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl text-accent shrink-0"><Layout className="h-5 w-5 sm:h-6 sm:w-6" /></div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Landing Page</p>
+                <h4 className="text-lg sm:text-2xl font-bold text-primary truncate">
                   {totalLandingPages > 0 ? totalLandingPages : Object.values(tenantPagesCount).reduce((a, b) => a + b, 0)}
                 </h4>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border shadow-sm">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-green-500/10 p-3.5 rounded-2xl text-green-600"><HardDrive className="h-6 w-6" /></div>
-              <div>
-                <p className="text-xs text-muted-foreground">Storage Cloudinary Server</p>
-                <h4 className="text-2xl font-bold text-primary">{cloudinaryStorageMb} MB</h4>
-                <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
-                  {totalImagesCount.toLocaleString()} Berkas Gambar Terunggah
+          <Card className="rounded-2xl border shadow-sm bg-white">
+            <CardContent className="p-3.5 sm:p-6 flex items-center gap-2.5 sm:gap-4">
+              <div className="bg-green-500/10 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl text-green-600 shrink-0"><HardDrive className="h-5 w-5 sm:h-6 sm:w-6" /></div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Storage Cloudinary</p>
+                <h4 className="text-lg sm:text-2xl font-bold text-primary truncate">{cloudinaryStorageMb} MB</h4>
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground font-medium mt-0.5 truncate">
+                  {totalImagesCount.toLocaleString()} Berkas Terunggah
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border shadow-sm">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-purple-500/10 p-3.5 rounded-2xl text-purple-600"><CloudLightning className="h-6 w-6" /></div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Visitor Global</p>
-                <h4 className="text-2xl font-bold text-primary">
+          <Card className="rounded-2xl border shadow-sm bg-white">
+            <CardContent className="p-3.5 sm:p-6 flex items-center gap-2.5 sm:gap-4">
+              <div className="bg-purple-500/10 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl text-purple-600 shrink-0"><CloudLightning className="h-5 w-5 sm:h-6 sm:w-6" /></div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Total Visitor Global</p>
+                <h4 className="text-lg sm:text-2xl font-bold text-primary truncate">
                   {tenants.reduce((acc, t) => acc + (t.visitorCount || 0), 0).toLocaleString()}
                 </h4>
               </div>
@@ -2315,16 +2315,18 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
           </Card>
         </div>
 
-        <Tabs defaultValue="tenants" className="w-full">
-          <TabsList className="bg-white border p-1 rounded-full w-fit mb-6 flex flex-wrap gap-1">
-            <TabsTrigger value="tenants" className="rounded-full px-6 py-2 text-xs">Kelola Tenant</TabsTrigger>
-            <TabsTrigger value="media" onClick={loadAllAdminImages} className="rounded-full px-6 py-2 text-xs flex items-center gap-1.5 font-bold"><ImageIcon className="h-3.5 w-3.5 text-blue-600" /> Pustaka Media ({totalImagesCount})</TabsTrigger>
-            <TabsTrigger value="orphans" className="rounded-full px-6 py-2 text-xs flex items-center gap-1.5"><Trash2 className="h-3.5 w-3.5 text-amber-600" /> Pembersihan Data Terasing</TabsTrigger>
-            <TabsTrigger value="packages" className="rounded-full px-6 py-2 text-xs">Paket Limits Tenant</TabsTrigger>
-            <TabsTrigger value="builderPlans" className="rounded-full px-6 py-2 text-xs">Paket Builder Iklan</TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-full px-6 py-2 text-xs">Pengaturan API & Database</TabsTrigger>
-            <TabsTrigger value="activity" className="rounded-full px-6 py-2 text-xs">Log Aktivitas</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="tenants" className="w-full space-y-4">
+          <div className="overflow-x-auto pb-1 max-w-full">
+            <TabsList className="bg-white border p-1 rounded-2xl md:rounded-full w-max flex items-center gap-1 shadow-xs">
+              <TabsTrigger value="tenants" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap font-bold shrink-0">Kelola Tenant</TabsTrigger>
+              <TabsTrigger value="media" onClick={loadAllAdminImages} className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0"><ImageIcon className="h-3.5 w-3.5 text-blue-600" /> Pustaka Media ({totalImagesCount})</TabsTrigger>
+              <TabsTrigger value="orphans" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0"><Trash2 className="h-3.5 w-3.5 text-amber-600" /> Pembersihan Data</TabsTrigger>
+              <TabsTrigger value="packages" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap shrink-0">Paket Limits Tenant</TabsTrigger>
+              <TabsTrigger value="builderPlans" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap shrink-0">Paket Builder Iklan</TabsTrigger>
+              <TabsTrigger value="settings" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap shrink-0">Pengaturan API & Database</TabsTrigger>
+              <TabsTrigger value="activity" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap shrink-0">Log Aktivitas</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* ==========================================
               TAB MEDIA LIBRARY & CLOUDINARY STORAGE
@@ -2566,8 +2568,9 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
               {dbLoading ? (
                 <div className="py-12 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : (
-                <Table>
-                  <TableHeader>
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs max-w-full">
+                  <Table className="min-w-[850px]">
+                    <TableHeader>
                     <TableRow>
                       {visibleColumns.mitra && <TableHead>Mitra / Perusahaan</TableHead>}
                       {visibleColumns.userUid && <TableHead>User UID (Auth)</TableHead>}
@@ -2792,6 +2795,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   })()}
                   </TableBody>
                 </Table>
+              </div>
               )}
             </Card>
 
