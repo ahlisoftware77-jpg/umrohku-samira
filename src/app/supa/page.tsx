@@ -53,7 +53,11 @@ import {
   Download,
   Upload,
   EyeOff,
-  Lock
+  Lock,
+  Filter,
+  SlidersHorizontal,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { Tenant, TenantPlan, TenantStatus, SYSTEM_PLANS, DatabaseServerConfig, BuilderPlan } from '@/types/cms';
 
@@ -116,6 +120,25 @@ export default function SuperAdminPage() {
   const [newPinInput, setNewPinInput] = useState('');
   const [confirmPinInput, setConfirmPinInput] = useState('');
   const [changePinError, setChangePinError] = useState('');
+
+  // Column Visibility state for Tenant Table
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    mitra: true,
+    userUid: true,
+    tenantId: true,
+    readableId: true,
+    email: true,
+    subdomain: true,
+    serverDb: true,
+    paket: true,
+    views: true,
+    status: true,
+    actions: true,
+  });
+
+  const toggleColumn = (colKey: string) => {
+    setVisibleColumns(prev => ({ ...prev, [colKey]: !prev[colKey] }));
+  };
 
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -1480,23 +1503,61 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
               ========================================== */}
           <TabsContent value="tenants" className="space-y-6">
             <Card className="rounded-3xl border shadow-none bg-white p-6">
-              <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
+              <CardHeader className="px-0 pt-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-xl font-headline font-bold text-primary">Manajemen Tenant Terdaftar</CardTitle>
                   <CardDescription className="text-xs">Ubah paket, status aktif, backup/restore data, atau edit batas operasional dari setiap akun tenant.</CardDescription>
                 </div>
 
-                <label className="cursor-pointer">
-                  <input 
-                    type="file" 
-                    accept=".json" 
-                    onChange={(e) => handleRestoreTenant(e)}
-                    className="hidden" 
-                  />
-                  <div className="rounded-full text-xs font-bold border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-2 h-9 px-4 shadow-sm">
-                    <Upload className="h-4 w-4" /> Pulihkan / Restore dari Berkas (.json)
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Column Hide / Unhide Selector Dropdown */}
+                  <div className="relative group">
+                    <button className="rounded-full text-xs font-bold border border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200 transition-all flex items-center gap-2 h-9 px-4 shadow-xs">
+                      <SlidersHorizontal className="h-3.5 w-3.5" /> Atur Kolom (Hide / Unhide)
+                    </button>
+                    <div className="absolute right-0 top-10 z-50 hidden group-hover:block group-focus-within:block bg-white border border-slate-200 rounded-2xl shadow-xl p-3 w-64 space-y-1 text-xs">
+                      <p className="font-bold text-primary px-2 py-1 border-b mb-1">Tampilkan / Sembunyikan Kolom:</p>
+                      {[
+                        { key: 'mitra', label: 'Mitra / Perusahaan' },
+                        { key: 'userUid', label: 'User UID (Auth)' },
+                        { key: 'tenantId', label: 'Tenant ID (Firestore)' },
+                        { key: 'readableId', label: 'Readable ID (Alias)' },
+                        { key: 'email', label: 'Email' },
+                        { key: 'subdomain', label: 'Subdomain' },
+                        { key: 'serverDb', label: 'Server DB' },
+                        { key: 'paket', label: 'Paket' },
+                        { key: 'views', label: 'Pengunjung (Views)' },
+                        { key: 'status', label: 'Status' },
+                        { key: 'actions', label: 'Aksi Kontrol' },
+                      ].map(col => (
+                        <button
+                          key={col.key}
+                          onClick={() => toggleColumn(col.key)}
+                          className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-50 transition-colors text-left"
+                        >
+                          <span className="font-medium text-slate-700">{col.label}</span>
+                          {visibleColumns[col.key] ? (
+                            <CheckSquare className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <Square className="h-4 w-4 text-slate-400" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </label>
+
+                  <label className="cursor-pointer">
+                    <input 
+                      type="file" 
+                      accept=".json" 
+                      onChange={(e) => handleRestoreTenant(e)}
+                      className="hidden" 
+                    />
+                    <div className="rounded-full text-xs font-bold border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-2 h-9 px-4 shadow-sm">
+                      <Upload className="h-4 w-4" /> Pulihkan / Restore (.json)
+                    </div>
+                  </label>
+                </div>
               </CardHeader>
               
               {dbLoading ? (
@@ -1505,77 +1566,94 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Mitra / Perusahaan</TableHead>
-                      <TableHead>User UID (Auth)</TableHead>
-                      <TableHead>Tenant ID (Firestore)</TableHead>
-                      <TableHead>Readable ID (Alias)</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Subdomain</TableHead>
-                      <TableHead>Server DB</TableHead>
-                      <TableHead>Paket</TableHead>
-                      <TableHead>Pengunjung (Views)</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Aksi Kontrol</TableHead>
+                      {visibleColumns.mitra && <TableHead>Mitra / Perusahaan</TableHead>}
+                      {visibleColumns.userUid && <TableHead>User UID (Auth)</TableHead>}
+                      {visibleColumns.tenantId && <TableHead>Tenant ID (Firestore)</TableHead>}
+                      {visibleColumns.readableId && <TableHead>Readable ID (Alias)</TableHead>}
+                      {visibleColumns.email && <TableHead>Email</TableHead>}
+                      {visibleColumns.subdomain && <TableHead>Subdomain</TableHead>}
+                      {visibleColumns.serverDb && <TableHead>Server DB</TableHead>}
+                      {visibleColumns.paket && <TableHead>Paket</TableHead>}
+                      {visibleColumns.views && <TableHead>Pengunjung (Views)</TableHead>}
+                      {visibleColumns.status && <TableHead>Status</TableHead>}
+                      {visibleColumns.actions && <TableHead className="text-right">Aksi Kontrol</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {tenants.map((t, idx) => (
                       <TableRow key={`${t.tenantId || 'tenant'}_${idx}`}>
-                        <TableCell>
-                          <div>
-                            <p className="font-bold text-sm text-primary">{t.name}</p>
-                            <p className="text-xs text-muted-foreground">{t.company}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-slate-800 font-mono font-bold select-all border border-slate-200 block w-fit shadow-xs" title="User UID (Firebase Auth ID)">
-                            {t.tenantId}
-                          </code>
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md font-mono font-bold select-all border border-blue-200 block w-fit shadow-xs" title="Tenant ID (Firestore Document ID)">
-                            {t.tenantId}
-                          </code>
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md font-mono font-bold select-all border border-purple-200 block w-fit shadow-xs" title="Readable ID (Subdomain / Email Alias)">
-                            {t.readableId || t.subdomain || (t.email ? t.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : '-')}
-                          </code>
-                        </TableCell>
-                        <TableCell className="text-sm">{t.email}</TableCell>
-                        <TableCell className="text-xs font-semibold text-accent">
-                          <a href={`/${t.subdomain}`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
-                            umrohku-samira.my.id/{t.subdomain} <ExternalLink className="h-3 w-3 inline" />
-                          </a>
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          <select
-                            value={t.dbServerId || 'default'}
-                            onChange={(e) => handleAssignTenantServer(t, e.target.value)}
-                            className="bg-muted/60 border rounded-lg px-2 py-1 text-xs font-semibold text-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                          >
-                            <option value="default">Default (landing-umroh)</option>
-                            {dbServers.map(s => (
-                              <option key={s.serverId} value={s.serverId}>
-                                {s.name} ({s.projectId})
-                              </option>
-                            ))}
-                          </select>
-                        </TableCell>
-                        <TableCell className="capitalize text-sm font-semibold">{t.plan}</TableCell>
-                        <TableCell className="text-sm font-extrabold text-primary">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                            <Eye className="h-3.5 w-3.5 text-amber-500" /> {(t.visitorCount || 0).toLocaleString()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                            t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
-                            {t.status}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right flex justify-end gap-1.5 pt-4">
+                        {visibleColumns.mitra && (
+                          <TableCell>
+                            <div>
+                              <p className="font-bold text-sm text-primary">{t.name}</p>
+                              <p className="text-xs text-muted-foreground">{t.company}</p>
+                            </div>
+                          </TableCell>
+                        )}
+                        {visibleColumns.userUid && (
+                          <TableCell>
+                            <code className="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-slate-800 font-mono font-bold select-all border border-slate-200 block w-fit shadow-xs" title="User UID (Firebase Auth ID)">
+                              {t.tenantId}
+                            </code>
+                          </TableCell>
+                        )}
+                        {visibleColumns.tenantId && (
+                          <TableCell>
+                            <code className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md font-mono font-bold select-all border border-blue-200 block w-fit shadow-xs" title="Tenant ID (Firestore Document ID)">
+                              {t.tenantId}
+                            </code>
+                          </TableCell>
+                        )}
+                        {visibleColumns.readableId && (
+                          <TableCell>
+                            <code className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md font-mono font-bold select-all border border-purple-200 block w-fit shadow-xs" title="Readable ID (Subdomain / Email Alias)">
+                              {t.readableId || t.subdomain || (t.email ? t.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : '-')}
+                            </code>
+                          </TableCell>
+                        )}
+                        {visibleColumns.email && <TableCell className="text-sm">{t.email}</TableCell>}
+                        {visibleColumns.subdomain && (
+                          <TableCell className="text-xs font-semibold text-accent">
+                            <a href={`/${t.subdomain}`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
+                              umrohku-samira.my.id/{t.subdomain} <ExternalLink className="h-3 w-3 inline" />
+                            </a>
+                          </TableCell>
+                        )}
+                        {visibleColumns.serverDb && (
+                          <TableCell className="text-xs">
+                            <select
+                              value={t.dbServerId || 'default'}
+                              onChange={(e) => handleAssignTenantServer(t, e.target.value)}
+                              className="bg-muted/60 border rounded-lg px-2 py-1 text-xs font-semibold text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                            >
+                              <option value="default">Default (landing-umroh)</option>
+                              {dbServers.map(s => (
+                                <option key={s.serverId} value={s.serverId}>
+                                  {s.name} ({s.projectId})
+                                </option>
+                              ))}
+                            </select>
+                          </TableCell>
+                        )}
+                        {visibleColumns.paket && <TableCell className="capitalize text-sm font-semibold">{t.plan}</TableCell>}
+                        {visibleColumns.views && (
+                          <TableCell className="text-sm font-extrabold text-primary">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                              <Eye className="h-3.5 w-3.5 text-amber-500" /> {(t.visitorCount || 0).toLocaleString()}
+                            </span>
+                          </TableCell>
+                        )}
+                        {visibleColumns.status && (
+                          <TableCell>
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                              t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                              {t.status}
+                            </span>
+                          </TableCell>
+                        )}
+                        {visibleColumns.actions && (
+                          <TableCell className="text-right flex justify-end gap-1.5 pt-4">
                           <a href={`/${t.subdomain}`} target="_blank" rel="noopener noreferrer">
                             <Button size="icon" variant="outline" className="h-8 w-8" title="Lihat Landing Page">
                               <Eye className="h-4 w-4 text-blue-600" />
@@ -1608,6 +1686,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
