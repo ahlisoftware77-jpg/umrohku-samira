@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { X, Maximize2, ChevronLeft, ChevronRight, ImageIcon, Camera, Eye } from 'lucide-react';
+import { X, Maximize2, ChevronLeft, ChevronRight, ImageIcon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Agent } from '@/lib/agents';
 import { db } from '@/lib/firebase';
@@ -18,18 +18,35 @@ interface GallerySectionProps {
   isFullPage?: boolean;
 }
 
-const CATEGORIES = [
-  { id: 'all', label: 'Semua Foto' },
-  { id: 'ibadah', label: 'Momen Ibadah' },
-  { id: 'ziarah', label: 'Ziarah & Perjalanan' },
-  { id: 'kebersamaan', label: 'Kebersamaan Jamaah' }
-];
-
 export default function GallerySection({ agent, data, isFullPage = false }: GallerySectionProps) {
   const [activeCategory, setActiveCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [dbGalleryImages, setDbGalleryImages] = useState<string[]>([]);
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  // ── Mobile Hardware Back Button Interceptor to Close Lightbox Modal ──
+  useEffect(() => {
+    if (selectedIndex === null) return;
+
+    const stateId = `gallery_lightbox_${Date.now()}`;
+    window.history.pushState({ isGalleryLightbox: true, stateId }, '');
+
+    let closedViaPopstate = false;
+
+    const handlePopState = () => {
+      closedViaPopstate = true;
+      setSelectedIndex(null);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (!closedViaPopstate && window.history.state?.isGalleryLightbox) {
+        window.history.back();
+      }
+    };
+  }, [selectedIndex]);
 
   // Fetch all gallery-category Cloudinary photos for this tenant from Firestore
   useEffect(() => {
@@ -130,7 +147,6 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
           title = 'Ziarah & Perjalanan Religi';
         }
       } else {
-        // Fallback for empty title/description/category inside object
         if (!item.category) {
           if (url.toLowerCase().includes('makkah') || url.toLowerCase().includes('haram') || idx % 3 === 0) {
             category = 'ibadah';
@@ -157,11 +173,46 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
     });
   }, [allImages]);
 
-  // Filtered Items based on selected category
+  // Dynamic Categories Generator with Photo Counter Badges
+  const categoriesList = useMemo(() => {
+    const baseMap: Record<string, { label: string; count: number }> = {
+      all: { label: 'Semua Foto', count: galleryItems.length },
+      ibadah: { label: 'Momen Ibadah', count: 0 },
+      ziarah: { label: 'Ziarah & Religi', count: 0 },
+      kebersamaan: { label: 'Kebersamaan Jamaah', count: 0 },
+    };
+
+    galleryItems.forEach(item => {
+      const catKey = (item.category || 'kebersamaan').toLowerCase();
+      if (baseMap[catKey]) {
+        baseMap[catKey].count += 1;
+      } else {
+        const formattedLabel = catKey.charAt(0).toUpperCase() + catKey.slice(1).replace(/-/g, ' ');
+        baseMap[catKey] = { label: formattedLabel, count: 1 };
+      }
+    });
+
+    return Object.keys(baseMap)
+      .filter(key => key === 'all' || baseMap[key].count > 0)
+      .map(key => ({
+        id: key,
+        label: baseMap[key].label,
+        count: baseMap[key].count
+      }));
+  }, [galleryItems]);
+
+  // Flexible Filtered Items based on selected category & search query
   const filteredItems = useMemo(() => {
-    if (activeCategory === 'all') return galleryItems;
-    return galleryItems.filter(item => item.category === activeCategory);
-  }, [galleryItems, activeCategory]);
+    return galleryItems.filter(item => {
+      const matchesCategory = activeCategory === 'all' || item.category.toLowerCase() === activeCategory.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = q === '' || 
+        item.title.toLowerCase().includes(q) || 
+        item.description.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [galleryItems, activeCategory, searchQuery]);
 
   const handlePrev = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -178,49 +229,77 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
   const selectedImage = selectedIndex !== null ? filteredItems[selectedIndex] ?? null : null;
 
   return (
-    <section id="galeri" className="py-20 md:py-28 bg-white overflow-hidden">
-      <div className="container mx-auto px-4">
+    <section id="galeri" className="py-16 md:py-28 bg-white overflow-hidden w-full max-w-full">
+      <div className="container mx-auto px-4 max-w-6xl">
         
         {/* Header */}
-        <div className="text-center mb-12">
-          <p className="font-semibold text-accent font-headline text-sm md:text-base uppercase tracking-widest mb-3">
+        <div className="text-center mb-8 md:mb-12">
+          <p className="font-semibold text-accent font-headline text-xs md:text-base uppercase tracking-widest mb-2">
             {data?.badgeText || 'Galeri Dokumentasi'}
           </p>
-          <h2 className="text-3xl md:text-5xl font-headline font-bold text-primary">
+          <h2 className="text-2xl md:text-5xl font-headline font-bold text-primary">
             {data?.title || 'Kenangan Indah di Tanah Suci'}
           </h2>
-          <p className="mt-4 max-w-2xl mx-auto text-base text-muted-foreground">
+          <p className="mt-3 md:mt-4 max-w-2xl mx-auto text-xs md:text-base text-muted-foreground">
             {data?.description || 'Kumpulan potret nyata kebahagiaan dan kekhusyukan para jamaah selama menjalankan ibadah Umrah dan Haji bersama Samira Travel.'}
           </p>
         </div>
 
-        {/* Interactive Category Filter Tabs */}
-        <div className="flex flex-wrap justify-center gap-2.5 md:gap-3 mb-12">
-          {CATEGORIES.map((tab) => {
-            const isActive = activeCategory === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveCategory(tab.id);
-                  setSelectedIndex(null);
-                }}
-                className={`relative px-5 py-2.5 rounded-full text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-300 border ${
-                  isActive 
-                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/10' 
-                    : 'bg-slate-50 text-muted-foreground border-slate-200/60 hover:bg-slate-100 hover:text-primary'
-                }`}
+        {/* Flexible Category Filter Pills & Search Input */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 mb-8 md:mb-12">
+          {/* Scrollable Pills for Mobile & Desktop */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none w-full md:w-auto pb-2 md:pb-0 px-1 snap-x max-w-full">
+            {categoriesList.map((tab) => {
+              const isActive = activeCategory === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveCategory(tab.id);
+                    setSelectedIndex(null);
+                  }}
+                  className={`relative px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 border whitespace-nowrap shrink-0 snap-start flex items-center gap-1.5 ${
+                    isActive 
+                      ? 'bg-primary text-white border-primary shadow-md shadow-primary/20 scale-105' 
+                      : 'bg-slate-50 text-gray-600 border-gray-200/80 hover:bg-slate-100 hover:text-primary'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                    isActive ? 'bg-accent text-accent-foreground' : 'bg-gray-200/70 text-gray-600'
+                  }`}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Flexible Search Filter Input */}
+          <div className="relative w-full md:w-64 shrink-0">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Cari foto..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-full border border-gray-200 bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all shadow-2xs"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                {tab.label}
+                <X className="w-3.5 h-3.5" />
               </button>
-            );
-          })}
+            )}
+          </div>
         </div>
 
         {/* Smooth Grid Layout */}
         <motion.div 
           layout
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6"
         >
           <AnimatePresence mode="popLayout">
             {filteredItems.map((item, idx) => (
@@ -230,34 +309,32 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                className="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 shadow-sm cursor-pointer group bg-slate-50"
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="relative aspect-square rounded-xl sm:rounded-2xl overflow-hidden border border-slate-100 shadow-xs cursor-pointer group bg-slate-50"
                 onClick={() => setSelectedIndex(idx)}
-                onMouseEnter={() => setHoveredIndex(idx)}
-                onMouseLeave={() => setHoveredIndex(null)}
               >
                 <Image
                   src={item.image}
                   alt={item.title}
                   fill
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 />
                 
                 {/* Smooth Hover Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
-                  <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full border border-white/20 transform translate-y-2 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <Maximize2 className="w-4 h-4 text-white" />
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 sm:p-5">
+                  <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-md p-1.5 sm:p-2 rounded-full border border-white/20 transform translate-y-2 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                   </div>
                   
-                  <div className="transform translate-y-3 group-hover:translate-y-0 transition-transform duration-300">
-                    <span className="text-[9px] font-extrabold text-accent uppercase tracking-widest bg-accent/20 px-2 py-0.5 rounded-full border border-accent/30">
-                      {CATEGORIES.find(c => c.id === item.category)?.label}
+                  <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                    <span className="text-[8px] sm:text-[9px] font-extrabold text-accent uppercase tracking-widest bg-accent/20 px-2 py-0.5 rounded-full border border-accent/30">
+                      {categoriesList.find(c => c.id === item.category)?.label || item.category}
                     </span>
-                    <h4 className="font-bold text-white text-base mt-2 font-headline leading-tight">
+                    <h4 className="font-bold text-white text-xs sm:text-base mt-1 sm:mt-2 font-headline leading-tight truncate">
                       {item.title}
                     </h4>
-                    <p className="text-[10px] text-white/70 mt-1 font-light leading-relaxed truncate">
+                    <p className="text-[10px] text-white/70 mt-0.5 font-light leading-relaxed truncate hidden sm:block">
                       {item.description}
                     </p>
                   </div>
@@ -268,9 +345,9 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
         </motion.div>
 
         {filteredItems.length === 0 && (
-          <div className="text-center py-20 bg-slate-50 rounded-2xl border border-slate-100">
-            <ImageIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-muted-foreground text-sm font-medium">Belum ada foto dalam kategori ini.</p>
+          <div className="text-center py-16 bg-slate-50 rounded-2xl border border-slate-100">
+            <ImageIcon className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <p className="text-muted-foreground text-xs sm:text-sm font-medium">Tidak ada foto yang cocok dengan pencarian atau kategori ini.</p>
           </div>
         )}
       </div>
@@ -285,14 +362,14 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
              </DialogDescription>
              <button 
               onClick={() => setSelectedIndex(null)}
-              className="p-2.5 rounded-full bg-white/10 text-white hover:bg-accent hover:text-accent-foreground transition-all duration-300 shadow-xl border border-white/20"
+              className="p-2 sm:p-2.5 rounded-full bg-white/10 text-white hover:bg-accent hover:text-accent-foreground transition-all duration-300 shadow-xl border border-white/20"
              >
-               <X className="w-6 h-6" />
+               <X className="w-5 h-5 sm:w-6 sm:h-6" />
                <span className="sr-only">Tutup</span>
              </button>
           </DialogHeader>
           
-          <div className="relative w-full h-[70vh] md:h-[80vh] flex items-center justify-center p-4 md:p-8">
+          <div className="relative w-full h-[70vh] md:h-[80vh] flex items-center justify-center p-3 sm:p-4 md:p-8">
             <AnimatePresence mode="wait">
               {selectedImage && (
                 <motion.div
@@ -315,7 +392,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                   </div>
                   
                   {/* Photo details caption */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-center text-white">
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-4 sm:p-6 text-center text-white">
                     <span className="text-[10px] text-accent uppercase font-bold tracking-widest">
                       {selectedImage.title}
                     </span>
@@ -328,23 +405,23 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
             </AnimatePresence>
 
             {/* Left and Right Nav Buttons */}
-            <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-between px-2 sm:px-4 pointer-events-none">
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={handlePrev}
-                className="bg-white/10 hover:bg-accent hover:text-accent-foreground text-white rounded-full h-12 w-12 md:h-16 md:w-16 shadow-2xl pointer-events-auto border border-white/10"
+                className="bg-white/10 hover:bg-accent hover:text-accent-foreground text-white rounded-full h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 shadow-2xl pointer-events-auto border border-white/10"
               >
-                <ChevronLeft className="h-8 w-8 md:h-10 md:w-10" />
+                <ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                 <span className="sr-only">Sebelumnya</span>
               </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={handleNext}
-                className="bg-white/10 hover:bg-accent hover:text-accent-foreground text-white rounded-full h-12 w-12 md:h-16 md:w-16 shadow-2xl pointer-events-auto border border-white/10"
+                className="bg-white/10 hover:bg-accent hover:text-accent-foreground text-white rounded-full h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 shadow-2xl pointer-events-auto border border-white/10"
               >
-                <ChevronRight className="h-8 w-8 md:h-10 md:w-10" />
+                <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                 <span className="sr-only">Selanjutnya</span>
               </Button>
             </div>
