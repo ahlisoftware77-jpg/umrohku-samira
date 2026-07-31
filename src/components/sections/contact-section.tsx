@@ -198,14 +198,6 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
                     <span className="flex items-center gap-1.5 text-amber-300">
                       <MapPin className="w-4 h-4" /> Kantor Mitra / Cabang
                     </span>
-                    <a 
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(maps.mitra.address)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-white hover:text-amber-300 underline text-[10px]"
-                    >
-                      Buka Maps ↗
-                    </a>
                   </div>
                   <div className="h-56 w-full bg-slate-100 flex items-center justify-center relative border-b">
                     {maps.mitra.embedUrl ? (
@@ -239,14 +231,6 @@ export default function ContactSection({ agent, data }: ContactSectionProps) {
                   <span className="flex items-center gap-1.5 text-amber-300">
                     <MapPin className="w-4 h-4" /> Kantor Pusat Samira
                   </span>
-                  <a 
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(maps.pusat.address)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-white hover:text-amber-300 underline text-[10px]"
-                  >
-                    Buka Maps ↗
-                  </a>
                 </div>
                 <div className="h-56 w-full bg-slate-100 flex items-center justify-center relative border-b">
                   <iframe
