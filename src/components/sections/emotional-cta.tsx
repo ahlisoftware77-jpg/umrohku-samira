@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -10,7 +9,9 @@ import {
   Zap, 
   Heart, 
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Award,
+  CalendarCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Agent } from '@/lib/agents';
@@ -21,93 +22,110 @@ interface EmotionalCtaProps {
 }
 
 const features = [
-  { icon: <CheckCircle2 className="w-5 h-5 text-accent" />, text: "PASTI Berangkat" },
-  { icon: <ShieldCheck className="w-5 h-5 text-accent" />, text: "PASTI Berasuransi" },
-  { icon: <Ban className="w-5 h-5 text-accent" />, text: "TANPA Riba" },
-  { icon: <Ban className="w-5 h-5 text-accent" />, text: "TANPA Agunan" },
-  { icon: <Zap className="w-5 h-5 text-accent" />, text: "MUDAH Cicilannya" },
+  { icon: <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />, text: "PASTI Berangkat", sub: "Seat & Hotel Ter-booking" },
+  { icon: <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />, text: "PASTI Berasuransi", sub: "Proteksi Perjalanan Penuh" },
+  { icon: <Ban className="w-5 h-5 text-amber-400 shrink-0" />, text: "TANPA Riba & Agunan", sub: "Akad Syariah Murni" },
+  { icon: <Zap className="w-5 h-5 text-amber-400 shrink-0" />, text: "MUDAH Cicilannya", sub: "Bisa Bulanan / Musiman" },
+  { icon: <Award className="w-5 h-5 text-amber-400 shrink-0" />, text: "Izin Resmi PPIU", sub: "Terakreditasi Kemenag" },
 ];
 
 export default function EmotionalCta({ agent }: EmotionalCtaProps) {
   const isDefault = agent?.slug?.toLowerCase() === 'default';
-  const whatsappNumber = agent?.whatsapp || (isDefault ? '6283815862300' : '');
+  const whatsappNumber = (agent?.whatsapp || agent?.phone || (isDefault ? '6283815862300' : '6283815862300')).replace(/[^0-9]/g, '') || '6283815862300';
 
   return (
-    <section className="py-24 relative overflow-hidden bg-white">
-      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-72 h-72 bg-accent/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
+    <section id="pasti" className="py-16 sm:py-24 md:py-32 relative overflow-hidden bg-gradient-to-br from-[#061426] via-primary to-[#061426] text-white w-full max-w-full">
+      {/* Ambient background glows */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 relative z-10 max-w-6xl">
+        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          
+          {/* Left Column (Main Promise & Guarantee Features) */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="lg:col-span-7"
+          >
+            <div className="inline-flex items-center gap-2 bg-amber-400 text-slate-950 font-black px-4 py-1.5 rounded-full text-xs uppercase tracking-widest mb-4 sm:mb-6 shadow-lg">
+              <Sparkles className="w-4 h-4 fill-slate-950" /> MAU UMROH YANG PASTI & BERKAH?
+            </div>
             
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1 }}
-            >
-              <div className="inline-flex items-center gap-2 bg-primary/5 text-primary font-bold px-4 py-2 rounded-full text-xs uppercase tracking-widest mb-6">
-                <Sparkles className="w-4 h-4 text-accent" /> MAU UMROH YANG PASTI?
-              </div>
-              
-              <h2 className="text-3xl md:text-5xl font-headline font-bold text-primary mb-6 leading-tight">
-                Sudah <span className="text-accent">RINDU</span> Baitulloh tapi tabungannya belum cukup?
-              </h2>
-              
-              <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-                Punya impian ingin memberangkatkan orang tua ke Tanah suci? Bagaimana kalau Berangkat UMROH dulu, BAYARnya belakangan? <strong>MAU?</strong>
-              </p>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-headline font-black text-white mb-4 sm:mb-6 leading-tight drop-shadow-md">
+              Sudah <span className="text-amber-400 underline decoration-amber-400/40">RINDU</span> Baitullah tapi Tabungan Belum Cukup?
+            </h2>
+            
+            <p className="text-slate-200 text-xs sm:text-base md:text-lg mb-6 sm:mb-8 leading-relaxed font-medium">
+              Punya impian mulia ingin memberangkatkan diri & orang tua tercinta ke Tanah Suci? Bersama Samira Travel, Anda bisa <strong>Berangkat UMROH DULUAN, Bayar Belakangan!</strong>
+            </p>
 
-              <div className="bg-primary p-8 rounded-[2rem] text-white shadow-2xl relative overflow-hidden group">
-                <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full group-hover:scale-110 transition-transform duration-500" />
-                
-                <h3 className="text-xl md:text-2xl font-bold mb-4 flex items-center gap-3">
-                  <Heart className="w-6 h-6 text-accent fill-accent" /> 
-                  Ya, Berangkat Umroh Duluan, Bisa Dicicil Belakangan
-                </h3>
-                <p className="text-white/80 mb-8">
-                  Fleksibilitas pembayaran yang memudahkan Anda: Boleh bayar bulanan atau bayar musiman 👍
-                </p>
+            {/* Feature Card */}
+            <div className="bg-white/10 backdrop-blur-xl p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl relative overflow-hidden">
+              <h3 className="text-base sm:text-xl font-headline font-extrabold mb-4 flex items-center gap-2.5 text-amber-300">
+                <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 fill-red-500" /> 
+                Solusi Ibadah Tenang, Mudah & Terjamin 100%
+              </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {features.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
-                      {item.icon}
-                      <span className="font-bold text-sm">{item.text}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {features.map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-3 bg-slate-950/40 p-3 sm:p-3.5 rounded-xl border border-white/10 hover:border-amber-400/40 transition-colors">
+                    {item.icon}
+                    <div>
+                      <span className="font-extrabold text-xs sm:text-sm text-white block">{item.text}</span>
+                      <span className="text-[10px] text-slate-300 block">{item.sub}</span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            </motion.div>
+            </div>
+          </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1 }}
-              className="relative"
-            >
-              <div className="relative z-10 bg-accent p-12 rounded-[3rem] text-center shadow-2xl border-8 border-white">
-                <blockquote className="text-2xl md:text-4xl font-headline font-bold text-primary italic leading-tight mb-8">
-                  "Panggilan Bukan Hanya Untuk Yang Mampu, Tapi Juga Yang Rindu"
-                </blockquote>
-                
-                <div className="space-y-6">
-                  <p className="text-primary/70 font-bold uppercase tracking-widest text-sm">Segera Amankan Seat Anda</p>
-                  <Button asChild size="lg" className="w-full h-16 rounded-full bg-primary text-white hover:bg-white hover:text-primary text-xl font-bold shadow-xl transition-all group">
-                    <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer">
-                      RESERVATION NOW!! <ArrowRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </a>
-                  </Button>
-                </div>
+          {/* Right Column (Quote & High Impact CTA Card) */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="lg:col-span-5 relative"
+          >
+            <div className="relative z-10 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 p-6 sm:p-10 rounded-2xl sm:rounded-3xl text-slate-950 shadow-2xl border-4 border-amber-300 overflow-hidden">
+              {/* Subtle background glow */}
+              <div className="absolute -right-12 -top-12 w-40 h-40 bg-white/20 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="inline-flex items-center gap-1.5 bg-slate-950/10 backdrop-blur-md px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider mb-4 border border-slate-950/10">
+                <CalendarCheck className="w-3.5 h-3.5" /> Kuota Terbatas Musim Ini
               </div>
 
-              <div className="absolute -top-6 -right-6 w-24 h-24 bg-primary rounded-full flex items-center justify-center text-accent shadow-xl animate-bounce">
-                <Sparkles className="w-10 h-10" />
+              <blockquote className="text-xl sm:text-2xl md:text-3xl font-headline font-black italic leading-tight mb-4 text-slate-950 drop-shadow-xs">
+                "Panggilan Allah Bukan Hanya Untuk Yang Mampu, Tapi Untuk Hamba Yang Rindu."
+              </blockquote>
+
+              <p className="text-xs sm:text-sm font-bold text-slate-900 mb-6 italic">
+                — Niatkan Sekarang, Allah Mudahkan Jalan-Nya 🤲
+              </p>
+              
+              <div className="space-y-4">
+                <Button asChild size="lg" className="w-full h-14 sm:h-16 rounded-xl sm:rounded-2xl bg-slate-950 text-white hover:bg-white hover:text-slate-950 text-sm sm:text-base font-black shadow-2xl transition-all duration-300 group border border-amber-400/40 hover:scale-105">
+                  <a href={`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Assalamu'alaikum, saya ingin konsultasi Paket Umroh Pasti Berangkat`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
+                    KONSULTASI & DAFTAR WA NOW! <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </a>
+                </Button>
+
+                <p className="text-center text-[10px] sm:text-xs font-bold text-slate-900/80">
+                  ⚡ Layanan Fast Response 24 Jam · Konsultasi Gratis
+                </p>
               </div>
-            </motion.div>
-          </div>
+            </div>
+
+            {/* Glowing Accent Badge */}
+            <div className="absolute -top-5 -right-5 w-16 h-16 sm:w-20 sm:h-20 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-xl animate-bounce border-2 border-white z-20">
+              <Sparkles className="w-8 h-8 sm:w-10 sm:h-10" />
+            </div>
+          </motion.div>
+
         </div>
       </div>
     </section>
