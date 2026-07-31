@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { doc, getDoc, updateDoc, writeBatch, collection, deleteDoc, getDocs, query, where } from 'firebase/firestore';
-import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
+import { Firestore } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch, collection, deleteDoc, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { LandingPage, Section, Content, SectionType } from '@/types/cms';
 
 interface CmsState {
@@ -8,7 +9,10 @@ interface CmsState {
   sections: Section[];
   contents: Record<string, Record<string, any>>;
   activeSectionId: string | null;
-  
+
+  // Resolved target Firestore DB instance (default or cluster)
+  targetDb: Firestore;
+
   // History stack for Undo/Redo
   history: { sections: Section[]; contents: Record<string, Record<string, any>> }[];
   historyIndex: number;
@@ -18,6 +22,7 @@ interface CmsState {
   
   // Actions
   setInitialData: (page: LandingPage, sections: Section[], contents: Record<string, Record<string, any>>) => void;
+  setTargetDb: (instance: Firestore) => void;
   setActiveSectionId: (id: string | null) => void;
   updateContent: (sectionId: string, key: string, value: any) => void;
   addSection: (type: SectionType) => void;
@@ -60,6 +65,7 @@ export const useCmsStore = create<CmsState>((set, get) => {
     sections: [],
     contents: {},
     activeSectionId: null,
+    targetDb: db,  // Default to primary DB; overridden by setTargetDb after loadCms resolves cluster
     history: [],
     historyIndex: -1,
     isSaving: false,
@@ -72,6 +78,11 @@ export const useCmsStore = create<CmsState>((set, get) => {
         history: [{ sections, contents }],
         historyIndex: 0
       });
+    },
+
+    setTargetDb: (instance: Firestore) => {
+      set({ targetDb: instance });
+      console.log('[useCmsStore] targetDb updated to cluster instance.');
     },
 
     setActiveSectionId: (id) => set({ activeSectionId: id }),
@@ -391,43 +402,13 @@ export const useCmsStore = create<CmsState>((set, get) => {
     },
 
     saveToFirestore: async () => {
-      const { page, sections, contents } = get();
+      const { page, sections, contents, targetDb } = get();
       if (!page) return;
 
       try {
-        // Resolve Target Database Server Instance dynamically for migrated tenants (e.g. landing-umroh2)
-        let targetDb = db;
-        try {
-          // Fetch tenant doc to get assigned dbServerId
-          const tenantDocSnap = await getDoc(doc(db, 'tenants', page.tenantId));
-          const tenantDbServerId = tenantDocSnap.exists() ? tenantDocSnap.data()?.dbServerId : null;
-
-          if (tenantDbServerId && tenantDbServerId !== 'default') {
-            let servers: any[] = [];
-            if (typeof window !== 'undefined') {
-              const storedServers = localStorage.getItem('database_servers');
-              if (storedServers) {
-                try { servers = JSON.parse(storedServers); } catch (e) {}
-              }
-            }
-
-            // Fallback to Firestore databaseServers collection if local storage is empty
-            if (servers.length === 0) {
-              try {
-                const dbServersSnap = await getDocs(collection(db, 'databaseServers'));
-                servers = dbServersSnap.docs.map(d => d.data());
-              } catch (e) {}
-            }
-
-            const serverConfig = servers.find(s => s.serverId === tenantDbServerId);
-            if (serverConfig) {
-              targetDb = getDynamicFirebaseInstance(serverConfig).db;
-              console.log(`[saveToFirestore] Dynamic DB resolved to Cluster: ${serverConfig.name || serverConfig.projectId}`);
-            }
-          }
-        } catch (dbErr) {
-          console.warn('[saveToFirestore] Failed resolving targetDb for save, falling back to default db:', dbErr);
-        }
+        // targetDb is already resolved during loadCms and stored in state.
+        // No per-save fetch needed — avoids race conditions on autosave.
+        console.log('[saveToFirestore] Writing to targetDb instance for tenant:', page.tenantId);
 
         const batch = writeBatch(targetDb);
 

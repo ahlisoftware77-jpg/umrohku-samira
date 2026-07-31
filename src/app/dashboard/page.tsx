@@ -73,7 +73,7 @@ function getProfessionalAuthErrorMessage(err: any): string {
 
 export default function TenantDashboardPage() {
   const { user, profile, loading, tenantId } = useAuthHandler();
-  const { setInitialData, page } = useCmsStore();
+  const { setInitialData, setTargetDb, page, targetDb } = useCmsStore();
 
   const [initLoading, setInitLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -380,7 +380,7 @@ export default function TenantDashboardPage() {
         } catch (fErr) {}
 
         // Resolve Target Database Server Instance dynamically for migrated tenants (e.g. landing-umroh2)
-        let targetDb = db;
+        let resolvedDb = db;
         if (tenantData && tenantData.dbServerId && tenantData.dbServerId !== 'default') {
           try {
             if (typeof window !== 'undefined') {
@@ -389,14 +389,32 @@ export default function TenantDashboardPage() {
                 const servers: any[] = JSON.parse(storedServers);
                 const serverConfig = servers.find(s => s.serverId === tenantData.dbServerId);
                 if (serverConfig) {
-                  targetDb = getDynamicFirebaseInstance(serverConfig).db;
+                  resolvedDb = getDynamicFirebaseInstance(serverConfig).db;
+                  console.log('[loadCms] Resolved to cluster DB:', serverConfig.serverId);
                 }
               }
             }
+
+            // Fallback: if localStorage empty, fetch from databaseServers collection in primary DB
+            if (resolvedDb === db) {
+              try {
+                const dbServersSnap = await getDocs(collection(db, 'databaseServers'));
+                const servers = dbServersSnap.docs.map(d => d.data() as { serverId: string; apiKey: string; authDomain: string; projectId: string; storageBucket?: string; messagingSenderId?: string; appId?: string });
+                const serverConfig = servers.find(s => s.serverId === tenantData.dbServerId);
+                if (serverConfig) {
+                  resolvedDb = getDynamicFirebaseInstance(serverConfig).db;
+                  console.log('[loadCms] Resolved to cluster DB via Firestore fallback:', serverConfig.serverId);
+                }
+              } catch (e) {}
+            }
           } catch (dbErr) {
-            console.warn('Failed resolving targetDb in dashboard loadCms, falling back to db:', dbErr);
+            console.warn('[loadCms] Failed resolving targetDb in dashboard loadCms, falling back to db:', dbErr);
           }
         }
+
+        // --- KEY FIX: push resolved DB into useCmsStore so saveToFirestore always uses correct target ---
+        setTargetDb(resolvedDb);
+        const targetDb = resolvedDb;
 
         // 2. Query for landing page in targetDb
         let pageSnap: any = { empty: true };
@@ -618,7 +636,8 @@ export default function TenantDashboardPage() {
   const handlePublish = async () => {
     if (!page) return;
     try {
-      const pageRef = doc(db, 'landingPages', page.pageId);
+      // Use targetDb from store (already resolved to cluster or default in loadCms)
+      const pageRef = doc(targetDb, 'landingPages', page.pageId);
       await updateDoc(pageRef, { status: 'published', updatedAt: new Date() });
       alert('Landing Page berhasil diterbitkan ke publik!');
     } catch (err) {
