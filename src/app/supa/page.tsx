@@ -97,6 +97,7 @@ export default function SuperAdminPage() {
   const [bPlanIsPopular, setBPlanIsPopular] = useState(false);
   const [bPlanIsHidden, setBPlanIsHidden] = useState(false);
   const [bPlanOrder, setBPlanOrder] = useState(1);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
   
   const [dbLoading, setDbLoading] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
@@ -1795,13 +1796,17 @@ service cloud.firestore {
       return;
     }
 
+    setIsSavingPlan(true);
+
     const featureList = bPlanFeatures
       .split('\n')
       .map(f => f.trim())
       .filter(f => f.length > 0);
 
+    const targetPlanId = editingPlanId || bPlanId || `plan_${Date.now()}`;
+
     const planObj: BuilderPlan = {
-      planId: bPlanId || `plan_${Date.now()}`,
+      planId: targetPlanId,
       name: bPlanName,
       badge: bPlanBadge || bPlanName.toUpperCase(),
       price: bPlanPrice,
@@ -1814,7 +1819,20 @@ service cloud.firestore {
     };
 
     try {
-      await setDoc(doc(db, 'plans', planObj.planId), planObj);
+      const targetDbs = [db];
+      for (const s of dbServers) {
+        try {
+          const inst = getDynamicFirebaseInstance(s).db;
+          if (inst && inst !== db) targetDbs.push(inst);
+        } catch (e) {}
+      }
+
+      for (const targetDbInst of targetDbs) {
+        try {
+          await setDoc(doc(targetDbInst, 'plans', planObj.planId), planObj);
+        } catch (e) {}
+      }
+
       setBuilderPlans(prev => {
         const exists = prev.some(p => p.planId === planObj.planId);
         let updated = exists 
@@ -1822,18 +1840,34 @@ service cloud.firestore {
           : [...prev, planObj];
         return updated.sort((a, b) => (a.order || 0) - (b.order || 0));
       });
+
       setIsPlanModalOpen(false);
-      alert('Paket Layanan Builder berhasil disimpan!');
-    } catch (err) {
+      alert(`✅ Paket Layanan Builder "${planObj.name}" berhasil disimpan!`);
+    } catch (err: any) {
       console.error(err);
-      alert('Gagal menyimpan paket.');
+      alert('Gagal menyimpan paket: ' + (err.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsSavingPlan(false);
     }
   };
 
   const handleToggleHideBuilderPlan = async (plan: BuilderPlan) => {
     try {
       const updated = { ...plan, isHidden: !plan.isHidden };
-      await setDoc(doc(db, 'plans', plan.planId), updated, { merge: true });
+      const targetDbs = [db];
+      for (const s of dbServers) {
+        try {
+          const inst = getDynamicFirebaseInstance(s).db;
+          if (inst && inst !== db) targetDbs.push(inst);
+        } catch (e) {}
+      }
+
+      for (const targetDbInst of targetDbs) {
+        try {
+          await setDoc(doc(targetDbInst, 'plans', plan.planId), updated, { merge: true });
+        } catch (e) {}
+      }
+
       setBuilderPlans(prev => prev.map(p => p.planId === plan.planId ? updated : p));
     } catch (err: any) {
       console.error(err);
@@ -1844,7 +1878,20 @@ service cloud.firestore {
   const handleDeleteBuilderPlan = async (planId: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus paket layanan ini secara permanen?')) return;
     try {
-      await deleteDoc(doc(db, 'plans', planId));
+      const targetDbs = [db];
+      for (const s of dbServers) {
+        try {
+          const inst = getDynamicFirebaseInstance(s).db;
+          if (inst && inst !== db) targetDbs.push(inst);
+        } catch (e) {}
+      }
+
+      for (const targetDbInst of targetDbs) {
+        try {
+          await deleteDoc(doc(targetDbInst, 'plans', planId));
+        } catch (e) {}
+      }
+
       setBuilderPlans(prev => prev.filter(p => p.planId !== planId));
       alert('Paket berhasil dihapus!');
     } catch (err) {
@@ -4133,8 +4180,8 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
 
                     <div className="flex gap-3 justify-end pt-4 border-t">
                       <Button type="button" variant="ghost" className="rounded-full" onClick={() => setIsPlanModalOpen(false)}>Batal</Button>
-                      <Button type="submit" className="bg-primary text-white rounded-full font-bold">
-                        Simpan Paket
+                      <Button type="submit" disabled={isSavingPlan} className="bg-primary text-white rounded-full font-bold">
+                        {isSavingPlan ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Paket'}
                       </Button>
                     </div>
                   </form>
