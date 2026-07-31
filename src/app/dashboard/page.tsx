@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuthHandler } from '@/hooks/useAuth';
 import { useCmsStore } from '@/hooks/useCmsStore';
 import { cmsService } from '@/lib/services/cmsService';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, getDynamicFirebaseInstance } from '@/lib/firebase';
 import { 
   signInWithEmailAndPassword, 
   signOut, 
@@ -224,80 +224,85 @@ export default function TenantDashboardPage() {
       const targetTenantId = tenantId || user.uid;
       const readableId = getReadableIdFromEmail(user.email);
 
-      // 2. Clean up ALL Firestore documents (tenants, users, pages, sections, contents, testimonials)
-      // Delete Tenant documents
-      try {
-        await deleteDoc(doc(db, 'tenants', targetTenantId));
-        await deleteDoc(doc(db, 'tenants', readableId));
-        await deleteDoc(doc(db, 'tenants', user.uid));
+      // Resolve active database server instance
+      let activeDb = db;
+      if (tenantProfile?.dbServerId && tenantProfile.dbServerId !== 'default') {
+        try {
+          const storedServers = localStorage.getItem('database_servers');
+          if (storedServers) {
+            const servers: any[] = JSON.parse(storedServers);
+            const serverConfig = servers.find(s => s.serverId === tenantProfile.dbServerId);
+            if (serverConfig) {
+              activeDb = getDynamicFirebaseInstance(serverConfig).db;
+            }
+          }
+        } catch (e) {}
+      }
 
-        const qSub = query(collection(db, 'tenants'), where('tenantId', '==', targetTenantId));
-        const snapSub = await getDocs(qSub);
-        for (const d of snapSub.docs) {
-          await deleteDoc(doc(db, 'tenants', d.id));
-        }
+      // Helper for deleting from a given database instance
+      const purgeDatabase = async (instanceDb: any) => {
+        // A. Delete Tenant documents
+        try {
+          await deleteDoc(doc(instanceDb, 'tenants', targetTenantId));
+          await deleteDoc(doc(instanceDb, 'tenants', readableId));
+          await deleteDoc(doc(instanceDb, 'tenants', user.uid));
 
-        const qTenantsByEmail = query(collection(db, 'tenants'), where('email', '==', user.email));
-        const snapTenantsByEmail = await getDocs(qTenantsByEmail);
-        for (const d of snapTenantsByEmail.docs) {
-          await deleteDoc(doc(db, 'tenants', d.id));
-        }
-      } catch (e1) {}
+          const snapSub = await getDocs(query(collection(instanceDb, 'tenants'), where('tenantId', '==', targetTenantId)));
+          for (const d of snapSub.docs) { await deleteDoc(doc(instanceDb, 'tenants', d.id)); }
 
-      // Delete User documents (UID, readableId, targetTenantId, and email/uid queries)
-      try {
-        await deleteDoc(doc(db, 'users', user.uid));
-        await deleteDoc(doc(db, 'users', readableId));
-        await deleteDoc(doc(db, 'users', targetTenantId));
+          const snapEmail = await getDocs(query(collection(instanceDb, 'tenants'), where('email', '==', user.email)));
+          for (const d of snapEmail.docs) { await deleteDoc(doc(instanceDb, 'tenants', d.id)); }
+        } catch (e1) {}
 
-        const qUsersByEmail = query(collection(db, 'users'), where('email', '==', user.email));
-        const snapUsersByEmail = await getDocs(qUsersByEmail);
-        for (const d of snapUsersByEmail.docs) {
-          await deleteDoc(doc(db, 'users', d.id));
-        }
+        // B. Delete User documents
+        try {
+          await deleteDoc(doc(instanceDb, 'users', user.uid));
+          await deleteDoc(doc(instanceDb, 'users', readableId));
+          await deleteDoc(doc(instanceDb, 'users', targetTenantId));
 
-        const qUsersByUid = query(collection(db, 'users'), where('uid', '==', user.uid));
-        const snapUsersByUid = await getDocs(qUsersByUid);
-        for (const d of snapUsersByUid.docs) {
-          await deleteDoc(doc(db, 'users', d.id));
-        }
-      } catch (e2) {}
+          const snapUserEmail = await getDocs(query(collection(instanceDb, 'users'), where('email', '==', user.email)));
+          for (const d of snapUserEmail.docs) { await deleteDoc(doc(instanceDb, 'users', d.id)); }
 
-      // Delete landingPages
-      try {
-        const qPage = query(collection(db, 'landingPages'), where('tenantId', '==', targetTenantId));
-        const snapPage = await getDocs(qPage);
-        for (const d of snapPage.docs) {
-          await deleteDoc(doc(db, 'landingPages', d.id));
-        }
-      } catch (e3) {}
+          const snapUserUid = await getDocs(query(collection(instanceDb, 'users'), where('uid', '==', user.uid)));
+          for (const d of snapUserUid.docs) { await deleteDoc(doc(instanceDb, 'users', d.id)); }
+        } catch (e2) {}
 
-      // Delete sections
-      try {
-        const qSec = query(collection(db, 'sections'), where('tenantId', '==', targetTenantId));
-        const snapSec = await getDocs(qSec);
-        for (const d of snapSec.docs) {
-          await deleteDoc(doc(db, 'sections', d.id));
-        }
-      } catch (e4) {}
+        // C. Delete landingPages
+        try {
+          const snapPage = await getDocs(query(collection(instanceDb, 'landingPages'), where('tenantId', '==', targetTenantId)));
+          for (const d of snapPage.docs) { await deleteDoc(doc(instanceDb, 'landingPages', d.id)); }
+        } catch (e3) {}
 
-      // Delete contents
-      try {
-        const qContent = query(collection(db, 'contents'), where('tenantId', '==', targetTenantId));
-        const snapContent = await getDocs(qContent);
-        for (const d of snapContent.docs) {
-          await deleteDoc(doc(db, 'contents', d.id));
-        }
-      } catch (e5) {}
+        // D. Delete sections
+        try {
+          const snapSec = await getDocs(query(collection(instanceDb, 'sections'), where('tenantId', '==', targetTenantId)));
+          for (const d of snapSec.docs) { await deleteDoc(doc(instanceDb, 'sections', d.id)); }
+        } catch (e4) {}
 
-      // Delete testimonials
-      try {
-        const qTesti = query(collection(db, 'testimonials'), where('tenantId', '==', targetTenantId));
-        const snapTesti = await getDocs(qTesti);
-        for (const d of snapTesti.docs) {
-          await deleteDoc(doc(db, 'testimonials', d.id));
-        }
-      } catch (e6) {}
+        // E. Delete contents
+        try {
+          const snapContent = await getDocs(query(collection(instanceDb, 'contents'), where('tenantId', '==', targetTenantId)));
+          for (const d of snapContent.docs) { await deleteDoc(doc(instanceDb, 'contents', d.id)); }
+        } catch (e5) {}
+
+        // F. Delete testimonials
+        try {
+          const snapTesti = await getDocs(query(collection(instanceDb, 'testimonials'), where('tenantId', '==', targetTenantId)));
+          for (const d of snapTesti.docs) { await deleteDoc(doc(instanceDb, 'testimonials', d.id)); }
+        } catch (e6) {}
+
+        // G. Delete uploaded images metadata
+        try {
+          const snapImages = await getDocs(query(collection(instanceDb, 'images'), where('tenantId', '==', targetTenantId)));
+          for (const d of snapImages.docs) { await deleteDoc(doc(instanceDb, 'images', d.id)); }
+        } catch (e7) {}
+      };
+
+      // Execute purge on default DB and active cluster DB
+      await purgeDatabase(db);
+      if (activeDb !== db) {
+        await purgeDatabase(activeDb);
+      }
 
       // 3. Delete Firebase Auth User
       await deleteUser(user);
