@@ -91,6 +91,7 @@ export default function DynamicTenantPage({ params }: PageProps) {
               status: 'active',
               plan: 'pro',
               limits: SYSTEM_PLANS.pro.limits,
+              visitorCount: 0,
               createdAt: new Date().toISOString(),
             };
           } else {

@@ -494,6 +494,7 @@ service cloud.firestore {
             plan: 'free',
             status: 'active',
             subdomain: u.subdomain || u.readableId || u.email?.split('@')[0] || 'mitra',
+            visitorCount: 0,
             limits: {
               landingPages: 1,
               storageMb: 50,
@@ -1418,9 +1419,9 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
             <CardContent className="p-6 flex items-center gap-4">
               <div className="bg-purple-500/10 p-3.5 rounded-2xl text-purple-600"><CloudLightning className="h-6 w-6" /></div>
               <div>
-                <p className="text-xs text-muted-foreground">Total Visitor</p>
+                <p className="text-xs text-muted-foreground">Total Visitor Global</p>
                 <h4 className="text-2xl font-bold text-primary">
-                  {(tenants.reduce((acc, t) => acc + (Number((t as any).views) || 0), 0) + (totalLandingPages * 125)).toLocaleString()}
+                  {tenants.reduce((acc, t) => acc + (t.visitorCount || 0), 0).toLocaleString()}
                 </h4>
               </div>
             </CardContent>
@@ -1471,7 +1472,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       <TableHead>Subdomain</TableHead>
                       <TableHead>Server DB</TableHead>
                       <TableHead>Paket</TableHead>
-                      <TableHead>Halaman</TableHead>
+                      <TableHead>Pengunjung (Views)</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Aksi Kontrol</TableHead>
                     </TableRow>
@@ -1506,7 +1507,11 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           </select>
                         </TableCell>
                         <TableCell className="capitalize text-sm font-semibold">{t.plan}</TableCell>
-                        <TableCell className="text-sm font-bold">{tenantPagesCount[t.tenantId] || 0}</TableCell>
+                        <TableCell className="text-sm font-extrabold text-primary">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                            <Eye className="h-3.5 w-3.5 text-amber-500" /> {(t.visitorCount || 0).toLocaleString()}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
                             t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'

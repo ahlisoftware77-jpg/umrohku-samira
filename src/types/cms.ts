@@ -29,6 +29,7 @@ export const TenantSchema = z.object({
   customDomain: z.string().optional(),
   subdomain: z.string(),
   dbServerId: z.string().optional(),
+  visitorCount: z.number().default(0).optional(),
   limits: TenantLimitsSchema,
 });
 export type Tenant = z.infer<typeof TenantSchema>;

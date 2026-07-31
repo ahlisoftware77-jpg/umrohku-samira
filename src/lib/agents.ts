@@ -12,6 +12,7 @@ export interface Agent {
   mapEmbedUrl: string;
   galleryImages?: string[];
   pdfUrl?: string;
+  visitorCount?: number;
 }
 
 export const agents: Agent[] = [

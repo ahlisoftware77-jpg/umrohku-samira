@@ -5,7 +5,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Menu, BookOpen } from 'lucide-react';
+import { Menu, BookOpen, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -93,7 +93,19 @@ export default function Header({ agent: providedAgent }: HeaderProps) {
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-3">
+          {agent?.visitorCount !== undefined && agent.visitorCount > 0 && (
+            <div className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold border transition-all duration-300 backdrop-blur-md shadow-sm",
+              isSolid 
+                ? "bg-primary/10 border-primary/20 text-primary" 
+                : "bg-white/15 border-white/30 text-white"
+            )} title="Jumlah total pengunjung web ini">
+              <Eye className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+              <span>{(agent.visitorCount || 0).toLocaleString()} Pengunjung</span>
+            </div>
+          )}
+
           <Button 
             asChild 
             variant={isSolid ? "default" : "outline"} 
@@ -130,6 +142,12 @@ export default function Header({ agent: providedAgent }: HeaderProps) {
                       className="object-contain object-left"
                     />
                   </div>
+                  {agent?.visitorCount !== undefined && agent.visitorCount > 0 && (
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white border border-white/30">
+                      <Eye className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                      <span>{(agent.visitorCount || 0).toLocaleString()}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col space-y-6 p-8">
                   {navLinks.map((link) => (

@@ -156,6 +156,7 @@ export default function TenantDashboardPage() {
           plan: 'free',
           status: 'active',
           subdomain: cleanSubdomain,
+          visitorCount: 0,
           createdAt: new Date().toISOString(),
           limits: SYSTEM_PLANS.free.limits,
         };

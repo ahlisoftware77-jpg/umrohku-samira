@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAgent, Agent } from '@/lib/agents';
 import { Tenant, SYSTEM_PLANS } from '@/types/cms';
@@ -62,6 +62,21 @@ export function useTenantResolver(tenantSlug: string) {
 
         setTenant(foundTenant);
         activeTenantId = foundTenant.tenantId;
+
+        // Auto-increment visitor counter once per browser session per subdomain
+        if (foundTenant.tenantId) {
+          const sessionKey = `visited_tenant_${foundTenant.subdomain}`;
+          if (typeof window !== 'undefined' && !sessionStorage.getItem(sessionKey)) {
+            sessionStorage.setItem(sessionKey, 'true');
+            const newCount = (foundTenant.visitorCount || 0) + 1;
+            foundTenant.visitorCount = newCount;
+            try {
+              await updateDoc(doc(db, 'tenants', foundTenant.tenantId), {
+                visitorCount: increment(1)
+              });
+            } catch (vErr) {}
+          }
+        }
         
         const isDefaultTenant = tenantSlug.toLowerCase() === 'default';
         
@@ -124,7 +139,8 @@ export function useTenantResolver(tenantSlug: string) {
           address: displayAddress,
           photoUrl: '/images/pp1.jpg',
           mapEmbedUrl: mapEmbedUrl || '',
-          pdfUrl: pdfUrl || ''
+          pdfUrl: pdfUrl || '',
+          visitorCount: foundTenant.visitorCount || 0
         });
 
       } catch (err: any) {
