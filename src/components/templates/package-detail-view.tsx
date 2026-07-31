@@ -164,6 +164,7 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
   const agent = providedAgent || getAgent('default');
   const agentSlug = agent?.slug || 'default';
   const prefix = agentSlug === 'default' ? '' : `/${agentSlug}`;
+  const activeWhatsapp = (agent?.whatsapp || agent?.phone || '6283815862300').replace(/[^0-9]/g, '') || '6283815862300';
 
   if (!pkg) {
     return (
@@ -581,17 +582,11 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
                       ))}
                     </div>
 
-                    {agent.whatsapp ? (
-                      <Button asChild className="w-full bg-accent text-accent-foreground h-12 sm:h-14 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base hover:bg-white hover:text-primary transition-all shadow-lg shadow-accent/20">
-                        <Link href={`https://api.whatsapp.com/send?phone=${agent.whatsapp}&text=Assalamu'alaikum, saya ingin mengetahui lebih lanjut tentang Paket ${pkg.title}`}>
-                          Bismillah, Daftar Sekarang <ArrowRight className="ml-1.5 w-4 h-4" />
-                        </Link>
-                      </Button>
-                    ) : (
-                      <Button className="w-full bg-accent/30 text-white/50 h-12 sm:h-14 rounded-xl sm:rounded-2xl font-bold text-sm cursor-not-allowed">
-                        Pendaftaran Belum Aktif
-                      </Button>
-                    )}
+                    <Button asChild className="w-full bg-accent text-accent-foreground h-12 sm:h-14 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base hover:bg-white hover:text-primary transition-all shadow-lg shadow-accent/20">
+                      <Link href={`https://api.whatsapp.com/send?phone=${activeWhatsapp}&text=Assalamu'alaikum, saya ingin mengetahui lebih lanjut tentang Paket ${pkg.title}`}>
+                        Bismillah, Daftar Sekarang <ArrowRight className="ml-1.5 w-4 h-4" />
+                      </Link>
+                    </Button>
 
                     <p className="text-center text-white/50 text-[11px] mt-3">
                       Konsultasi gratis · Tanpa biaya tersembunyi
@@ -660,17 +655,11 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
           <span className="text-base sm:text-lg font-extrabold text-primary font-headline leading-tight block">{pkg.price}</span>
         </div>
 
-        {agent.whatsapp ? (
-          <Button asChild className="bg-accent text-accent-foreground h-11 px-5 rounded-full font-bold text-xs shadow-md shadow-accent/20 hover:bg-white hover:text-primary transition-all shrink-0">
-            <Link href={`https://api.whatsapp.com/send?phone=${agent.whatsapp}&text=Assalamu'alaikum, saya ingin mengetahui lebih lanjut tentang Paket ${pkg.title}`}>
-              Daftar WA <ArrowRight className="ml-1.5 w-4 h-4" />
-            </Link>
-          </Button>
-        ) : (
-          <Button disabled className="bg-gray-200 text-gray-500 h-11 px-4 rounded-full font-bold text-xs shrink-0">
-            Belum Aktif
-          </Button>
-        )}
+        <Button asChild className="bg-accent text-accent-foreground h-11 px-5 rounded-full font-bold text-xs shadow-md shadow-accent/20 hover:bg-white hover:text-primary transition-all shrink-0">
+          <Link href={`https://api.whatsapp.com/send?phone=${activeWhatsapp}&text=Assalamu'alaikum, saya ingin mengetahui lebih lanjut tentang Paket ${pkg.title}`}>
+            Daftar WA <ArrowRight className="ml-1.5 w-4 h-4" />
+          </Link>
+        </Button>
       </div>
 
       {/* Brochure Dialog */}

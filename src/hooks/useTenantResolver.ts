@@ -148,6 +148,11 @@ export function useTenantResolver(tenantSlug: string) {
             : (foundTenant.company || 'Kantor Cabang Mitra');
         }
         
+        const agentStatic = getAgent(foundTenant.subdomain || tenantSlug);
+        const resolvedPhone = phone || agentStatic?.phone || '083815862300';
+        const rawWa = phone || agentStatic?.whatsapp || '6283815862300';
+        const resolvedWhatsapp = rawWa.replace(/[^0-9]/g, '') || '6283815862300';
+
         // Build Agent object for templates
         setAgent({
           slug: foundTenant.subdomain || 'default',
@@ -155,8 +160,8 @@ export function useTenantResolver(tenantSlug: string) {
           name: foundTenant.name,
           displayName: foundTenant.company || foundTenant.name,
           email: email || foundTenant.email,
-          phone: phone || '',
-          whatsapp: (phone || '').replace(/[^0-9]/g, ''), 
+          phone: resolvedPhone,
+          whatsapp: resolvedWhatsapp,
           address: displayAddress,
           photoUrl: '/images/pp1.jpg',
           mapEmbedUrl: mapEmbedUrl || '',
