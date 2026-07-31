@@ -406,7 +406,7 @@ export default function EditorSidebar() {
                 <Input 
                   value={activeSectionContent.package1_btnText || ''} 
                   onChange={(e) => handleFieldChange('package1_btnText', e.target.value)}
-                  placeholder="Pesan Paket Reguler"
+                  placeholder="Lihat Detail"
                 />
               </div>
               <div className="space-y-2 pt-2 border-t">
@@ -465,7 +465,7 @@ export default function EditorSidebar() {
                 <Input 
                   value={activeSectionContent.package2_btnText || ''} 
                   onChange={(e) => handleFieldChange('package2_btnText', e.target.value)}
-                  placeholder="Pesan Paket VIP"
+                  placeholder="Lihat Detail"
                 />
               </div>
               <div className="space-y-2 pt-2 border-t">
@@ -524,7 +524,7 @@ export default function EditorSidebar() {
                 <Input 
                   value={activeSectionContent.package3_btnText || ''} 
                   onChange={(e) => handleFieldChange('package3_btnText', e.target.value)}
-                  placeholder="Pesan Paket Eksklusif"
+                  placeholder="Lihat Detail"
                 />
               </div>
               <div className="space-y-2 pt-2 border-t">
@@ -583,7 +583,7 @@ export default function EditorSidebar() {
                 <Input 
                   value={activeSectionContent.package4_btnText || ''} 
                   onChange={(e) => handleFieldChange('package4_btnText', e.target.value)}
-                  placeholder="Pesan Paket Haji"
+                  placeholder="Lihat Detail"
                 />
               </div>
               <div className="space-y-2 pt-2 border-t">

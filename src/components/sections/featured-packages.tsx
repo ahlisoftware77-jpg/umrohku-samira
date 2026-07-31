@@ -40,7 +40,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
       price: data.package1_price || 'Rp 27.500.000',
       description: 'Program perjalanan ibadah Umrah dengan pelayanan terbaik dan bimbingan muthawwif terpercaya.',
       features: (data.package1_features || '• Tiket Pesawat PP\n• Hotel Bintang 4\n• Bus AC Eksekutif').split('\n').filter(Boolean),
-      btnText: data.package1_btnText || 'Pesan Paket Reguler',
+      btnText: data.package1_btnText || 'Lihat Detail',
       imageUrl: data.package1_imageUrl || PlaceHolderImages[0]?.imageUrl || '',
     });
   }
@@ -51,7 +51,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
       price: data.package2_price || 'Rp 35.000.000',
       description: 'Layanan ibadah VIP dengan akomodasi hotel di pelataran Masjidil Haram & penerbangan direct.',
       features: (data.package2_features || '• Hotel Pelataran Haram\n• Penerbangan Direct Saudia\n• Pembimbing Ustaz Kondang').split('\n').filter(Boolean),
-      btnText: data.package2_btnText || 'Pesan Paket VIP',
+      btnText: data.package2_btnText || 'Lihat Detail',
       imageUrl: data.package2_imageUrl || PlaceHolderImages[1]?.imageUrl || '',
     });
   }
@@ -62,7 +62,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
       price: data.package3_price || 'Rp 42.000.000',
       description: 'Paket spesial ibadah Ramadhan & awal tahun dengan fasilitas lengkap dan kenyamanan keluarga.',
       features: (data.package3_features || '• Layanan Itikaf Full Ramadhan\n• Kereta Cepat Haramain\n• Asuransi Perjalanan').split('\n').filter(Boolean),
-      btnText: data.package3_btnText || 'Pesan Paket Eksklusif',
+      btnText: data.package3_btnText || 'Lihat Detail',
       imageUrl: data.package3_imageUrl || PlaceHolderImages[2]?.imageUrl || '',
     });
   }
@@ -73,7 +73,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
       price: data.package4_price || 'Hubungi Kami',
       description: 'Ibadah Haji tanpa antri dengan fasilitas premium dan bimbingan eksklusif untuk memastikan rukun haji tertunaikan.',
       features: (data.package4_features || '• Visa Haji Furoda Resmi\n• Tenda Maktab Premium\n• Apartemen Transit').split('\n').filter(Boolean),
-      btnText: data.package4_btnText || 'Pesan Paket Haji',
+      btnText: data.package4_btnText || 'Lihat Detail',
       imageUrl: data.package4_imageUrl || PlaceHolderImages[3]?.imageUrl || PlaceHolderImages[0]?.imageUrl || '',
     });
   }
@@ -84,7 +84,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
     price: p.price,
     description: p.description,
     features: p.details,
-    btnText: 'Pesan Sekarang',
+    btnText: 'Lihat Detail',
     imageUrl: PlaceHolderImages.find(img => img.id === p.imageId)?.imageUrl || PlaceHolderImages[0]?.imageUrl,
   }));
 
@@ -111,6 +111,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
           {activeList.map((pkg, idx) => {
+            const buttonLabel = (pkg.btnText && pkg.btnText !== 'Pesan Sekarang' && !pkg.btnText.startsWith('Pesan Paket')) ? pkg.btnText : 'Lihat Detail';
             return (
               <motion.div
                 key={pkg.id || idx}
@@ -152,7 +153,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
                     <div className="mt-6 pt-3 border-t">
                       <p className="text-xl font-black text-primary mb-3 text-left">{pkg.price}</p>
                       <Button asChild className="w-full rounded-full h-10 text-xs font-bold bg-primary hover:bg-accent text-white">
-                        <Link href={getPackageLink(pkg.id)}>{pkg.btnText || 'Pesan Sekarang'}</Link>
+                        <Link href={getPackageLink(pkg.id)}>{buttonLabel}</Link>
                       </Button>
                     </div>
                   </CardContent>
