@@ -168,6 +168,31 @@ export default function SuperAdminPage() {
   });
   const [isExportingBackup, setIsExportingBackup] = useState(false);
 
+  // Restore Preview Modal State
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [restoreFileData, setRestoreFileData] = useState<any>(null);
+  const [restoreFileName, setRestoreFileName] = useState('');
+  const [restoreTargetTenantOverride, setRestoreTargetTenantOverride] = useState<Tenant | null>(null);
+  const [detectedComponents, setDetectedComponents] = useState<{
+    profile: boolean;
+    landingPagesCount: number;
+    sectionsCount: number;
+    contentsCount: number;
+    testimonialsCount: number;
+    imagesCount: number;
+    metaInfo: any;
+    isGlobalPackage: boolean;
+  } | null>(null);
+  const [restoreSelectionOptions, setRestoreSelectionOptions] = useState({
+    profile: true,
+    landingPages: true,
+    sections: true,
+    contents: true,
+    testimonials: true,
+    images: true,
+  });
+  const [isExecutingRestore, setIsExecutingRestore] = useState(false);
+
   const toggleColumn = (colKey: string) => {
     setVisibleColumns(prev => {
       const updated = { ...prev, [colKey]: !prev[colKey] };
@@ -909,8 +934,8 @@ service cloud.firestore {
     }
   };
 
-  // Handle Restore Database Tenant from JSON File Upload
-  const handleRestoreTenant = async (e: React.ChangeEvent<HTMLInputElement>, targetTenant?: Tenant) => {
+  // Detect JSON File Contents & Open Restore Preview Modal
+  const openRestorePreviewModal = async (e: React.ChangeEvent<HTMLInputElement>, targetTenant?: Tenant) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -918,84 +943,201 @@ service cloud.firestore {
       const fileText = await file.text();
       const backupData = JSON.parse(fileText);
 
-      if (!backupData || (!backupData.tenant && !backupData.sections)) {
+      const isGlobalPackage = backupData?.meta?.exportType === 'global_all_tenants_backup' || Array.isArray(backupData?.tenants);
+
+      if (!backupData || (!backupData.tenant && !backupData.sections && !isGlobalPackage)) {
         alert('File backup JSON tidak valid atau rusak!');
         e.target.value = '';
         return;
       }
 
-      const tenantToRestore = targetTenant || backupData.tenant;
-      if (!tenantToRestore || !tenantToRestore.tenantId) {
-        alert('Data ID tenant tidak ditemukan di dalam berkas backup!');
-        e.target.value = '';
-        return;
+      // Analyze detected contents
+      let profileDetected = false;
+      let landingPagesCount = 0;
+      let sectionsCount = 0;
+      let contentsCount = 0;
+      let testimonialsCount = 0;
+      let imagesCount = 0;
+
+      if (isGlobalPackage && Array.isArray(backupData.tenants)) {
+        profileDetected = true;
+        backupData.tenants.forEach((tPkg: any) => {
+          if (Array.isArray(tPkg.landingPages)) landingPagesCount += tPkg.landingPages.length;
+          if (Array.isArray(tPkg.sections)) sectionsCount += tPkg.sections.length;
+          if (Array.isArray(tPkg.contents)) contentsCount += tPkg.contents.length;
+          if (Array.isArray(tPkg.testimonials)) testimonialsCount += tPkg.testimonials.length;
+          if (Array.isArray(tPkg.images)) imagesCount += tPkg.images.length;
+        });
+      } else {
+        profileDetected = !!backupData.tenant || !!backupData.user;
+        if (Array.isArray(backupData.landingPages)) landingPagesCount = backupData.landingPages.length;
+        if (Array.isArray(backupData.sections)) sectionsCount = backupData.sections.length;
+        if (Array.isArray(backupData.contents)) contentsCount = backupData.contents.length;
+        if (Array.isArray(backupData.testimonials)) testimonialsCount = backupData.testimonials.length;
+        if (Array.isArray(backupData.images)) imagesCount = backupData.images.length;
       }
 
-      const confirmMsg = `Konfirmasi Pemulihan (Restore) Database:\n\nApakah Anda yakin ingin memulihkan data untuk tenant "${tenantToRestore.company || tenantToRestore.subdomain}"?\nData seksi & isi konten lama di server akan ditimpa dengan berkas backup ini.`;
-      if (!confirm(confirmMsg)) {
-        e.target.value = '';
-        return;
-      }
+      setDetectedComponents({
+        profile: profileDetected,
+        landingPagesCount,
+        sectionsCount,
+        contentsCount,
+        testimonialsCount,
+        imagesCount,
+        metaInfo: backupData.meta || {},
+        isGlobalPackage,
+      });
 
-      const activeServerConfig = dbServers.find(s => s.serverId === tenantToRestore.dbServerId);
-      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+      // Set initial checkbox choices based on what is detected
+      setRestoreSelectionOptions({
+        profile: profileDetected,
+        landingPages: landingPagesCount > 0,
+        sections: sectionsCount > 0,
+        contents: contentsCount > 0,
+        testimonials: testimonialsCount > 0,
+        images: imagesCount > 0,
+      });
 
-      // 1. Restore Tenant Document
-      if (backupData.tenant) {
-        await setDoc(doc(targetDb, 'tenants', tenantToRestore.tenantId), backupData.tenant, { merge: true });
-        await setDoc(doc(db, 'tenants', tenantToRestore.tenantId), backupData.tenant, { merge: true });
-      }
-
-      // 2. Restore User Document
-      if (backupData.user) {
-        await setDoc(doc(targetDb, 'users', tenantToRestore.tenantId), backupData.user, { merge: true });
-        await setDoc(doc(db, 'users', tenantToRestore.tenantId), backupData.user, { merge: true });
-      }
-
-      // 3. Restore Landing Pages
-      if (Array.isArray(backupData.landingPages)) {
-        for (const p of backupData.landingPages) {
-          if (p.pageId) {
-            await setDoc(doc(targetDb, 'landingPages', p.pageId), p, { merge: true });
-          }
-        }
-      }
-
-      // 4. Restore Sections
-      if (Array.isArray(backupData.sections)) {
-        for (const s of backupData.sections) {
-          if (s.sectionId) {
-            await setDoc(doc(targetDb, 'sections', s.sectionId), s, { merge: true });
-          }
-        }
-      }
-
-      // 5. Restore Contents
-      if (Array.isArray(backupData.contents)) {
-        for (const c of backupData.contents) {
-          if (c.sectionId && c.key) {
-            const contentDocId = `${tenantToRestore.tenantId}_${c.sectionId}_${c.key}`;
-            await setDoc(doc(targetDb, 'contents', contentDocId), c, { merge: true });
-          }
-        }
-      }
-
-      // 6. Restore Testimonials
-      if (Array.isArray(backupData.testimonials)) {
-        for (const t of backupData.testimonials) {
-          if (t.testimonialId) {
-            await setDoc(doc(targetDb, 'testimonials', t.testimonialId), t, { merge: true });
-          }
-        }
-      }
-
-      alert(`✅ RESTORE SUKSES! Seluruh data database tenant "${tenantToRestore.company || tenantToRestore.subdomain}" berhasil dipulihkan.`);
-      loadAdminData();
+      setRestoreFileData(backupData);
+      setRestoreFileName(file.name);
+      setRestoreTargetTenantOverride(targetTenant || null);
+      setIsRestoreModalOpen(true);
     } catch (err: any) {
-      console.error('Restore error:', err);
-      alert(`Gagal memulihkan database dari file: ${err.message || 'Format JSON tidak cocok'}`);
+      console.error('Parse JSON backup error:', err);
+      alert(`Format berkas backup JSON salah: ${err.message}`);
     } finally {
       e.target.value = '';
+    }
+  };
+
+  // Execute Selective Restore to Firebase
+  const executeSelectiveRestore = async () => {
+    if (!restoreFileData) return;
+    try {
+      setIsExecutingRestore(true);
+
+      const backupData = restoreFileData;
+      const isGlobalPackage = detectedComponents?.isGlobalPackage;
+
+      if (isGlobalPackage && Array.isArray(backupData.tenants)) {
+        // GLOBAL RESTORE
+        for (const tPkg of backupData.tenants) {
+          const tenantToRestore = tPkg.tenant;
+          if (!tenantToRestore || !tenantToRestore.tenantId) continue;
+
+          const activeServerConfig = dbServers.find(s => s.serverId === tenantToRestore.dbServerId);
+          const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+          if (restoreSelectionOptions.profile && tPkg.tenant) {
+            await setDoc(doc(targetDb, 'tenants', tenantToRestore.tenantId), tPkg.tenant, { merge: true });
+            await setDoc(doc(db, 'tenants', tenantToRestore.tenantId), tPkg.tenant, { merge: true });
+          }
+
+          if (restoreSelectionOptions.profile && tPkg.user) {
+            await setDoc(doc(targetDb, 'users', tenantToRestore.tenantId), tPkg.user, { merge: true });
+            await setDoc(doc(db, 'users', tenantToRestore.tenantId), tPkg.user, { merge: true });
+          }
+
+          if (restoreSelectionOptions.landingPages && Array.isArray(tPkg.landingPages)) {
+            for (const p of tPkg.landingPages) {
+              if (p.pageId) await setDoc(doc(targetDb, 'landingPages', p.pageId), p, { merge: true });
+            }
+          }
+
+          if (restoreSelectionOptions.sections && Array.isArray(tPkg.sections)) {
+            for (const s of tPkg.sections) {
+              if (s.sectionId) await setDoc(doc(targetDb, 'sections', s.sectionId), s, { merge: true });
+            }
+          }
+
+          if (restoreSelectionOptions.contents && Array.isArray(tPkg.contents)) {
+            for (const c of tPkg.contents) {
+              if (c.sectionId && c.key) {
+                const contentDocId = `${tenantToRestore.tenantId}_${c.sectionId}_${c.key}`;
+                await setDoc(doc(targetDb, 'contents', contentDocId), c, { merge: true });
+              }
+            }
+          }
+
+          if (restoreSelectionOptions.testimonials && Array.isArray(tPkg.testimonials)) {
+            for (const tItem of tPkg.testimonials) {
+              if (tItem.testimonialId) await setDoc(doc(targetDb, 'testimonials', tItem.testimonialId), tItem, { merge: true });
+            }
+          }
+
+          if (restoreSelectionOptions.images && Array.isArray(tPkg.images)) {
+            for (const imgItem of tPkg.images) {
+              if (imgItem.imageId || imgItem.publicId) {
+                const imgDocId = imgItem.imageId || `${tenantToRestore.tenantId}_${Date.now()}`;
+                await setDoc(doc(targetDb, 'images', imgDocId), imgItem, { merge: true });
+              }
+            }
+          }
+        }
+      } else {
+        // SINGLE TENANT RESTORE
+        const tenantToRestore = restoreTargetTenantOverride || backupData.tenant;
+        if (!tenantToRestore || !tenantToRestore.tenantId) {
+          alert('ID Tenant target tidak ditemukan!');
+          return;
+        }
+
+        const activeServerConfig = dbServers.find(s => s.serverId === tenantToRestore.dbServerId);
+        const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+        if (restoreSelectionOptions.profile && backupData.tenant) {
+          await setDoc(doc(targetDb, 'tenants', tenantToRestore.tenantId), backupData.tenant, { merge: true });
+          await setDoc(doc(db, 'tenants', tenantToRestore.tenantId), backupData.tenant, { merge: true });
+        }
+
+        if (restoreSelectionOptions.profile && backupData.user) {
+          await setDoc(doc(targetDb, 'users', tenantToRestore.tenantId), backupData.user, { merge: true });
+          await setDoc(doc(db, 'users', tenantToRestore.tenantId), backupData.user, { merge: true });
+        }
+
+        if (restoreSelectionOptions.landingPages && Array.isArray(backupData.landingPages)) {
+          for (const p of backupData.landingPages) {
+            if (p.pageId) await setDoc(doc(targetDb, 'landingPages', p.pageId), p, { merge: true });
+          }
+        }
+
+        if (restoreSelectionOptions.sections && Array.isArray(backupData.sections)) {
+          for (const s of backupData.sections) {
+            if (s.sectionId) await setDoc(doc(targetDb, 'sections', s.sectionId), s, { merge: true });
+          }
+        }
+
+        if (restoreSelectionOptions.contents && Array.isArray(backupData.contents)) {
+          for (const c of backupData.contents) {
+            if (c.sectionId && c.key) {
+              const contentDocId = `${tenantToRestore.tenantId}_${c.sectionId}_${c.key}`;
+              await setDoc(doc(targetDb, 'contents', contentDocId), c, { merge: true });
+            }
+          }
+        }
+
+        if (restoreSelectionOptions.testimonials && Array.isArray(backupData.testimonials)) {
+          for (const tItem of backupData.testimonials) {
+            if (tItem.testimonialId) await setDoc(doc(targetDb, 'testimonials', tItem.testimonialId), tItem, { merge: true });
+          }
+        }
+
+        if (restoreSelectionOptions.images && Array.isArray(backupData.images)) {
+          for (const imgItem of backupData.images) {
+            const imgDocId = imgItem.imageId || `${tenantToRestore.tenantId}_${Date.now()}`;
+            await setDoc(doc(targetDb, 'images', imgDocId), imgItem, { merge: true });
+          }
+        }
+      }
+
+      setIsRestoreModalOpen(false);
+      alert('✅ PEMULIHAN (RESTORE) SUKSES! Seluruh data komponen terpilih berhasil dipulihkan.');
+      if (typeof window !== 'undefined') window.location.reload();
+    } catch (err: any) {
+      console.error('Restore error:', err);
+      alert(`Gagal memulihkan database: ${err.message || 'Terjadi kesalahan'}`);
+    } finally {
+      setIsExecutingRestore(false);
     }
   };
 
@@ -1801,7 +1943,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     <input 
                       type="file" 
                       accept=".json" 
-                      onChange={(e) => handleRestoreTenant(e)}
+                      onChange={(e) => openRestorePreviewModal(e)}
                       className="hidden" 
                     />
                     <div className="rounded-full text-xs font-bold border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-2 h-9 px-4 shadow-sm">
@@ -1970,7 +2112,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                             <input 
                               type="file" 
                               accept=".json" 
-                              onChange={(e) => handleRestoreTenant(e, t)}
+                              onChange={(e) => openRestorePreviewModal(e, t)}
                               className="hidden" 
                             />
                             <div className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-purple-50 text-purple-600 shadow-sm transition-colors" title="Restore / Pulihkan Database Tenant (.json)">
@@ -2084,6 +2226,148 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       ) : (
                         <span className="flex items-center gap-2">
                           <Download className="h-4 w-4" /> Unduh Backup JSON
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {/* Smart Detection Restore Preview Modal Dialog */}
+            {isRestoreModalOpen && detectedComponents && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <Card className="w-full max-w-lg shadow-2xl rounded-3xl bg-white border-none p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+                  <CardHeader className="px-0 pt-0 border-b pb-4">
+                    <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+                      <Upload className="h-5 w-5 text-purple-600" /> Deteksi Berkas Backup JSON
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Nama Berkas: <code className="bg-slate-100 text-purple-700 font-bold px-2 py-0.5 rounded-md font-mono">{restoreFileName}</code>
+                    </CardDescription>
+                  </CardHeader>
+
+                  <div className="space-y-3 py-1 text-xs">
+                    {/* File Meta Info Banner */}
+                    <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3 space-y-1 text-purple-950">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold">Tipe Berkas:</span>
+                        <span className="font-extrabold uppercase px-2 py-0.5 rounded-full bg-purple-200/60 text-[10px]">
+                          {detectedComponents.isGlobalPackage ? 'Backup Total Semua Tenant' : 'Backup Single Tenant'}
+                        </span>
+                      </div>
+                      {detectedComponents.metaInfo?.exportedAt && (
+                        <p className="text-[11px] text-purple-700">
+                          Waktu Export Backup: <strong>{new Date(detectedComponents.metaInfo.exportedAt).toLocaleString('id-ID')}</strong>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Detected Content Summary */}
+                    <div className="space-y-1 border-b pb-2">
+                      <p className="font-bold text-slate-800">Komponen Terdeteksi di Berkas Ini:</p>
+                      <p className="text-[11px] text-slate-500">Centang komponen data yang ingin Anda pulihkan (*restore*) ke database:</p>
+                    </div>
+
+                    {/* Detected Options Checklist */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        { 
+                          key: 'profile', 
+                          label: 'Profil Tenant & User', 
+                          countText: detectedComponents.profile ? 'Terdeteksi' : 'Tidak Ada', 
+                          isAvailable: detectedComponents.profile 
+                        },
+                        { 
+                          key: 'landingPages', 
+                          label: 'Halaman Landing Page', 
+                          countText: `${detectedComponents.landingPagesCount} Dokumen`, 
+                          isAvailable: detectedComponents.landingPagesCount > 0 
+                        },
+                        { 
+                          key: 'sections', 
+                          label: 'Seksi Halaman', 
+                          countText: `${detectedComponents.sectionsCount} Seksi`, 
+                          isAvailable: detectedComponents.sectionsCount > 0 
+                        },
+                        { 
+                          key: 'contents', 
+                          label: 'Isi Konten & Teks', 
+                          countText: `${detectedComponents.contentsCount} Rekaman`, 
+                          isAvailable: detectedComponents.contentsCount > 0 
+                        },
+                        { 
+                          key: 'testimonials', 
+                          label: 'Testimoni Jamaah', 
+                          countText: `${detectedComponents.testimonialsCount} Testimoni`, 
+                          isAvailable: detectedComponents.testimonialsCount > 0 
+                        },
+                        { 
+                          key: 'images', 
+                          label: 'Galeri Foto Cloudinary', 
+                          countText: `${detectedComponents.imagesCount} Foto`, 
+                          isAvailable: detectedComponents.imagesCount > 0 
+                        },
+                      ].map(opt => {
+                        const isChecked = (restoreSelectionOptions as any)[opt.key];
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            disabled={!opt.isAvailable}
+                            onClick={() => opt.isAvailable && setRestoreSelectionOptions(prev => ({ ...prev, [opt.key]: !(prev as any)[opt.key] }))}
+                            className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                              !opt.isAvailable 
+                                ? 'bg-slate-100/50 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed' 
+                                : isChecked 
+                                  ? 'bg-purple-50/80 border-purple-300 text-purple-950 shadow-xs' 
+                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div>
+                              <p className="font-bold text-xs">{opt.label}</p>
+                              <span className={`text-[10px] font-semibold ${opt.isAvailable ? 'text-purple-600' : 'text-slate-400'}`}>
+                                {opt.countText}
+                              </span>
+                            </div>
+                            {opt.isAvailable ? (
+                              isChecked ? (
+                                <CheckSquare className="h-4 w-4 text-purple-600 shrink-0" />
+                              ) : (
+                                <Square className="h-4 w-4 text-slate-400 shrink-0" />
+                              )
+                            ) : (
+                              <span className="text-[10px] text-slate-400 font-medium">Kosong</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 border-t pt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsRestoreModalOpen(false)}
+                      disabled={isExecutingRestore}
+                      className="rounded-full text-xs font-bold px-5"
+                    >
+                      Batal
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={executeSelectiveRestore}
+                      disabled={isExecutingRestore || !Object.values(restoreSelectionOptions).some(Boolean)}
+                      className="rounded-full text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white px-6 shadow-md"
+                    >
+                      {isExecutingRestore ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" /> Memulihkan...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Upload className="h-4 w-4" /> Pulihkan Data Terpilih
                         </span>
                       )}
                     </Button>
