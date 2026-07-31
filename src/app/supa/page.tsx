@@ -57,7 +57,8 @@ import {
   Filter,
   SlidersHorizontal,
   CheckSquare,
-  Square
+  Square,
+  Search
 } from 'lucide-react';
 import { Tenant, TenantPlan, TenantStatus, SYSTEM_PLANS, DatabaseServerConfig, BuilderPlan } from '@/types/cms';
 
@@ -147,6 +148,9 @@ export default function SuperAdminPage() {
     }
     return defaultColumns;
   });
+
+  // Search Query state for Tenant Table
+  const [tenantSearchQuery, setTenantSearchQuery] = useState('');
 
   const toggleColumn = (colKey: string) => {
     setVisibleColumns(prev => {
@@ -511,36 +515,23 @@ service cloud.firestore {
     const processAndSetTenants = () => {
       const tenantMap = new Map<string, Tenant>();
 
-      // 1. Map tenants collection first, prioritizing documents with active dbServerId or higher visitorCount
+      // 1. Map tenants collection first
       rawTenants.forEach(t => {
-        const subKey = (t.subdomain || '').toLowerCase().trim();
         const emailKey = (t.email || '').toLowerCase().trim();
-        const dedupeKey = subKey || emailKey || t.tenantId;
-
-        if (!dedupeKey) return;
-
-        if (!tenantMap.has(dedupeKey)) {
-          tenantMap.set(dedupeKey, t);
-        } else {
-          const existing = tenantMap.get(dedupeKey)!;
-          // Prefer document with custom dbServerId, or higher visitorCount
-          const existingIsCustom = existing.dbServerId && existing.dbServerId !== 'default';
-          const newIsCustom = t.dbServerId && t.dbServerId !== 'default';
-
-          if ((newIsCustom && !existingIsCustom) || ((t.visitorCount || 0) > (existing.visitorCount || 0))) {
-            tenantMap.set(dedupeKey, { ...existing, ...t });
-          }
+        const tenantKey = t.tenantId || emailKey;
+        if (emailKey && !tenantMap.has(emailKey)) {
+          tenantMap.set(emailKey, t);
+        } else if (tenantKey && !tenantMap.has(tenantKey)) {
+          tenantMap.set(tenantKey, t);
         }
       });
 
       // 2. Map users collection as fallback for any missing tenant profiles
       rawUsers.forEach(u => {
-        const subKey = (u.subdomain || '').toLowerCase().trim();
         const emailKey = (u.email || '').toLowerCase().trim();
-        const dedupeKey = subKey || emailKey || u.userId || u.tenantId;
-
-        if (dedupeKey && !tenantMap.has(dedupeKey)) {
-          tenantMap.set(dedupeKey, {
+        const userKey = u.userId || u.tenantId || emailKey;
+        if (emailKey && !tenantMap.has(emailKey)) {
+          tenantMap.set(emailKey, {
             tenantId: u.tenantId || u.userId || u.readableId || u.id,
             readableId: u.readableId || u.email,
             name: u.name || u.email?.split('@')[0] || 'Mitra Baru',
@@ -1604,6 +1595,27 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {/* Search Input Bar */}
+                  <div className="relative min-w-[240px] md:min-w-[280px]">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="text"
+                      placeholder="Cari mitra, email, subdomain, ID..."
+                      value={tenantSearchQuery}
+                      onChange={(e) => setTenantSearchQuery(e.target.value)}
+                      className="pl-9 pr-8 h-9 text-xs rounded-full border-slate-300 focus-visible:ring-primary bg-slate-50/50"
+                    />
+                    {tenantSearchQuery && (
+                      <button 
+                        onClick={() => setTenantSearchQuery('')}
+                        className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600 font-bold"
+                        title="Bersihkan pencarian"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
                   {/* Column Hide / Unhide Selector Dropdown */}
                   <div className="relative group">
                     <button className="rounded-full text-xs font-bold border border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200 transition-all flex items-center gap-2 h-9 px-4 shadow-xs">
@@ -1674,7 +1686,36 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tenants.map((t, idx) => (
+                    {(() => {
+                      const q = tenantSearchQuery.trim().toLowerCase();
+                      const filteredTenants = tenants.filter(t => {
+                        if (!q) return true;
+                        const readableId = t.readableId || (t.email ? t.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : '');
+                        return (
+                          (t.name && t.name.toLowerCase().includes(q)) ||
+                          (t.company && t.company.toLowerCase().includes(q)) ||
+                          (t.email && t.email.toLowerCase().includes(q)) ||
+                          (t.subdomain && t.subdomain.toLowerCase().includes(q)) ||
+                          (t.tenantId && t.tenantId.toLowerCase().includes(q)) ||
+                          (readableId && readableId.toLowerCase().includes(q))
+                        );
+                      });
+
+                      if (filteredTenants.length === 0) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={11} className="py-12 text-center text-muted-foreground text-xs">
+                              <div className="flex flex-col items-center justify-center gap-2">
+                                <Search className="h-8 w-8 text-slate-300" />
+                                <p className="font-bold text-slate-600">Tidak ada data tenant yang cocok</p>
+                                <p className="text-slate-400">Coba gunakan kata kunci pencarian lain (nama, email, subdomain, ID).</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+
+                      return filteredTenants.map((t, idx) => (
                       <TableRow key={`${t.tenantId || 'tenant'}_${idx}`}>
                         {visibleColumns.mitra && (
                           <TableCell>
@@ -1782,7 +1823,8 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                         </TableCell>
                         )}
                       </TableRow>
-                    ))}
+                    ));
+                  })()}
                   </TableBody>
                 </Table>
               )}
