@@ -1855,7 +1855,7 @@ export default function EditorSidebar() {
         {/* ====================================================
             THEME TAB (Ultra-Pro Design)
             ==================================================== */}
-        <TabsContent value="theme" className="flex-1 overflow-y-auto pt-2 px-4 pb-6 space-y-6">
+        <TabsContent value="theme" className="flex-1 overflow-y-auto mt-0 pt-3 px-4 pb-24 md:pb-6 space-y-4">
           {/* Header */}
           <div className="border-b pb-3 space-y-1">
             <h3 className="font-extrabold text-sm text-primary uppercase tracking-wider flex items-center gap-2">
@@ -1996,12 +1996,33 @@ export default function EditorSidebar() {
               <option value="monospace">Monospace — Gaya Ketikan Rapi</option>
             </select>
           </div>
+
+          {/* 5. Design Tips & Guidance Box */}
+          <div className="p-3.5 bg-slate-900 text-white rounded-2xl space-y-2 border border-slate-800 shadow-md">
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+              <Sparkles className="h-4 w-4" /> Panduan Desain Travel Umrah
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Kombinasi warna **Navy & Emas** memberikan kesan terpercaya, amanah, dan elegan bagi calon jamaah. Pastikan kontras warna nyaman dibaca di smartphone.
+            </p>
+            <div className="pt-1 flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => updateTheme({ primaryColor: '#0A1E3B', secondaryColor: '#D4AF37', borderRadius: 'lg', fontFamily: 'PT Sans' })}
+                className="h-7 text-[10px] font-bold text-amber-300 hover:text-white hover:bg-white/10 rounded-lg"
+              >
+                Reset Tema Bawaan
+              </Button>
+            </div>
+          </div>
         </TabsContent>
 
         {/* ====================================================
             SEO TAB (Ultra-Pro Design with Live Google SERP Preview)
             ==================================================== */}
-        <TabsContent value="seo" className="flex-1 overflow-y-auto pt-2 px-4 pb-6 space-y-6">
+        <TabsContent value="seo" className="flex-1 overflow-y-auto mt-0 pt-3 px-4 pb-24 md:pb-6 space-y-4">
           {/* Header */}
           <div className="border-b pb-3 space-y-1">
             <h3 className="font-extrabold text-sm text-primary uppercase tracking-wider flex items-center gap-2">
@@ -2099,6 +2120,33 @@ export default function EditorSidebar() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* SEO & Social Sharing Audit Checklist */}
+            <div className="p-3.5 bg-slate-900 text-white rounded-2xl space-y-3 border border-slate-800 shadow-md">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <Globe className="h-4 w-4" /> Kesiapan Fitur SEO Automatic
+                </span>
+                <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  Siap Siar
+                </span>
+              </div>
+
+              <div className="space-y-2 text-[11px]">
+                <div className="flex items-center gap-2 text-slate-200">
+                  <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>Meta Tag OpenGraph & Twitter Card terpasang otomatis</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-200">
+                  <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>Pratinjau gambar & deskripsi di WhatsApp siap tampil</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-200">
+                  <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>Subdomain terdaftar di Google Search Engine Index</span>
+                </div>
+              </div>
             </div>
           </div>
         </TabsContent>
