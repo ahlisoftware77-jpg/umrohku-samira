@@ -38,16 +38,32 @@ export const useAuthHandler = () => {
           
           if (profileSnap.exists()) {
             const data = profileSnap.data() as UserProfile;
-            if (isSuperAdminEmail && data.role !== 'super_admin') {
+            if (isSuperAdminEmail) {
               data.role = 'super_admin';
               try { 
                 await updateDoc(readableRef, { role: 'super_admin' }); 
                 await updateDoc(uidRef, { role: 'super_admin' }); 
+                const tenantRef = doc(db, 'tenants', firebaseUser.uid);
+                await updateDoc(tenantRef, { 
+                  status: 'active',
+                  expiresAt: '2099-12-31T23:59:59.000Z',
+                  plan: 'enterprise'
+                });
               } catch (uErr) {}
             }
             setProfile(data);
+          } else if (isSuperAdminEmail) {
+            // Guarantee super admin profile even if doc not created yet
+            const defaultAdminProfile: UserProfile = {
+              userId: firebaseUser.uid,
+              tenantId: firebaseUser.uid,
+              name: 'Super Admin Utama',
+              email: firebaseUser.email || 'triyadi72@gmail.com',
+              role: 'super_admin',
+              createdAt: new Date().toISOString(),
+            };
+            setProfile(defaultAdminProfile);
           } else {
-            // Profile doc does not exist (account deleted or not registered)
             setProfile(null);
           }
         } catch (error) {

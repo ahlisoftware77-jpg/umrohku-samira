@@ -2703,6 +2703,17 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                         {visibleColumns.expiry && (
                           <TableCell className="whitespace-nowrap">
                             {(() => {
+                              if (t.email === 'triyadi72@gmail.com' || t.expiresAt === '2099-12-31T23:59:59.000Z') {
+                                return (
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs w-fit flex items-center gap-1 border border-amber-400">
+                                      👑 Super Admin (Unlimited)
+                                    </span>
+                                    <span className="text-[10px] text-emerald-600 font-mono font-bold">Selamanya Active</span>
+                                  </div>
+                                );
+                              }
+
                               const expDateStr = t.expiresAt || (t.createdAt ? new Date((t.createdAt as any)?.seconds ? (t.createdAt as any).seconds * 1000 + 14*86400*1000 : new Date(t.createdAt).getTime() + 14*86400*1000).toISOString() : null);
                               if (!expDateStr) return <span className="text-[10px] text-slate-400 font-bold">Belum Diatur</span>;
 
