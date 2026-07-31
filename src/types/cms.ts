@@ -23,6 +23,7 @@ export const TenantSchema = z.object({
   name: z.string(),
   company: z.string(),
   email: z.string().email(),
+  phone: z.string().optional(),
   plan: TenantPlanSchema.default('free'),
   status: TenantStatusSchema.default('active'),
   createdAt: z.any(), // Firebase Timestamp

@@ -80,9 +80,28 @@ export default function TenantDashboardPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
+  const [phone, setPhone] = useState('');
   const [subdomain, setSubdomain] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [authError, setAuthError] = useState('');
+
+  // Helper for auto-converting phone numbers to 62 format
+  const formatPhoneNumber = (input: string) => {
+    // Remove non-digit characters
+    let cleaned = input.replace(/\D/g, '');
+    
+    // If starts with '0', replace leading '0' with '62' (e.g. 0838... -> 62838...)
+    if (cleaned.startsWith('0')) {
+      cleaned = '62' + cleaned.slice(1);
+    }
+    
+    return cleaned;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhone(formatted);
+  };
 
   // Account Deletion States
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -111,8 +130,14 @@ export default function TenantDashboardPage() {
 
     try {
       if (isRegister) {
-        if (!name || !company || !subdomain) {
-          setAuthError('Semua kolom wajib diisi untuk pendaftaran.');
+        if (!name || !company || !phone || !subdomain) {
+          setAuthError('Semua kolom wajib diisi untuk pendaftaran (Nama, Perusahaan, No. WhatsApp, Subdomain, Email, Kata Sandi).');
+          return;
+        }
+
+        const formattedPhone = formatPhoneNumber(phone);
+        if (!formattedPhone.startsWith('62') || formattedPhone.length < 10) {
+          setAuthError('Nomor WhatsApp tidak valid. Masukkan nomor telepon minimal 10 digit (contoh: 0838... atau 62838...).');
           return;
         }
 
@@ -154,6 +179,7 @@ export default function TenantDashboardPage() {
           name,
           company,
           email,
+          phone: formattedPhone,
           plan: 'free',
           status: 'active',
           subdomain: cleanSubdomain,
@@ -177,6 +203,7 @@ export default function TenantDashboardPage() {
             name: name || 'Mitra',
             company: company || name || 'Mitra Travel',
             email,
+            phone: formattedPhone,
             subdomain: cleanSubdomain,
             role: 'owner',
             createdAt: new Date().toISOString(),
@@ -626,6 +653,19 @@ export default function TenantDashboardPage() {
                       placeholder="Samira Travel Karawang" 
                       value={company} 
                       onChange={(e) => setCompany(e.target.value)} 
+                      required 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="reg-phone">Nomor WhatsApp / HP</Label>
+                    <Input 
+                      id="reg-phone" 
+                      name="tel" 
+                      type="tel"
+                      autoComplete="tel" 
+                      placeholder="083812345678 (otomatis jadi 62838...)" 
+                      value={phone} 
+                      onChange={handlePhoneChange} 
                       required 
                     />
                   </div>

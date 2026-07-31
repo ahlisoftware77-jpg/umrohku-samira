@@ -1951,6 +1951,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                         { key: 'tenantId', label: 'Tenant ID (Firestore)' },
                         { key: 'readableId', label: 'Readable ID (Alias)' },
                         { key: 'email', label: 'Email' },
+                        { key: 'phone', label: 'No. WhatsApp / HP' },
                         { key: 'subdomain', label: 'Subdomain' },
                         { key: 'serverDb', label: 'Server DB' },
                         { key: 'paket', label: 'Paket' },
@@ -2008,6 +2009,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       {visibleColumns.tenantId && <TableHead>Tenant ID (Firestore)</TableHead>}
                       {visibleColumns.readableId && <TableHead>Readable ID (Alias)</TableHead>}
                       {visibleColumns.email && <TableHead>Email</TableHead>}
+                      {visibleColumns.phone && <TableHead>No. WhatsApp / HP</TableHead>}
                       {visibleColumns.subdomain && <TableHead>Subdomain</TableHead>}
                       {visibleColumns.serverDb && <TableHead>Server DB</TableHead>}
                       {visibleColumns.paket && <TableHead>Paket</TableHead>}
@@ -2079,6 +2081,11 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           </TableCell>
                         )}
                         {visibleColumns.email && <TableCell className="text-sm">{t.email}</TableCell>}
+                        {visibleColumns.phone && (
+                          <TableCell className="text-xs font-mono font-bold text-emerald-700">
+                            {t.phone || '-'}
+                          </TableCell>
+                        )}
                         {visibleColumns.subdomain && (
                           <TableCell className="text-xs font-semibold text-accent">
                             <a href={`/${t.subdomain}`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
