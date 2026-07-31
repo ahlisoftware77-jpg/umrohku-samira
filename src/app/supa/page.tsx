@@ -1468,6 +1468,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   <TableHeader>
                     <TableRow>
                       <TableHead>Mitra / Perusahaan</TableHead>
+                      <TableHead>ID Tenant (Firestore)</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Subdomain</TableHead>
                       <TableHead>Server DB</TableHead>
@@ -1485,6 +1486,11 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                             <p className="font-bold text-sm text-primary">{t.name}</p>
                             <p className="text-xs text-muted-foreground">{t.company}</p>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-xs bg-slate-100 px-2 py-1 rounded-md text-slate-700 font-mono font-bold select-all border border-slate-200 block w-fit">
+                            {t.tenantId}
+                          </code>
                         </TableCell>
                         <TableCell className="text-sm">{t.email}</TableCell>
                         <TableCell className="text-xs font-semibold text-accent">
