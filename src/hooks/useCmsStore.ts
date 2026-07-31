@@ -398,22 +398,35 @@ export const useCmsStore = create<CmsState>((set, get) => {
         // Resolve Target Database Server Instance dynamically for migrated tenants (e.g. landing-umroh2)
         let targetDb = db;
         try {
-          // 1. Check local storage cluster cache first
-          if (typeof window !== 'undefined') {
-            const storedServers = localStorage.getItem('database_servers');
-            const tenantDocSnap = await getDoc(doc(db, 'tenants', page.tenantId));
-            const tenantDbServerId = tenantDocSnap.exists() ? tenantDocSnap.data()?.dbServerId : null;
+          // Fetch tenant doc to get assigned dbServerId
+          const tenantDocSnap = await getDoc(doc(db, 'tenants', page.tenantId));
+          const tenantDbServerId = tenantDocSnap.exists() ? tenantDocSnap.data()?.dbServerId : null;
 
-            if (tenantDbServerId && tenantDbServerId !== 'default' && storedServers) {
-              const servers: any[] = JSON.parse(storedServers);
-              const serverConfig = servers.find(s => s.serverId === tenantDbServerId);
-              if (serverConfig) {
-                targetDb = getDynamicFirebaseInstance(serverConfig).db;
+          if (tenantDbServerId && tenantDbServerId !== 'default') {
+            let servers: any[] = [];
+            if (typeof window !== 'undefined') {
+              const storedServers = localStorage.getItem('database_servers');
+              if (storedServers) {
+                try { servers = JSON.parse(storedServers); } catch (e) {}
               }
+            }
+
+            // Fallback to Firestore databaseServers collection if local storage is empty
+            if (servers.length === 0) {
+              try {
+                const dbServersSnap = await getDocs(collection(db, 'databaseServers'));
+                servers = dbServersSnap.docs.map(d => d.data());
+              } catch (e) {}
+            }
+
+            const serverConfig = servers.find(s => s.serverId === tenantDbServerId);
+            if (serverConfig) {
+              targetDb = getDynamicFirebaseInstance(serverConfig).db;
+              console.log(`[saveToFirestore] Dynamic DB resolved to Cluster: ${serverConfig.name || serverConfig.projectId}`);
             }
           }
         } catch (dbErr) {
-          console.warn('Failed resolving targetDb for save, falling back to default db:', dbErr);
+          console.warn('[saveToFirestore] Failed resolving targetDb for save, falling back to default db:', dbErr);
         }
 
         const batch = writeBatch(targetDb);

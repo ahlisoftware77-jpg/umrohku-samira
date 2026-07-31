@@ -13,7 +13,7 @@ import {
   serverTimestamp,
   writeBatch
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
 import { LandingPage, Section, Content, PageRevision, SectionType } from '@/types/cms';
 
 export const cmsService = {
@@ -119,9 +119,33 @@ export const cmsService = {
     landingPageId: string,
     onUpdate: (data: { page: LandingPage | null; sections: Section[]; contents: Record<string, Record<string, any>> }) => void
   ) {
-    const pageRef = doc(db, 'landingPages', landingPageId);
+    // Resolve target DB instance based on tenant's assigned cluster server
+    let targetDb = db;
+    try {
+      const tenantSnap = await getDoc(doc(db, 'tenants', tenantId));
+      if (tenantSnap.exists()) {
+        const tenantData = tenantSnap.data();
+        if (tenantData.dbServerId && tenantData.dbServerId !== 'default') {
+          let servers: any[] = [];
+          if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('database_servers');
+            if (stored) { try { servers = JSON.parse(stored); } catch (e) {} }
+          }
+          if (servers.length === 0) {
+            const dbServersSnap = await getDocs(collection(db, 'databaseServers'));
+            servers = dbServersSnap.docs.map(d => d.data());
+          }
+          const serverConfig = servers.find(s => s.serverId === tenantData.dbServerId);
+          if (serverConfig) {
+            targetDb = getDynamicFirebaseInstance(serverConfig).db;
+          }
+        }
+      }
+    } catch (e) {}
+
+    const pageRef = doc(targetDb, 'landingPages', landingPageId);
     
-    // Listen to single landing page doc for meta changes
+    // Listen to single landing page doc for meta changes from targetDb
     return onSnapshot(
       pageRef, 
       async (pageSnap) => {
@@ -132,9 +156,9 @@ export const cmsService = {
         const pageData = pageSnap.data() as LandingPage;
         
         try {
-          // Fetch sections once with getDocs to save Reads
+          // Fetch sections once with getDocs from targetDb
           const sectionsQuery = query(
-            collection(db, 'sections'),
+            collection(targetDb, 'sections'),
             where('landingPageId', '==', landingPageId)
           );
           const secSnap = await getDocs(sectionsQuery);
@@ -145,9 +169,9 @@ export const cmsService = {
             return;
           }
 
-          // Fetch contents once with getDocs (Save 90% Reads vs realtime contents listener)
+          // Fetch contents once with getDocs from targetDb
           const contentsQuery = query(
-            collection(db, 'contents'),
+            collection(targetDb, 'contents'),
             where('tenantId', '==', tenantId)
           );
           const contentSnap = await getDocs(contentsQuery);
