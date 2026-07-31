@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
 import { getAgent, Agent } from '@/lib/agents';
 import { Tenant, SYSTEM_PLANS } from '@/types/cms';
 
@@ -63,7 +63,7 @@ export function useTenantResolver(tenantSlug: string) {
         setTenant(foundTenant);
         activeTenantId = foundTenant.tenantId;
 
-        // Auto-increment visitor counter once per browser session per subdomain
+        // Auto-increment visitor counter across dynamic database server cluster
         if (foundTenant && (foundTenant.tenantId || foundTenant.subdomain)) {
           const sessionKey = `visited_tenant_${foundTenant.subdomain}`;
           if (typeof window !== 'undefined' && !sessionStorage.getItem(sessionKey)) {
@@ -72,21 +72,27 @@ export function useTenantResolver(tenantSlug: string) {
             foundTenant.visitorCount = newCount;
             
             try {
+              let activeDb = db;
+              if (foundTenant.dbServerId && foundTenant.dbServerId !== 'default') {
+                try {
+                  const storedServers = localStorage.getItem('database_servers');
+                  if (storedServers) {
+                    const servers: any[] = JSON.parse(storedServers);
+                    const serverConfig = servers.find(s => s.serverId === foundTenant.dbServerId);
+                    if (serverConfig) {
+                      activeDb = getDynamicFirebaseInstance(serverConfig).db;
+                    }
+                  }
+                } catch (e) {}
+              }
+
               const targetDocId = (foundTenant as any).firestoreDocId || foundTenant.tenantId || foundTenant.subdomain;
-              await updateDoc(doc(db, 'tenants', targetDocId), {
-                visitorCount: increment(1)
-              });
-            } catch (vErr) {
-              try {
-                const qSub = query(collection(db, 'tenants'), where('subdomain', '==', foundTenant.subdomain));
-                const snapSub = await getDocs(qSub);
-                if (!snapSub.empty) {
-                  await updateDoc(doc(db, 'tenants', snapSub.docs[0].id), {
-                    visitorCount: increment(1)
-                  });
-                }
-              } catch (e) {}
-            }
+              const incrementOp = { visitorCount: increment(1) };
+              await updateDoc(doc(activeDb, 'tenants', targetDocId), incrementOp);
+              if (activeDb !== db) {
+                await updateDoc(doc(db, 'tenants', targetDocId), incrementOp).catch(() => {});
+              }
+            } catch (vErr) {}
           }
         }
         

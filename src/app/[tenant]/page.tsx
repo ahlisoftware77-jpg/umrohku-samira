@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, increment } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
 import { getAgent, Agent } from '@/lib/agents';
 import HomeTemplate from '@/components/templates/home-template';
 import DynamicHomeTemplate from '@/components/templates/dynamic-home-template';
@@ -106,26 +106,35 @@ export default function DynamicTenantPage({ params }: PageProps) {
         const validTenant: Tenant = foundTenant;
         setTenantData(validTenant);
 
-        // Auto-increment visitor counter once per browser session
+        // Auto-increment visitor counter across dynamic database server cluster
         try {
           const sessionKey = `visited_tenant_${validTenant.subdomain}`;
           if (typeof window !== 'undefined' && !sessionStorage.getItem(sessionKey)) {
             sessionStorage.setItem(sessionKey, 'true');
             
-            const docIdToUpdate = (validTenant as any).firestoreDocId || validTenant.tenantId || validTenant.subdomain;
-            updateDoc(doc(db, 'tenants', docIdToUpdate), {
-              visitorCount: increment(1)
-            }).catch(async () => {
+            // Resolve active database server instance
+            let activeDb = db;
+            if (validTenant.dbServerId && validTenant.dbServerId !== 'default') {
               try {
-                const qSub = query(collection(db, 'tenants'), where('subdomain', '==', validTenant.subdomain));
-                const snapSub = await getDocs(qSub);
-                if (!snapSub.empty) {
-                  await updateDoc(doc(db, 'tenants', snapSub.docs[0].id), {
-                    visitorCount: increment(1)
-                  });
+                const storedServers = localStorage.getItem('database_servers');
+                if (storedServers) {
+                  const servers: any[] = JSON.parse(storedServers);
+                  const serverConfig = servers.find(s => s.serverId === validTenant.dbServerId);
+                  if (serverConfig) {
+                    activeDb = getDynamicFirebaseInstance(serverConfig).db;
+                  }
                 }
               } catch (e) {}
-            });
+            }
+
+            const docIdToUpdate = (validTenant as any).firestoreDocId || validTenant.tenantId || validTenant.subdomain;
+            
+            // Update visitor count on both target cluster DB and global registry DB
+            const incrementOp = { visitorCount: increment(1) };
+            updateDoc(doc(activeDb, 'tenants', docIdToUpdate), incrementOp).catch(() => {});
+            if (activeDb !== db) {
+              updateDoc(doc(db, 'tenants', docIdToUpdate), incrementOp).catch(() => {});
+            }
           }
         } catch (vErr) {}
 
