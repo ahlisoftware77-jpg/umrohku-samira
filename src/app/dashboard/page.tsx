@@ -24,7 +24,8 @@ import {
   where, 
   getDocs, 
   serverTimestamp, 
-  writeBatch 
+  writeBatch,
+  onSnapshot
 } from 'firebase/firestore';
 import EditorSidebar from '@/components/editor/editor-sidebar';
 import EditorCanvas from '@/components/editor/editor-canvas';
@@ -33,7 +34,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode } from 'lucide-react';
+import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye } from 'lucide-react';
 import { Tenant, LandingPage, Section, Content, SectionType, SYSTEM_PLANS } from '@/types/cms';
 
 function getReadableIdFromEmail(emailAddress: string): string {
@@ -545,6 +546,20 @@ export default function TenantDashboardPage() {
     }
 
     loadCms();
+
+    // Realtime subscription for tenantProfile visitorCount
+    let unsubTenant: (() => void) | null = null;
+    if (tenantIdString) {
+      unsubTenant = onSnapshot(doc(db, 'tenants', tenantIdString), (snap) => {
+        if (snap.exists()) {
+          setTenantProfile(snap.data() as Tenant);
+        }
+      }, () => {});
+    }
+
+    return () => {
+      if (unsubTenant) unsubTenant();
+    };
   }, [tenantId, page]);
 
   // Publish Page status to Firestore
@@ -656,18 +671,28 @@ export default function TenantDashboardPage() {
           </span>
           
           {tenantProfile && (
-            <div className="hidden md:flex flex-col ml-4 border-l pl-4">
-              <span className="text-sm font-bold text-slate-800 leading-none">
-                {tenantProfile.name} {tenantProfile.company ? `(${tenantProfile.company})` : ''}
-              </span>
-              <a 
-                href={`/${tenantProfile.subdomain}`} 
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-primary hover:underline flex items-center gap-1 mt-1 font-medium"
-              >
-                Lihat Subdomain: umrohku-samira.my.id/{tenantProfile.subdomain}
-              </a>
+            <div className="hidden md:flex items-center gap-3 ml-4 border-l pl-4">
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-slate-800 leading-none">
+                  {tenantProfile.name} {tenantProfile.company ? `(${tenantProfile.company})` : ''}
+                </span>
+                <a 
+                  href={`/${tenantProfile.subdomain}`} 
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-primary hover:underline flex items-center gap-1 mt-1 font-medium"
+                >
+                  Lihat Subdomain: umrohku-samira.my.id/{tenantProfile.subdomain}
+                </a>
+              </div>
+
+              {/* Realtime Visitor Counter Badge */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs font-sans">
+                <Eye className="h-3.5 w-3.5 text-amber-500 animate-pulse shrink-0" />
+                <span className="text-xs font-bold whitespace-nowrap">
+                  {(tenantProfile.visitorCount || 0).toLocaleString()} <span className="font-medium text-amber-700/80 text-[11px]">Pengunjung</span>
+                </span>
+              </div>
             </div>
           )}
         </div>
