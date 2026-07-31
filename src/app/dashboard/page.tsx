@@ -119,6 +119,22 @@ export default function TenantDashboardPage() {
   // Mobile responsive tab switcher: 'edit' | 'preview'
   const [mobileTab, setMobileTab] = useState<'edit' | 'preview'>('edit');
 
+  // Compute if current tenant is expired or suspended
+  const isTenantExpired = React.useMemo(() => {
+    if (!tenantProfile) return false;
+    // Super Admin & main developer bypass expiry
+    if (profile?.role === 'super_admin' || user?.email === 'triyadi72@gmail.com') return false;
+
+    if (tenantProfile.status === 'suspended') return true;
+
+    if (tenantProfile.expiresAt) {
+      const expTime = new Date(tenantProfile.expiresAt).getTime();
+      return !isNaN(expTime) && expTime < Date.now();
+    }
+
+    return false;
+  }, [tenantProfile, profile, user]);
+
   // Auto-switch to preview when a section is selected (mobile UX)
   // On desktop both panels are always visible, so this has no visual side-effect.
   useEffect(() => {
@@ -184,6 +200,9 @@ export default function TenantDashboardPage() {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         const readableId = getReadableIdFromEmail(email);
 
+        const now = new Date();
+        const trial14Days = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
         const newTenant: Tenant = {
           tenantId: cred.user.uid,
           readableId,
@@ -195,7 +214,9 @@ export default function TenantDashboardPage() {
           status: 'active',
           subdomain: cleanSubdomain,
           visitorCount: 0,
-          createdAt: new Date().toISOString(),
+          createdAt: now.toISOString(),
+          registeredAt: now.toISOString(),
+          expiresAt: trial14Days.toISOString(),
           limits: SYSTEM_PLANS.free.limits,
         };
 
@@ -1161,6 +1182,69 @@ export default function TenantDashboardPage() {
                   className="rounded-full px-6 font-bold text-xs bg-slate-200 text-slate-700 hover:bg-slate-300"
                 >
                   Tutup
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Expired / Suspended Account Modal Overlay */}
+      {isTenantExpired && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md shadow-2xl rounded-3xl bg-white border-none overflow-hidden text-center">
+            <CardHeader className="bg-red-600 text-white p-6 relative">
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-2 border border-white/20">
+                <AlertTriangle className="h-8 w-8 text-amber-300 animate-bounce" />
+              </div>
+              <CardTitle className="text-xl font-headline font-bold">Masa Aktif Berakhir</CardTitle>
+              <CardDescription className="text-white/90 text-xs mt-1">
+                Masa trial 14 hari atau langganan aktif untuk subdomain <strong className="underline">{tenantProfile?.subdomain}</strong> telah habis.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-5">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-left space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-red-900">
+                  <span>Status Akun:</span>
+                  <span className="bg-red-600 text-white px-2.5 py-0.5 rounded-full uppercase text-[10px] font-extrabold">Tangguh (Expired)</span>
+                </div>
+                <p className="text-xs text-red-700 leading-relaxed">
+                  Untuk mengaktifkan kembali akses editor landing page dan mempublikasikan website Anda, silakan hubungi Customer Support / Admin via WhatsApp.
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <a
+                  href={`https://api.whatsapp.com/send?phone=6283815862300&text=${encodeURIComponent(
+                    `Assalamu'alaikum Admin, saya ingin memperpanjang masa aktif akun landing page:\nNama: ${tenantProfile?.name || '-'}\nPerusahaan: ${tenantProfile?.company || '-'}\nSubdomain: ${tenantProfile?.subdomain || '-'}\nEmail: ${tenantProfile?.email || '-'}\nMohon dibantu perpanjangan akses.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-all transform active:scale-95"
+                >
+                  <span className="text-lg">💬</span> Hubungi Admin WhatsApp
+                </a>
+
+                <p className="text-[11px] text-slate-500">
+                  Nomor WhatsApp CS: <strong className="text-slate-800 font-mono">6283815862300</strong>
+                </p>
+              </div>
+
+              <div className="pt-3 border-t flex justify-center">
+                <Button
+                  variant="ghost"
+                  onClick={async () => {
+                    await signOut(auth);
+                    if (typeof window !== 'undefined') {
+                      localStorage.clear();
+                      sessionStorage.clear();
+                      window.location.href = '/dashboard';
+                    }
+                  }}
+                  className="text-xs font-bold text-slate-500 hover:text-red-600 rounded-full px-4"
+                >
+                  <LogOut className="h-4 w-4 mr-1.5" /> Keluar Akun
                 </Button>
               </div>
             </CardContent>

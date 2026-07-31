@@ -46,6 +46,7 @@ import {
   ImageIcon,
   Search,
   RefreshCw,
+  Clock,
   CheckCircle2,
   PlusCircle,
   ArrowRightLeft,
@@ -146,6 +147,7 @@ export default function SuperAdminPage() {
     paket: true,
     views: true,
     createdAt: true,
+    expiry: true,
     status: true,
     actions: true,
   };
@@ -165,7 +167,67 @@ export default function SuperAdminPage() {
   // Search Query state for Tenant Table
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
 
-  // Backup Modal & Selective Data Types State
+  // Expiry Extension State
+  const [editingExpiryTenant, setEditingExpiryTenant] = useState<Tenant | null>(null);
+  const [customDateInput, setCustomDateInput] = useState<string>('');
+  const [isUpdatingExpiry, setIsUpdatingExpiry] = useState<boolean>(false);
+
+  // Handle Expiry / Subscription extension for Tenant
+  const handleExtendSubscription = async (tenantToUpdate: Tenant, daysToAdd: number, customExpiryDate?: string) => {
+    setIsUpdatingExpiry(true);
+    try {
+      let targetDate: Date;
+
+      if (customExpiryDate) {
+        targetDate = new Date(customExpiryDate);
+      } else {
+        const currentExp = tenantToUpdate.expiresAt ? new Date(tenantToUpdate.expiresAt) : new Date();
+        const isAlreadyPast = currentExp.getTime() < Date.now();
+        const baseDate = isAlreadyPast ? new Date() : currentExp;
+        targetDate = new Date(baseDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+      }
+
+      const newExpiresAt = targetDate.toISOString();
+      const updatedData = {
+        expiresAt: newExpiresAt,
+        status: 'active' as TenantStatus,
+      };
+
+      const activeServerConfig = dbServers.find(s => s.serverId === tenantToUpdate.dbServerId);
+      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+      const candidateTenantIds = Array.from(new Set([
+        tenantToUpdate.tenantId,
+        tenantToUpdate.subdomain,
+        tenantToUpdate.readableId,
+        tenantToUpdate.email
+      ].filter(Boolean)));
+
+      const dbsToUpdate = [db];
+      if (targetDb !== db) dbsToUpdate.push(targetDb);
+
+      for (const instDb of dbsToUpdate) {
+        for (const tid of candidateTenantIds) {
+          try {
+            await updateDoc(doc(instDb, 'tenants', tid!), updatedData);
+          } catch (e) {
+            try {
+              await setDoc(doc(instDb, 'tenants', tid!), updatedData, { merge: true });
+            } catch (e2) {}
+          }
+        }
+      }
+
+      setTenants(prev => prev.map(t => t.tenantId === tenantToUpdate.tenantId ? { ...t, ...updatedData } : t));
+      setEditingExpiryTenant(null);
+
+      alert(`✅ Masa aktif tenant "${tenantToUpdate.name}" (${tenantToUpdate.subdomain}) berhasil diperpanjang hingga ${targetDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}!`);
+    } catch (err: any) {
+      alert('Gagal memperpanjang masa aktif: ' + (err.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsUpdatingExpiry(false);
+    }
+  };
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [backupTargetTenant, setBackupTargetTenant] = useState<Tenant | null>(null);
   const [isGlobalBackup, setIsGlobalBackup] = useState(false);
@@ -2459,6 +2521,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                         { key: 'paket', label: 'Paket' },
                         { key: 'views', label: 'Pengunjung (Views)' },
                         { key: 'createdAt', label: 'Tgl Pendaftaran' },
+                        { key: 'expiry', label: 'Masa Aktif / Expiry' },
                         { key: 'status', label: 'Status' },
                         { key: 'actions', label: 'Aksi Kontrol' },
                       ].map(col => (
@@ -2517,6 +2580,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       {visibleColumns.paket && <TableHead>Paket</TableHead>}
                       {visibleColumns.views && <TableHead>Pengunjung (Views)</TableHead>}
                       {visibleColumns.createdAt && <TableHead>Tgl Pendaftaran</TableHead>}
+                      {visibleColumns.expiry && <TableHead>Masa Aktif / Expiry</TableHead>}
                       {visibleColumns.status && <TableHead>Status</TableHead>}
                       {visibleColumns.actions && <TableHead className="text-right">Aksi Kontrol</TableHead>}
                     </TableRow>
@@ -2633,6 +2697,49 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                             </span>
                           </TableCell>
                         )}
+                        {visibleColumns.expiry && (
+                          <TableCell className="whitespace-nowrap">
+                            {(() => {
+                              const expDateStr = t.expiresAt || (t.createdAt ? new Date((t.createdAt as any)?.seconds ? (t.createdAt as any).seconds * 1000 + 14*86400*1000 : new Date(t.createdAt).getTime() + 14*86400*1000).toISOString() : null);
+                              if (!expDateStr) return <span className="text-[10px] text-slate-400 font-bold">Belum Diatur</span>;
+
+                              const expTime = new Date(expDateStr).getTime();
+                              const daysLeft = Math.ceil((expTime - Date.now()) / (1000 * 60 * 60 * 24));
+                              const formattedDate = new Date(expTime).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                              if (daysLeft < 0 || t.status === 'suspended') {
+                                return (
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-700 w-fit">
+                                      🔴 Expired ({Math.abs(daysLeft)} hr lalu)
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 font-mono">{formattedDate}</span>
+                                  </div>
+                                );
+                              }
+
+                              if (daysLeft <= 3) {
+                                return (
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 w-fit">
+                                      ⚡ Sisa {daysLeft} Hari
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 font-mono">{formattedDate}</span>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 w-fit">
+                                    🟢 Active ({daysLeft} hr)
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 font-mono">{formattedDate}</span>
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                        )}
                         {visibleColumns.status && (
                           <TableCell>
                             <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
@@ -2649,6 +2756,9 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                               <Eye className="h-4 w-4 text-blue-600" />
                             </Button>
                           </a>
+                          <Button size="icon" variant="outline" className="h-8 w-8 text-amber-600 hover:bg-amber-50" onClick={() => { setEditingExpiryTenant(t); setCustomDateInput(''); }} title="Perpanjang Masa Aktif & Langganan">
+                            <Clock className="h-4 w-4" />
+                          </Button>
                           <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleToggleStatus(t)} title="Suspend / Activate">
                             {t.status === 'active' ? <Ban className="h-4 w-4 text-red-500" /> : <Check className="h-4 w-4 text-green-500" />}
                           </Button>
@@ -2684,6 +2794,119 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                 </Table>
               )}
             </Card>
+
+            {/* Expiry Extension Modal Dialog */}
+            {editingExpiryTenant && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <Card className="w-full max-w-md shadow-2xl rounded-3xl bg-white border-none p-6 space-y-5 animate-in fade-in zoom-in duration-150">
+                  <CardHeader className="px-0 pt-0 border-b pb-4">
+                    <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-amber-500" /> Kelola Masa Aktif & Langganan
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Perpanjang masa aktif akses editor & publikasi website untuk <strong className="text-slate-900">{editingExpiryTenant.name} ({editingExpiryTenant.subdomain})</strong>.
+                    </CardDescription>
+                  </CardHeader>
+
+                  <div className="space-y-4">
+                    {/* Status Masa Aktif Saat Ini */}
+                    <div className="p-3.5 bg-slate-50 rounded-2xl border space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500 font-medium">Status Akun:</span>
+                        <span className="font-bold text-slate-900">{editingExpiryTenant.status === 'suspended' ? '🔴 Suspended' : '🟢 Active'}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500 font-medium">Kadaluarsa Saat Ini:</span>
+                        <span className="font-bold text-slate-900 font-mono">
+                          {editingExpiryTenant.expiresAt
+                            ? new Date(editingExpiryTenant.expiresAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                            : 'Belum Diatur (Trial 14 Hari Default)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Presets Button Extensions */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-700">Pilih Tambahan Waktu (Otomatis Dihitung):</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          disabled={isUpdatingExpiry}
+                          onClick={() => handleExtendSubscription(editingExpiryTenant, 30)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl h-11 flex flex-col items-center justify-center shadow-xs"
+                        >
+                          <span>+ 1 Bulan (30 Hari)</span>
+                          <span className="text-[9px] font-normal opacity-90">Rekomendasi Berlangganan</span>
+                        </Button>
+
+                        <Button
+                          type="button"
+                          disabled={isUpdatingExpiry}
+                          onClick={() => handleExtendSubscription(editingExpiryTenant, 14)}
+                          variant="outline"
+                          className="border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 font-bold text-xs rounded-xl h-11 flex flex-col items-center justify-center"
+                        >
+                          <span>+ 14 Hari</span>
+                          <span className="text-[9px] font-normal opacity-80">Perpanjang Trial</span>
+                        </Button>
+
+                        <Button
+                          type="button"
+                          disabled={isUpdatingExpiry}
+                          onClick={() => handleExtendSubscription(editingExpiryTenant, 90)}
+                          variant="outline"
+                          className="border-slate-200 text-slate-800 hover:bg-slate-100 font-bold text-xs rounded-xl h-10"
+                        >
+                          + 3 Bulan (90 Hari)
+                        </Button>
+
+                        <Button
+                          type="button"
+                          disabled={isUpdatingExpiry}
+                          onClick={() => handleExtendSubscription(editingExpiryTenant, 365)}
+                          variant="outline"
+                          className="border-slate-200 text-slate-800 hover:bg-slate-100 font-bold text-xs rounded-xl h-10"
+                        >
+                          + 1 Tahun (365 Hari)
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Manual Expiry Date Input */}
+                    <div className="space-y-2 pt-3 border-t">
+                      <Label className="text-xs font-bold text-slate-700">Atur Tanggal Kadaluarsa Kustom (Manual):</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="date"
+                          value={customDateInput}
+                          onChange={(e) => setCustomDateInput(e.target.value)}
+                          className="rounded-xl text-xs h-10 border-slate-300"
+                        />
+                        <Button
+                          type="button"
+                          disabled={!customDateInput || isUpdatingExpiry}
+                          onClick={() => handleExtendSubscription(editingExpiryTenant, 0, customDateInput)}
+                          className="bg-primary text-white font-bold text-xs rounded-xl h-10 px-4 shrink-0"
+                        >
+                          {isUpdatingExpiry ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan Tanggal'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setEditingExpiryTenant(null)}
+                      className="rounded-full text-xs font-bold text-slate-600"
+                    >
+                      Batal
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            )}
 
             {/* Selective & Total Database Backup Export Modal Dialog */}
             {isBackupModalOpen && (

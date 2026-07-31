@@ -26,7 +26,9 @@ export const TenantSchema = z.object({
   phone: z.string().optional(),
   plan: TenantPlanSchema.default('free'),
   status: TenantStatusSchema.default('active'),
-  createdAt: z.any(), // Firebase Timestamp
+  createdAt: z.any().optional(),
+  registeredAt: z.string().optional(),
+  expiresAt: z.string().optional(),
   customDomain: z.string().optional(),
   subdomain: z.string(),
   dbServerId: z.string().optional(),
