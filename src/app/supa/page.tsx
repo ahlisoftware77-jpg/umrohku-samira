@@ -1357,6 +1357,11 @@ service cloud.firestore {
       const testiSnap = await getDocs(qTesti);
       const testiData = testiSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
+      // 6. Fetch Uploaded Images Metadata
+      const qImages = query(collection(sourceInstance.db, 'images'), where('tenantId', '==', tenant.tenantId));
+      const imagesSnap = await getDocs(qImages);
+      const imagesData = imagesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
       addLog(`Memindahkan profil Tenant & User ke Server Tujuan...`);
       const updatedTenant: Tenant = { 
         ...tenantDocData, 
@@ -1394,6 +1399,12 @@ service cloud.firestore {
       for (const tDoc of testiData) {
         const { id, ...data } = tDoc;
         await setDoc(doc(targetInstance.db, 'testimonials', id), data, { merge: true });
+      }
+
+      addLog(`Memindahkan ${imagesData.length} Rekaman Galeri Foto Cloudinary...`);
+      for (const imgDoc of imagesData) {
+        const { id, ...data } = imgDoc;
+        await setDoc(doc(targetInstance.db, 'images', id), data, { merge: true });
       }
 
       // 6. Update pointer in Primary Global DB Registry so routing resolves seamlessly
