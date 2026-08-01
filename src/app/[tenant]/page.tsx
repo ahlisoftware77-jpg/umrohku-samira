@@ -209,7 +209,9 @@ export default function DynamicTenantPage({ params }: PageProps) {
           'testimonial',
           'cta',
           'social_media',
-          'contact'
+          'contact',
+          'airlines',
+          'ad_popup'
         ];
         const existingTypes = new Set(sectionsList.map(s => s.type));
 
