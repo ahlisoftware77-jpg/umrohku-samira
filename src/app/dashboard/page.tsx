@@ -1509,13 +1509,15 @@ export default function TenantDashboardPage() {
           )}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-50 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 md:p-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 group border border-emerald-500/20"
-          title="Tanya via Chat dengan Pengembang"
+          className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-50 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 md:py-3.5 md:px-4 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 group border border-emerald-500/20"
+          title="Hubungi Layanan Support Pengembang"
         >
-          <MessageCircle className="h-5 w-5 shrink-0 text-white" />
-          <span className="text-[11px] tracking-wide font-extrabold max-w-0 overflow-hidden group-hover:max-w-[200px] transition-all duration-300 ease-out whitespace-nowrap hidden md:inline-block">
-            Tanya Pengembang
-          </span>
+          <MessageCircle className="h-5 w-5 shrink-0 text-white animate-pulse" />
+          <div className="flex flex-col items-start leading-none max-w-0 overflow-hidden group-hover:max-w-[200px] transition-all duration-300 ease-out whitespace-nowrap hidden md:flex">
+            <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-200 mb-0.5">Layanan Support</span>
+            <span className="text-[11px] font-extrabold">Hubungi Developer</span>
+          </div>
+          <span className="text-[10px] font-extrabold md:hidden whitespace-nowrap">Support</span>
         </a>
       )}
     </div>
