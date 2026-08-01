@@ -83,6 +83,7 @@ export default function SuperAdminPage() {
   const [previewImageModal, setPreviewImageModal] = useState<MediaImage | null>(null);
   const [selectedImages, setSelectedImages] = useState<(MediaImage & { dbServerId?: string })[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isRestoringImages, setIsRestoringImages] = useState(false);
 
   // Builder Plans state
   const [builderPlans, setBuilderPlans] = useState<BuilderPlan[]>([]);
@@ -584,6 +585,94 @@ service cloud.firestore {
       alert(`Selesai menghapus gambar. Berhasil: ${successCount}, Gagal: ${failCount}.`);
     } else {
       alert(`✅ Berhasil menghapus ${successCount} berkas gambar terpilih secara permanen!`);
+    }
+  };
+
+  // Export Backup Pustaka Gambar
+  const handleBackupImageLibrary = () => {
+    try {
+      const backupData = {
+        meta: {
+          exportType: 'image_library_backup',
+          version: '1.0',
+          exportedAt: new Date().toISOString(),
+          totalImages: allImagesList.length,
+        },
+        images: allImagesList,
+      };
+
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_pustaka_gambar_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      alert('✅ Backup Pustaka Gambar berhasil diexport dan diunduh!');
+    } catch (err: any) {
+      alert('Gagal mengekspor backup gambar: ' + (err.message || 'Terjadi kesalahan'));
+    }
+  };
+
+  // Restore Pustaka Gambar from JSON Backup
+  const handleRestoreImageLibrary = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsRestoringImages(true);
+      const fileText = await file.text();
+      const backupData = JSON.parse(fileText);
+
+      if (backupData.meta?.exportType !== 'image_library_backup' || !Array.isArray(backupData.images)) {
+         alert('File backup JSON tidak valid atau bukan cadangan Pustaka Gambar!');
+         return;
+      }
+
+      const confirmMsg = `Apakah Anda yakin ingin memulihkan ${backupData.images.length} rekaman gambar ke database? Rekaman yang sudah ada akan diperbarui.`;
+      if (!confirm(confirmMsg)) return;
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const img of backupData.images) {
+        try {
+          const activeServerConfig = dbServers.find(s => s.serverId === img.dbServerId);
+          const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+          const imgDocId = img.imageId || `${img.tenantId}_${Date.now()}`;
+          const imageDocData = {
+            imageId: imgDocId,
+            tenantId: img.tenantId,
+            cloudinaryPublicId: img.cloudinaryPublicId,
+            secureUrl: img.secureUrl,
+            width: Number(img.width) || 0,
+            height: Number(img.height) || 0,
+            format: img.format || 'png',
+            sizeBytes: Number(img.sizeBytes) || 0,
+            folder: img.folder || '',
+            category: img.category || 'media',
+            createdAt: img.createdAt || new Date().toISOString(),
+          };
+
+          await setDoc(doc(targetDb, 'images', imgDocId), imageDocData, { merge: true });
+          successCount++;
+        } catch (err) {
+          console.error('Failed to restore image record:', img.imageId, err);
+          failCount++;
+        }
+      }
+
+      await loadAllAdminImages();
+      alert(`✅ Pemulihan selesai! Berhasil memulihkan ${successCount} gambar. Gagal: ${failCount}.`);
+    } catch (err: any) {
+      alert('Gagal memulihkan Pustaka Gambar: ' + err.message);
+    } finally {
+      setIsRestoringImages(false);
+      e.target.value = '';
     }
   };
 
@@ -2492,13 +2581,46 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     Pantau seluruh berkas gambar yang terunggah di server storage Cloudinary lintas cluster database. Anda dapat pratinjau dan menghapus berkas secara langsung tanpa perlu masuk ke web Cloudinary.
                   </CardDescription>
                 </div>
-                <Button 
-                  onClick={loadAllAdminImages} 
-                  variant="outline" 
-                  className="rounded-full text-xs font-bold border-primary text-primary hover:bg-primary hover:text-white h-9 px-4 flex items-center gap-1.5"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" /> Segarkan Pustaka Media
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button 
+                    onClick={loadAllAdminImages} 
+                    variant="outline" 
+                    className="rounded-full text-xs font-bold border-slate-300 hover:bg-slate-50 h-9 px-3 sm:px-4 flex items-center gap-1.5 text-slate-700"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" /> Segarkan
+                  </Button>
+
+                  <Button 
+                    onClick={handleBackupImageLibrary} 
+                    variant="outline"
+                    className="rounded-full text-xs font-bold border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white h-9 px-3 sm:px-4 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Backup Pustaka (.json)
+                  </Button>
+
+                  <label className="cursor-pointer">
+                    <input 
+                      type="file" 
+                      accept=".json" 
+                      onChange={handleRestoreImageLibrary}
+                      className="hidden" 
+                      disabled={isRestoringImages}
+                    />
+                    <div className="rounded-full text-xs font-bold border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1.5 h-9 px-3 sm:px-4 shadow-xs">
+                      {isRestoringImages ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Memulihkan...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-3.5 w-3.5" />
+                          Restore Pustaka (.json)
+                        </>
+                      )}
+                    </div>
+                  </label>
+                </div>
               </CardHeader>
 
               {/* Search and Filters */}
