@@ -594,24 +594,29 @@ service cloud.firestore {
       const backupData = {
         meta: {
           exportType: 'image_library_backup',
-          version: '1.0',
+          version: '1.1',
           exportedAt: new Date().toISOString(),
-          totalImages: allImagesList.length,
+          totalImages: filteredImages.length,
+          filterActive: selectedMediaTenant,
         },
-        images: allImagesList,
+        images: filteredImages,
       };
+
+      const filterName = selectedMediaTenant === 'all' ? 'semua' : 
+                         selectedMediaTenant === 'orphaned' ? 'tanpa_tenant' : 
+                         `tenant_${selectedMediaTenant}`;
 
       const jsonStr = JSON.stringify(backupData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `backup_pustaka_gambar_${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `backup_pustaka_gambar_${filterName}_${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      alert('✅ Backup Pustaka Gambar berhasil diexport dan diunduh!');
+      alert(`✅ Backup Pustaka Gambar (${filteredImages.length} berkas, filter: ${filterName}) berhasil diexport dan diunduh!`);
     } catch (err: any) {
       alert('Gagal mengekspor backup gambar: ' + (err.message || 'Terjadi kesalahan'));
     }
@@ -632,21 +637,46 @@ service cloud.firestore {
          return;
       }
 
-      const confirmMsg = `Apakah Anda yakin ingin memulihkan ${backupData.images.length} rekaman gambar ke database? Rekaman yang sudah ada akan diperbarui.`;
-      if (!confirm(confirmMsg)) return;
+      // Check active filter for remapping
+      const isSpecificTenantSelected = selectedMediaTenant !== 'all' && selectedMediaTenant !== 'orphaned';
+      const activeTenantObj = isSpecificTenantSelected ? tenants.find(t => t.tenantId === selectedMediaTenant) : null;
+      const targetTenantName = activeTenantObj ? (activeTenantObj.company || activeTenantObj.name) : selectedMediaTenant;
+
+      let overrideTenant = false;
+      if (isSpecificTenantSelected && activeTenantObj) {
+        const askOverride = confirm(
+          `⚠️ DETEKSI FILTER TENANT AKTIF!\n\n` +
+          `Anda sedang menyaring media untuk tenant: "${targetTenantName}".\n\n` +
+          `Apakah Anda ingin MEMETAKAN ULANG (remap) semua ${backupData.images.length} gambar di dalam file backup ini agar masuk ke tenant "${targetTenantName}"?\n\n` +
+          `• Klik [OK] untuk memetakan ulang ke tenant "${targetTenantName}".\n` +
+          `• Klik [Batal/Cancel] untuk memulihkan ke tenant asalnya masing-masing.`
+        );
+        overrideTenant = askOverride;
+      } else {
+        const confirmMsg = `Apakah Anda yakin ingin memulihkan ${backupData.images.length} rekaman gambar ke database? Rekaman yang sudah ada akan diperbarui.`;
+        if (!confirm(confirmMsg)) return;
+      }
 
       let successCount = 0;
       let failCount = 0;
 
       for (const img of backupData.images) {
         try {
-          const activeServerConfig = dbServers.find(s => s.serverId === img.dbServerId);
+          const targetTenantId = overrideTenant ? selectedMediaTenant : img.tenantId;
+
+          // Find correct DB cluster for this tenant
+          const tenantObj = tenants.find(t => t.tenantId === targetTenantId);
+          const activeServerConfig = dbServers.find(s => s.serverId === (tenantObj?.dbServerId || img.dbServerId));
           const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
 
-          const imgDocId = img.imageId || `${img.tenantId}_${Date.now()}`;
+          // Remap imageId to avoid key clashing if remapped
+          const imgDocId = overrideTenant 
+            ? `${targetTenantId}_${img.imageId.includes('_') ? img.imageId.split('_').slice(1).join('_') : img.imageId}` 
+            : img.imageId;
+
           const imageDocData = {
             imageId: imgDocId,
-            tenantId: img.tenantId,
+            tenantId: targetTenantId,
             cloudinaryPublicId: img.cloudinaryPublicId,
             secureUrl: img.secureUrl,
             width: Number(img.width) || 0,
