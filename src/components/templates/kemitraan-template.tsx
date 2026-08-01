@@ -232,6 +232,124 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
           </div>
         </section>
 
+        {/* 3.3. Skema Ujrah & Komisi Kemitraan (public/images/ujroh.jpeg) */}
+        <section id="ujrah" className="py-16 md:py-24 bg-gradient-to-b from-slate-900 via-[#07192e] to-[#05101d] text-white relative">
+          <div className="container mx-auto px-4 md:px-6 max-w-6xl">
+            
+            {/* Header Title */}
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-widest mb-3 shadow-lg">
+                <DollarSign className="w-4 h-4 fill-slate-950" /> POTENSI PENGHASILAN BERKAH & TRANSPARAN
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-headline font-black text-white leading-tight mb-3">
+                Skema Ujrah & Komisi Langsung Kemitraan Samira
+              </h2>
+              <p className="text-xs sm:text-base text-slate-300 font-medium max-w-2xl mx-auto">
+                Sistem akad ujrah syariah yang adil, jujur, dan langsung cair untuk setiap jamaah yang Anda daftarkan tanpa potongan tersembunyi.
+              </p>
+            </div>
+
+            {/* Main Showcase Card Grid */}
+            <div className="bg-gradient-to-br from-[#0c223d] via-[#091b30] to-[#061222] rounded-3xl border-2 border-amber-400/40 p-6 sm:p-10 shadow-2xl overflow-hidden mb-12">
+              <div className="grid lg:grid-cols-12 gap-8 items-center">
+                
+                {/* Image Left Column */}
+                <div className="lg:col-span-6 space-y-3">
+                  <div className="relative rounded-2xl overflow-hidden border-2 border-amber-300 shadow-2xl group bg-slate-950">
+                    <img 
+                      src="/images/ujroh.jpeg" 
+                      alt="Tabel Skema Ujrah Komisi Samira Travel" 
+                      className="w-full h-auto object-cover group-hover:scale-102 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 left-3 bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+                      📜 Tabel Resmi Ujrah Samira Travel
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-center text-slate-400 italic">
+                    *Gambar skema ujrah komisi resmi Samira Travel (Klik/Perbesar untuk detail).
+                  </p>
+                </div>
+
+                {/* Content Right Column */}
+                <div className="lg:col-span-6 space-y-5">
+                  <div className="inline-block bg-amber-400/10 text-amber-300 text-xs font-extrabold px-3 py-1 rounded-full border border-amber-400/30">
+                    ✨ Keuntungan Komisi Kemitraan Syariah
+                  </div>
+
+                  <h3 className="text-xl sm:text-2xl font-headline font-black text-white leading-snug">
+                    Ujrah Komisi Langsung & Hadiah Umrah GRATIS Tour Leader
+                  </h3>
+
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                    Di Samira Travel, setiap ikhtiar Anda mensyiarkan umrah akan mendapatkan apresiasi ujrah terbaik yang langsung ditransfer saat jamaah melakukan booking seat.
+                  </p>
+
+                  <div className="space-y-3">
+                    <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-white/10 flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-white text-xs sm:text-sm block font-extrabold">Ujrah Langsung Per Jamaah</strong>
+                        <span className="text-[11px] sm:text-xs text-slate-300">Komisi menarik langsung cair untuk setiap 1 jamaah yang mendaftar melalui Anda.</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-amber-400/40 flex items-start gap-3">
+                      <Gift className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-amber-300 text-xs sm:text-sm block font-extrabold">Bonus FREE 1 Pax Umrah Tour Leader</strong>
+                        <span className="text-[11px] sm:text-xs text-slate-300">Bawa 33 jamaah sekaligus di tanggal yang sama = Berangkat Umrah GRATIS sebagai Tour Leader + Ujrah komisi tetap utuh!</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-white/10 flex items-start gap-3">
+                      <ShieldCheck className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-white text-xs sm:text-sm block font-extrabold">Murni Akad Syariah (No MLM)</strong>
+                        <span className="text-[11px] sm:text-xs text-slate-300">Tanpa potongan berbelit, tanpa skema piramida, 100% transparan & berkah.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button asChild size="lg" className="w-full h-13 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black text-sm shadow-xl hover:scale-102 transition-all">
+                    <a href={waRegisterUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
+                      <PhoneCall className="w-4 h-4" /> KONSULTASI SKEMA UJRAH VIA WA <ChevronRight className="w-4 h-4" />
+                    </a>
+                  </Button>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Commission Simulation Table Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-950 p-5 rounded-2xl border border-white/10 text-center">
+                <span className="text-xs text-slate-400 block mb-1">Pencapaian 1 Jamaah</span>
+                <strong className="text-lg font-black text-emerald-400 block mb-1">Ujrah Langsung Cair</strong>
+                <span className="text-[11px] text-slate-400">Komisi pertama Anda langsung ditransfer saat jamaah DP.</span>
+              </div>
+
+              <div className="bg-slate-950 p-5 rounded-2xl border border-white/10 text-center">
+                <span className="text-xs text-slate-400 block mb-1">Pencapaian 5 Jamaah</span>
+                <strong className="text-lg font-black text-amber-300 block mb-1">Jutaan Rupiah</strong>
+                <span className="text-[11px] text-slate-400">Penghasilan tambahan berkah untuk keluarga dari rumah.</span>
+              </div>
+
+              <div className="bg-slate-950 p-5 rounded-2xl border border-white/10 text-center">
+                <span className="text-xs text-slate-400 block mb-1">Pencapaian 10 Jamaah</span>
+                <strong className="text-lg font-black text-amber-400 block mb-1">Puluhan Juta Rupiah</strong>
+                <span className="text-[11px] text-slate-400">Hasil nyata dari konsistensi mensyiarkan baitullah.</span>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 text-slate-950 p-5 rounded-2xl text-center shadow-lg border border-amber-300">
+                <span className="text-xs text-slate-900 font-extrabold block mb-1">Pencapaian 33 Jamaah</span>
+                <strong className="text-lg font-black text-slate-950 block mb-1">UMRAH GRATIS + FULL UJRAH</strong>
+                <span className="text-[11px] text-slate-900 font-bold">Terbang sebagai Tour Leader & komisi utuh!</span>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
         {/* 3.5. Running Text Maskapai Partner Section */}
         <section className="py-14 md:py-20 bg-gradient-to-r from-[#05101d] via-[#091f3a] to-[#05101d] border-y border-amber-400/30 overflow-hidden relative">
           <style jsx>{`
