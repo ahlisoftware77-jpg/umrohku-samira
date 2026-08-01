@@ -292,7 +292,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
             onMouseLeave={() => setIsAutoPlaying(true)}
           >
             {/* Main Interactive Slideshow Card */}
-            <div className="relative aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.2/1] rounded-3xl overflow-hidden border-2 border-amber-400 shadow-2xl bg-slate-950 group cursor-pointer"
+            <div className="relative aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.2/1] rounded-3xl overflow-hidden border-2 border-amber-400 shadow-none bg-slate-950 group cursor-pointer"
                  onClick={() => setSelectedIndex(slideIndex)}
             >
               <AnimatePresence mode="wait">
@@ -320,16 +320,16 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                     {/* Slide Caption Overlay */}
                     <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-8 sm:right-8 z-20 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                       <div className="max-w-2xl">
-                        <span className="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full mb-2 inline-block shadow-md">
+                        <span className="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full mb-2 inline-block shadow-none">
                           ✨ {currentSlide.title}
                         </span>
-                        <p className="text-white text-xs sm:text-base font-medium line-clamp-2 drop-shadow-sm">
+                        <p className="text-white text-xs sm:text-base font-medium line-clamp-2">
                           {currentSlide.description}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="bg-slate-900/80 text-amber-300 text-xs font-black px-3 py-1.5 rounded-full border border-amber-400/40 backdrop-blur-md">
+                        <span className="bg-slate-900/80 text-amber-300 text-xs font-black px-3 py-1.5 rounded-full border border-amber-400/40 backdrop-blur-md shadow-none">
                           {slideIndex + 1} / {galleryItems.length} Foto
                         </span>
                         <div className="bg-slate-900/80 text-white p-2 rounded-full border border-white/20 hover:bg-amber-400 hover:text-slate-950 transition-colors">
@@ -345,7 +345,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
               <button
                 type="button"
                 onClick={handlePrev}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/70 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-xl opacity-80 group-hover:opacity-100 cursor-pointer"
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/70 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-80 group-hover:opacity-100 cursor-pointer"
                 aria-label="Foto Sebelumnya"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -354,7 +354,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
               <button
                 type="button"
                 onClick={handleNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/70 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-xl opacity-80 group-hover:opacity-100 cursor-pointer"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/70 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-80 group-hover:opacity-100 cursor-pointer"
                 aria-label="Foto Selanjutnya"
               >
                 <ChevronRight className="w-6 h-6" />
@@ -369,7 +369,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                   onClick={() => setSlideIndex(idx)}
                   className={`relative w-16 h-12 sm:w-24 sm:h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                     slideIndex === idx
-                      ? 'border-amber-400 scale-105 shadow-md shadow-amber-400/20'
+                      ? 'border-amber-400 scale-105 shadow-none'
                       : 'border-slate-200 opacity-60 hover:opacity-100'
                   }`}
                 >
@@ -383,7 +383,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
               <Button 
                 asChild 
                 size="lg" 
-                className="h-14 px-8 rounded-2xl bg-slate-900 text-white font-black text-sm sm:text-base hover:bg-amber-500 hover:text-slate-950 shadow-xl hover:scale-105 transition-all border border-amber-300/40"
+                className="h-14 px-8 rounded-2xl bg-slate-900 text-white font-black text-sm sm:text-base hover:bg-amber-500 hover:text-slate-950 shadow-none hover:scale-105 transition-all border border-amber-300/40"
               >
                 <Link href={galeriPageUrl} className="flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-amber-400" />
