@@ -25,6 +25,8 @@ import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Trash2, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+import { loadGoogleFont } from '@/lib/fonts';
+
 export default function EditorCanvas() {
   const { 
     page, 
@@ -37,7 +39,13 @@ export default function EditorCanvas() {
     toggleSectionVisibility
   } = useCmsStore();
 
+  const fontFamily = page?.theme?.fontFamily || 'PT Sans';
 
+  useEffect(() => {
+    if (fontFamily) {
+      loadGoogleFont(fontFamily);
+    }
+  }, [fontFamily]);
 
   if (!page) {
     return (
@@ -111,10 +119,28 @@ export default function EditorCanvas() {
         return <EmotionalCta agent={agentCompat} data={data} />;
       case 'contact':
         return <ContactSection agent={agentCompat} data={data} />;
+      case 'why-samira':
+        return <WhySamira agent={agentCompat} />;
+      case 'why-umrah':
+        return <WhyUmrah data={data} />;
+      case 'financial-solution':
+        return <FinancialSolution agent={agentCompat} data={data} />;
+      case 'emotional-cta':
+        return <EmotionalCta agent={agentCompat} data={data} />;
+      case 'muri-awards':
+        return <MuriAwards data={data} />;
+      case 'registration-flow':
+        return <RegistrationFlow data={data} />;
+      case 'hotel-explanation':
+        return <HotelExplanation data={data} />;
+      case 'product-knowledge':
+        return <ProductKnowledgeSection agent={agentCompat} data={data} />;
+      case 'final-cta':
+        return <FinalCta agent={agentCompat} data={data} />;
       default:
         return (
-          <div className="py-12 bg-muted/40 text-center text-xs font-semibold uppercase text-muted-foreground border-2 border-dashed">
-            Seksi Belum Terdefinisi ({type})
+          <div className="p-8 text-center text-muted-foreground border-2 border-dashed rounded-xl my-4">
+            Komponen section ({type}) belum diimplementasi.
           </div>
         );
     }
@@ -148,6 +174,24 @@ export default function EditorCanvas() {
           --primary-color: ${page.theme.primaryColor};
           --secondary-color: ${page.theme.secondaryColor};
           --border-radius-theme: ${borderRadiusValue};
+        }
+        .canvas-preview-frame,
+        .canvas-preview-frame *,
+        .canvas-preview-frame h1,
+        .canvas-preview-frame h2,
+        .canvas-preview-frame h3,
+        .canvas-preview-frame h4,
+        .canvas-preview-frame h5,
+        .canvas-preview-frame h6,
+        .canvas-preview-frame .font-headline,
+        .canvas-preview-frame .font-sans,
+        .canvas-preview-frame p,
+        .canvas-preview-frame button,
+        .canvas-preview-frame input,
+        .canvas-preview-frame textarea,
+        .canvas-preview-frame select,
+        .canvas-preview-frame span {
+          font-family: '${fontFamily}', sans-serif !important;
         }
         .bg-primary {
           background-color: var(--primary-color) !important;

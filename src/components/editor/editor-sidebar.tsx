@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCmsStore } from '@/hooks/useCmsStore';
+import { AVAILABLE_FONTS, loadGoogleFont } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1996,14 +1997,19 @@ export default function EditorSidebar() {
           <div className="space-y-2.5 p-3.5 bg-muted/30 border rounded-2xl">
             <p className="text-xs font-bold text-primary uppercase tracking-wider">Gaya Huruf & Tipografi (Font)</p>
             <select 
-              value={page?.theme.fontFamily || 'PT Sans'} 
-              onChange={(e) => updateTheme({ fontFamily: e.target.value })}
-              className="w-full h-11 px-3 rounded-xl border border-input bg-white text-xs font-bold font-sans shadow-xs focus:outline-none focus:border-amber-500"
+              value={page?.theme.fontFamily || 'Plus Jakarta Sans'} 
+              onChange={(e) => {
+                const selectedFont = e.target.value;
+                loadGoogleFont(selectedFont);
+                updateTheme({ fontFamily: selectedFont });
+              }}
+              className="w-full h-11 px-3 rounded-xl border border-input bg-white text-xs font-bold font-sans shadow-xs focus:outline-none focus:border-amber-500 cursor-pointer"
             >
-              <option value="PT Sans">PT Sans — Modern Sans-Serif (Rekomendasi Utama)</option>
-              <option value="Alegreya">Alegreya — Premium Elegant Serif</option>
-              <option value="system-ui">System UI — Standar Bawaan Smartphone / PC</option>
-              <option value="monospace">Monospace — Gaya Ketikan Rapi</option>
+              {AVAILABLE_FONTS.map(font => (
+                <option key={font.name} value={font.name}>
+                  {font.label}
+                </option>
+              ))}
             </select>
           </div>
 

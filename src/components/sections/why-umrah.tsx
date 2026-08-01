@@ -72,7 +72,7 @@ const cardColors = [
   }
 ];
 
-export default function WhyUmrah() {
+export default function WhyUmrah({ data }: { data?: Record<string, any> } = {}) {
   return (
     <section id="alasan" className="py-10 sm:py-16 md:py-24 bg-gradient-to-b from-slate-50/60 via-muted/20 to-slate-50/60 overflow-hidden w-full max-w-full">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-6xl">

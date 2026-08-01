@@ -5,6 +5,8 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { LandingPage } from '@/types/cms';
 
+import { loadGoogleFont } from '@/lib/fonts';
+
 interface LayoutProps {
   children: React.ReactNode;
   params: Promise<{ tenant: string }>;
@@ -71,6 +73,12 @@ export default function TenantLayout({ children, params }: LayoutProps) {
   const radius = theme?.borderRadius || 'lg';
   const font = theme?.fontFamily || 'PT Sans';
 
+  useEffect(() => {
+    if (font) {
+      loadGoogleFont(font);
+    }
+  }, [font]);
+
   const borderRadiusValue = radius === 'none' ? '0px' :
                             radius === 'sm' ? '0.25rem' :
                             radius === 'md' ? '0.5rem' :
@@ -87,7 +95,7 @@ export default function TenantLayout({ children, params }: LayoutProps) {
           --border-radius-theme: ${borderRadiusValue};
         }
         
-        body, p, button, input, textarea, select {
+        body, p, button, input, textarea, select, h1, h2, h3, h4, h5, h6, .font-headline, .font-sans, span {
           font-family: '${font}', sans-serif !important;
         }
         
