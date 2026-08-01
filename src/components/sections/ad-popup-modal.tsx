@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Send, ExternalLink, Gift, Clock, ShieldCheck } from 'lucide-react';
+import { X, Sparkles, Send, ExternalLink, Gift, Clock, ShieldCheck, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Agent, getAgent } from '@/lib/agents';
 
@@ -38,7 +38,9 @@ export default function AdPopupModal({ agent: providedAgent, data, isPreview = f
   const targetUrl = data?.targetUrl || defaultWaUrl;
   const showDelayMs = data?.showDelayMs ?? 800;
 
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  // Closed by default in editor preview, so it doesn't block the dashboard canvas
+  const [isOpen, setIsOpen] = useState<boolean>(!isPreview);
+  const [userDismissed, setUserDismissed] = useState<boolean>(false);
 
   useEffect(() => {
     if (!enabled) {
@@ -47,7 +49,7 @@ export default function AdPopupModal({ agent: providedAgent, data, isPreview = f
     }
 
     if (isPreview) {
-      setIsOpen(true);
+      // Don't auto-open modal backdrop in preview mode if user closed it
       return;
     }
 
@@ -55,23 +57,123 @@ export default function AdPopupModal({ agent: providedAgent, data, isPreview = f
     const storageKey = `seen_ad_popup_${agent.slug || 'root'}`;
     const hasSeenPopup = sessionStorage.getItem(storageKey);
 
-    if (!hasSeenPopup) {
+    if (!hasSeenPopup && !userDismissed) {
       const timer = setTimeout(() => {
         setIsOpen(true);
       }, showDelayMs);
       return () => clearTimeout(timer);
     }
-  }, [enabled, isPreview, showDelayMs, agent.slug]);
+  }, [enabled, isPreview, showDelayMs, agent.slug, userDismissed]);
 
-  const handleClose = () => {
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setIsOpen(false);
+    setUserDismissed(true);
     if (!isPreview) {
       const storageKey = `seen_ad_popup_${agent.slug || 'root'}`;
       sessionStorage.setItem(storageKey, 'true');
     }
   };
 
-  if (!enabled && !isPreview) return null;
+  // Inline Preview Card for Dashboard Editor Canvas (so it NEVER blocks the dashboard UI)
+  if (isPreview) {
+    return (
+      <div className="p-6 my-4 bg-slate-900 text-white rounded-3xl border-2 border-amber-400 shadow-xl max-w-xl mx-auto">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+            <span className="font-extrabold text-sm text-amber-300 uppercase tracking-wider">
+              Pratinjau Seksi Iklan Popup (Awal Muat Halaman)
+            </span>
+          </div>
+          <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${enabled !== false ? 'bg-emerald-500 text-slate-950' : 'bg-red-500 text-white'}`}>
+            {enabled !== false ? '✅ AKTIF' : '❌ NON-AKTIF'}
+          </span>
+        </div>
+
+        <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3 text-center">
+          <span className="inline-block bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-widest px-3 py-0.5 rounded-full">
+            {badgeText}
+          </span>
+          <h4 className="text-base font-black text-white">{title}</h4>
+          <p className="text-xs text-slate-300">{subtitle}</p>
+
+          {imageUrl && (
+            <div className="relative max-h-48 rounded-xl overflow-hidden border border-slate-800 bg-black my-2">
+              <img src={imageUrl} alt={title} className="max-h-44 w-auto mx-auto object-contain" />
+            </div>
+          )}
+
+          <div className="pt-2 flex justify-center gap-3">
+            <Button 
+              type="button"
+              size="sm"
+              onClick={() => setIsOpen(true)}
+              className="bg-amber-400 text-slate-950 font-black text-xs rounded-xl hover:bg-yellow-400 cursor-pointer"
+            >
+              <Eye className="w-4 h-4 mr-1" /> Uji Tampilan Popup Overlay
+            </Button>
+          </div>
+        </div>
+
+        {/* Modal Overlay simulation inside preview when user clicks test button */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md"
+              onClick={handleClose}
+            >
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.85, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-lg bg-gradient-to-b from-[#0c223d] via-[#091f3a] to-[#05101d] text-white rounded-3xl border-2 border-amber-400 shadow-2xl p-6 text-center"
+              >
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-900 text-slate-300 hover:text-white hover:bg-red-600 transition-colors flex items-center justify-center border border-slate-700 z-20 shadow-md cursor-pointer"
+                  aria-label="Tutup"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-widest mb-3">
+                  <Sparkles className="w-3.5 h-3.5" /> {badgeText}
+                </div>
+
+                <h3 className="text-xl font-headline font-black text-white mb-2">{title}</h3>
+                <p className="text-xs text-slate-300 mb-4">{subtitle}</p>
+
+                {imageUrl && (
+                  <div className="rounded-xl overflow-hidden border border-amber-400/40 mb-4 bg-slate-950">
+                    <img src={imageUrl} alt={title} className="w-full h-auto max-h-[240px] object-contain mx-auto" />
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  <Button asChild size="lg" className="w-full bg-amber-400 text-slate-950 font-black text-xs rounded-xl">
+                    <a href={targetUrl} target="_blank" rel="noopener noreferrer" onClick={handleClose}>
+                      <Send className="w-4 h-4 mr-1.5" /> {buttonText}
+                    </a>
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={handleClose} className="text-xs text-slate-400 cursor-pointer">
+                    Tutup Pratinjau
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  if (!enabled) return null;
 
   return (
     <AnimatePresence>
@@ -94,8 +196,9 @@ export default function AdPopupModal({ agent: providedAgent, data, isPreview = f
           >
             {/* Close Button X */}
             <button
+              type="button"
               onClick={handleClose}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-900/80 text-slate-300 hover:text-white hover:bg-red-600 transition-colors flex items-center justify-center border border-slate-700 z-20 shadow-md"
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-900/80 text-slate-300 hover:text-white hover:bg-red-600 transition-colors flex items-center justify-center border border-slate-700 z-20 shadow-md cursor-pointer"
               aria-label="Tutup Iklan"
             >
               <X className="w-5 h-5" />
@@ -145,7 +248,7 @@ export default function AdPopupModal({ agent: providedAgent, data, isPreview = f
               <Button
                 asChild
                 size="lg"
-                className="w-full h-13 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 font-black text-sm shadow-xl hover:scale-103 transition-transform border border-amber-300"
+                className="w-full h-13 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 font-black text-sm shadow-xl hover:scale-103 transition-transform border border-amber-300 cursor-pointer"
               >
                 <a href={targetUrl} target="_blank" rel="noopener noreferrer" onClick={handleClose} className="flex items-center justify-center gap-2">
                   <Send className="w-4 h-4" /> {buttonText}
@@ -153,9 +256,10 @@ export default function AdPopupModal({ agent: providedAgent, data, isPreview = f
               </Button>
 
               <Button
+                type="button"
                 variant="ghost"
                 onClick={handleClose}
-                className="w-full sm:w-auto h-12 text-slate-400 hover:text-white font-bold text-xs"
+                className="w-full sm:w-auto h-12 text-slate-400 hover:text-white font-bold text-xs cursor-pointer"
               >
                 Nanti Saya Lihat
               </Button>
