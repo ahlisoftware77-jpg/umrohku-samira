@@ -310,6 +310,7 @@ export default function SuperAdminPage() {
   const [orphanedContents, setOrphanedContents] = useState<any[]>([]);
   const [isScanningOrphans, setIsScanningOrphans] = useState(false);
   const [isPurgingOrphans, setIsPurgingOrphans] = useState(false);
+  const [isRestoringOrphans, setIsRestoringOrphans] = useState(false);
 
   // CLI Auth state
   const [firebaseTokenInput, setFirebaseTokenInput] = useState(() => 
@@ -1818,6 +1819,96 @@ service cloud.firestore {
       alert(`Eror pemindaian data terasing: ${err.message}`);
     } finally {
       setIsScanningOrphans(false);
+    }
+  };
+
+  // Backup Scanned Orphaned/Misplaced Contents to JSON
+  const handleBackupOrphanedContents = () => {
+    try {
+      const backupData = {
+        meta: {
+          exportType: 'orphaned_contents_backup',
+          version: '1.0',
+          exportedAt: new Date().toISOString(),
+          totalItems: orphanedContents.length,
+        },
+        orphanedContents: orphanedContents.map(i => ({
+          docId: i.docId,
+          tenantId: i.tenantId,
+          sectionId: i.sectionId,
+          key: i.key,
+          value: i.rawValue !== undefined ? i.rawValue : i.value,
+          serverId: i.serverId,
+          projectId: i.projectId,
+          status: i.status,
+          statusLabel: i.statusLabel,
+        })),
+      };
+
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_konten_terasing_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      alert(`✅ Backup ${orphanedContents.length} dokumen terasing/sisa migrasi berhasil diunduh!`);
+    } catch (err: any) {
+      alert('Gagal mengekspor backup konten terasing: ' + (err.message || 'Terjadi kesalahan'));
+    }
+  };
+
+  // Restore Orphaned/Misplaced Contents from JSON
+  const handleRestoreOrphanedContents = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsRestoringOrphans(true);
+      const fileText = await file.text();
+      const backupData = JSON.parse(fileText);
+
+      if (backupData.meta?.exportType !== 'orphaned_contents_backup' || !Array.isArray(backupData.orphanedContents)) {
+        alert('File JSON tidak valid atau bukan cadangan Konten Terasing!');
+        return;
+      }
+
+      const confirmMsg = `Apakah Anda yakin ingin memulihkan ${backupData.orphanedContents.length} dokumen konten terasing ke database?`;
+      if (!confirm(confirmMsg)) return;
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const item of backupData.orphanedContents) {
+        try {
+          const activeServerConfig = dbServers.find(s => s.serverId === item.serverId);
+          const targetDb = item.serverId === 'default' ? db : (activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db);
+
+          await setDoc(doc(targetDb, 'contents', item.docId), {
+            contentId: item.docId,
+            tenantId: item.tenantId,
+            sectionId: item.sectionId,
+            key: item.key,
+            value: item.value,
+            updatedAt: new Date(),
+          }, { merge: true });
+          successCount++;
+        } catch (err) {
+          console.error('Failed to restore content record:', item.docId, err);
+          failCount++;
+        }
+      }
+
+      await handleScanOrphanedContents();
+      alert(`✅ Pemulihan selesai! Berhasil memulihkan ${successCount} dokumen. Gagal: ${failCount}.`);
+    } catch (err: any) {
+      alert('Gagal memulihkan konten terasing: ' + err.message);
+    } finally {
+      setIsRestoringOrphans(false);
+      e.target.value = '';
     }
   };
 
@@ -3636,22 +3727,54 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     type="button"
                     onClick={handleScanOrphanedContents} 
                     disabled={isScanningOrphans}
-                    className="bg-primary hover:bg-primary/90 text-white font-bold rounded-full text-xs px-5 h-9 flex items-center gap-2 shadow-xs"
+                    className="bg-primary hover:bg-primary/90 text-white font-bold rounded-full text-xs px-4 h-9 flex items-center gap-2 shadow-xs"
                   >
                     {isScanningOrphans ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                    {isScanningOrphans ? 'Memindai Database...' : 'Pindai Dokumen Terasing'}
+                    {isScanningOrphans ? 'Memindai Database...' : 'Pindai Dokumen'}
                   </Button>
+
+                  <Button 
+                    type="button"
+                    onClick={handleBackupOrphanedContents} 
+                    disabled={orphanedContents.length === 0}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-full text-xs px-4 h-9 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Backup Konten (.json)
+                  </Button>
+
+                  <label className="cursor-pointer">
+                    <input 
+                      type="file" 
+                      accept=".json" 
+                      onChange={handleRestoreOrphanedContents}
+                      className="hidden" 
+                      disabled={isRestoringOrphans}
+                    />
+                    <div className="rounded-full text-xs font-bold border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1.5 h-9 px-4 shadow-xs">
+                      {isRestoringOrphans ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Memulihkan...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-3.5 w-3.5" />
+                          Restore Konten (.json)
+                        </>
+                      )}
+                    </div>
+                  </label>
 
                   {orphanedContents.some(i => i.status === 'misplaced') && (
                     <Button 
                       type="button"
                       onClick={handleSyncMisplacedContents} 
                       disabled={isPurgingOrphans}
-                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full text-xs px-5 h-9 flex items-center gap-2 shadow-md"
-                      title="Pindahkan seluruh dokumen sisa migrasi ke Server Cluster terhubung (misal: umroh2) lalu bersihkan salinan di DB Utama"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-xs px-4 h-9 flex items-center gap-2 shadow-md"
+                      title="Pindahkan seluruh dokumen sisa migrasi ke Server Cluster terhubung lalu bersihkan salinan di DB Utama"
                     >
                       {isPurgingOrphans ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}
-                      {isPurgingOrphans ? 'Memindahkan...' : `Pindahkan Sisa Migrasi ke Cluster DB (${orphanedContents.filter(i => i.status === 'misplaced').length})`}
+                      Pindahkan Sisa Migrasi ({orphanedContents.filter(i => i.status === 'misplaced').length})
                     </Button>
                   )}
 
@@ -3660,10 +3783,10 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       type="button"
                       onClick={handlePurgeOrphanedContents} 
                       disabled={isPurgingOrphans}
-                      className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full text-xs px-5 h-9 flex items-center gap-2 shadow-md"
+                      className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full text-xs px-4 h-9 flex items-center gap-2 shadow-md"
                     >
                       {isPurgingOrphans ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      {isPurgingOrphans ? 'Bersihkan...' : `Hapus Permanen Terasing (${orphanedContents.length})`}
+                      Hapus Permanen ({orphanedContents.length})
                     </Button>
                   )}
                 </div>
@@ -3675,22 +3798,15 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-3 opacity-80" />
                     <h3 className="font-bold text-slate-700 text-sm">Tidak Ada Dokumen Terasing Terdeteksi</h3>
                     <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                      Klik tombol <strong>"Pindai Dokumen Terasing"</strong> di atas untuk memindai database utama dan cluster server dari sisa-sisa dokumen konten lama.
+                      Klik tombol <strong>"Pindai Dokumen"</strong> di atas untuk memindai database utama dan cluster server dari sisa-sisa dokumen konten lama.
                     </p>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between bg-amber-50 border border-amber-200 p-3 rounded-2xl text-xs text-amber-900">
-                      <span className="font-bold flex items-center gap-1.5">
-                        <AlertTriangle className="h-4 w-4 text-amber-600" />
-                        Ditemukan {orphanedContents.length} dokumen konten lama tanpa pemilik aktif:
-                      </span>
-                      <span className="text-[11px] font-semibold bg-amber-200/60 px-2.5 py-0.5 rounded-full">
-                        Siap Dibersihkan
-                      </span>
-                    </div>
+                ) : (() => {
+                  const mainDbOrphans = orphanedContents.filter(i => i.serverId === 'default');
+                  const clusterDbOrphans = orphanedContents.filter(i => i.serverId !== 'default');
 
-                    <div className="rounded-2xl border overflow-hidden max-h-[450px] overflow-y-auto">
+                  const renderContentsTable = (items: typeof orphanedContents, dbColorClass: string) => (
+                    <div className="rounded-2xl border overflow-hidden max-h-[300px] overflow-y-auto bg-white shadow-xs">
                       <Table>
                         <TableHeader className="bg-slate-50 sticky top-0 z-10">
                           <TableRow>
@@ -3704,10 +3820,10 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {orphanedContents.map((item, idx) => (
+                          {items.map((item, idx) => (
                             <TableRow key={idx} className="hover:bg-slate-50/50">
-                              <TableCell className="text-xs font-bold text-primary">
-                                <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-md border border-primary/20 text-[10px] whitespace-nowrap">
+                              <TableCell className="text-xs font-bold">
+                                <span className={`px-2.5 py-1 rounded-md border text-[10px] whitespace-nowrap font-bold ${dbColorClass}`}>
                                   {item.serverLabel}
                                 </span>
                               </TableCell>
@@ -3744,8 +3860,48 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                         </TableBody>
                       </Table>
                     </div>
-                  </div>
-                )}
+                  );
+
+                  return (
+                    <div className="space-y-6">
+                      {/* View 1: DB Utama */}
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-emerald-700 flex items-center gap-1.5 uppercase tracking-wider">
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                            View 1: DB Utama (landing-umroh) — {mainDbOrphans.length} Dokumen
+                          </h4>
+                          <span className="text-[10px] font-bold text-slate-400">SERVER: DEFAULT</span>
+                        </div>
+                        {mainDbOrphans.length === 0 ? (
+                          <div className="p-4 bg-slate-50 rounded-2xl text-center text-xs text-slate-500 border border-dashed">
+                            Bersih! Tidak ada dokumen terasing di DB Utama.
+                          </div>
+                        ) : (
+                          renderContentsTable(mainDbOrphans, "bg-emerald-50 text-emerald-700 border-emerald-200")
+                        )}
+                      </div>
+
+                      {/* View 2: DB Cluster / DB2 */}
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-purple-700 flex items-center gap-1.5 uppercase tracking-wider">
+                            <span className="h-2.5 w-2.5 rounded-full bg-purple-500 inline-block"></span>
+                            View 2: DB Cluster / DB2 — {clusterDbOrphans.length} Dokumen
+                          </h4>
+                          <span className="text-[10px] font-bold text-slate-400">SERVER: CLUSTER</span>
+                        </div>
+                        {clusterDbOrphans.length === 0 ? (
+                          <div className="p-4 bg-slate-50 rounded-2xl text-center text-xs text-slate-500 border border-dashed">
+                            Bersih! Tidak ada dokumen terasing di DB Cluster.
+                          </div>
+                        ) : (
+                          renderContentsTable(clusterDbOrphans, "bg-purple-50 text-purple-700 border-purple-200")
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </Card>
           </TabsContent>
