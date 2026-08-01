@@ -62,6 +62,25 @@ const benefitsList = [
   { title: "Bimbingan & Training Pro", desc: "Pelatihan Product Knowledge, Service Excellence, serta Strategi Pemasaran Online & Offline." },
 ];
 
+const kemitraanAirlines = [
+  { name: 'Saudia Airlines', logo: '/images/MASKAPAI/saudia3.png', fallback: '/images/MASKAPAI/saudia1.jpg', tag: 'Direct Saudi Arabia', desc: 'Jakarta / Medan ➔ Jeddah & Madinah' },
+  { name: 'Garuda Indonesia', logo: '/images/MASKAPAI/LOGO GARUDA.png', tag: 'Bintang 5 Flag Carrier', desc: 'CGK / SUB / UPG ➔ Jeddah & Madinah' },
+  { name: 'Batik Air', logo: '/images/MASKAPAI/batikair.jpg', tag: 'Premium Full Service', desc: 'Direct Flight Umrah Indonesia' },
+  { name: 'Lion Air Umrah', logo: '/images/MASKAPAI/Lion_Air-Logo.wine.png', tag: 'Airbus A330-900NEO', desc: 'Direct dari 12+ Bandara Daerah' },
+  { name: 'Turkish Airlines', logo: '/images/MASKAPAI/turki-air.jpg', tag: 'Best Europe Carrier', desc: 'Jakarta ➔ Istanbul ➔ Jeddah' },
+  { name: 'Saudia Express', logo: '/images/MASKAPAI/saudia1.jpg', tag: 'Royal Middle East', desc: 'Musholla In-Flight & Halal Food' },
+];
+
+const tickerItems = [
+  '🇸🇦 Saudia Airlines Direct Flight',
+  '🇮🇩 Garuda Indonesia Bintang 5',
+  '🦚 Batik Air Premium Full Service',
+  '🦁 Lion Air Airbus A330-900NEO',
+  '🇹🇷 Turkish Airlines Umrah Plus',
+  '🕋 100% Kepastian Seat Terbooking Diawal',
+  '📦 Bagasi 30kg + Air Zamzam 5 Liter Gratis'
+];
+
 export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTemplateProps) {
   const agent = providedAgent || getAgent('default');
   const rawPhone = agent?.whatsapp || agent?.phone || '6283815862300';
@@ -210,6 +229,128 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
               ))}
             </div>
 
+          </div>
+        </section>
+
+        {/* 3.5. Running Text Maskapai Partner Section */}
+        <section className="py-14 md:py-20 bg-gradient-to-r from-[#05101d] via-[#091f3a] to-[#05101d] border-y border-amber-400/30 overflow-hidden relative">
+          <style jsx>{`
+            @keyframes marqueeLeft {
+              0% { transform: translateX(0%); }
+              100% { transform: translateX(-50%); }
+            }
+            @keyframes marqueeRight {
+              0% { transform: translateX(-50%); }
+              100% { transform: translateX(0%); }
+            }
+            .animate-marquee-left {
+              display: flex;
+              width: max-content;
+              animation: marqueeLeft 28s linear infinite;
+            }
+            .animate-marquee-right {
+              display: flex;
+              width: max-content;
+              animation: marqueeRight 32s linear infinite;
+            }
+            .animate-marquee-left:hover, .animate-marquee-right:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+
+          <div className="container mx-auto px-4 md:px-6 max-w-6xl text-center mb-8 relative z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-widest mb-3 shadow-lg border border-amber-300">
+              <Plane className="w-4 h-4 fill-slate-950 text-slate-950" /> MITRA MASKAPAI PENERBANGAN RESMI
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-headline font-black text-white leading-tight mb-2">
+              Kerjasama Resmi Maskapai Bintang 5 Dunia
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto font-medium">
+              Seluruh penerbangan jamaah kemitraan Samira Travel menggunakan armada penerbangan langsung (direct flight) terbaik & terpercaya.
+            </p>
+          </div>
+
+          {/* Running Text Banner Ticker Top */}
+          <div className="bg-amber-400 text-slate-950 py-2.5 font-black text-xs uppercase tracking-widest overflow-hidden mb-6 border-y border-amber-300 shadow-md">
+            <div className="animate-marquee-left flex items-center gap-8 whitespace-nowrap">
+              {[...tickerItems, ...tickerItems, ...tickerItems].map((item, idx) => (
+                <span key={idx} className="inline-flex items-center gap-3">
+                  <span className="bg-slate-950 text-amber-300 px-2 py-0.5 rounded-md text-[10px] font-bold">SAMIRA PARTNER</span>
+                  <span>{item}</span>
+                  <span className="text-slate-900 font-extrabold">•</span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Running Logo Cards Marquee Row 1 */}
+          <div className="relative w-full overflow-hidden py-3">
+            <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-[#05101d] to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-[#05101d] to-transparent z-10 pointer-events-none" />
+
+            <div className="animate-marquee-left flex items-center gap-4 sm:gap-6">
+              {[...kemitraanAirlines, ...kemitraanAirlines].map((air, idx) => (
+                <div 
+                  key={idx} 
+                  className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-amber-300 shadow-xl flex items-center gap-4 min-w-[280px] sm:min-w-[320px] max-w-[340px] hover:scale-105 transition-transform cursor-pointer shrink-0"
+                >
+                  <div className="w-20 sm:w-24 h-12 bg-white rounded-xl flex items-center justify-center p-1.5 border border-slate-200 shrink-0">
+                    <img 
+                      src={air.logo} 
+                      alt={air.name} 
+                      className="max-h-10 w-auto object-contain"
+                      onError={(e) => {
+                        if (air.fallback) {
+                          (e.target as HTMLImageElement).src = air.fallback;
+                        }
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full inline-block mb-1">
+                      {air.tag}
+                    </span>
+                    <strong className="text-slate-950 font-extrabold text-sm block truncate">{air.name}</strong>
+                    <span className="text-[11px] text-slate-600 font-medium block truncate">{air.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Running Logo Cards Marquee Row 2 (Reverse Direction) */}
+          <div className="relative w-full overflow-hidden py-3 mt-2">
+            <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-[#05101d] to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-[#05101d] to-transparent z-10 pointer-events-none" />
+
+            <div className="animate-marquee-right flex items-center gap-4 sm:gap-6">
+              {[...kemitraanAirlines.slice().reverse(), ...kemitraanAirlines.slice().reverse()].map((air, idx) => (
+                <div 
+                  key={idx} 
+                  className="bg-slate-950/90 p-4 sm:p-5 rounded-2xl border-2 border-amber-400/40 shadow-xl flex items-center gap-4 min-w-[280px] sm:min-w-[320px] max-w-[340px] hover:border-amber-400 hover:scale-105 transition-all cursor-pointer shrink-0"
+                >
+                  <div className="w-20 sm:w-24 h-12 bg-white rounded-xl flex items-center justify-center p-1.5 border border-amber-300 shrink-0">
+                    <img 
+                      src={air.logo} 
+                      alt={air.name} 
+                      className="max-h-10 w-auto object-contain"
+                      onError={(e) => {
+                        if (air.fallback) {
+                          (e.target as HTMLImageElement).src = air.fallback;
+                        }
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/30 inline-block mb-1">
+                      {air.tag}
+                    </span>
+                    <strong className="text-white font-extrabold text-sm block truncate">{air.name}</strong>
+                    <span className="text-[11px] text-slate-300 font-medium block truncate">{air.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
