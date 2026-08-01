@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Home, BookOpen, Handshake, Package, Send } from 'lucide-react';
+import { Home, BookOpen, Handshake, Package, ImageIcon, Send } from 'lucide-react';
 import { Agent, getAgent } from '@/lib/agents';
 
 interface MobileBottomNavbarProps {
@@ -43,14 +43,12 @@ export default function MobileBottomNavbar({ agent: providedAgent }: MobileBotto
       label: 'Beranda',
       href: `${prefix}/`,
       icon: Home,
-      isSpecial: false,
     },
     {
-      id: 'katalog',
-      label: 'E-Katalog',
-      href: `${prefix}/product-knowledge`,
-      icon: BookOpen,
-      isSpecial: false,
+      id: 'paket',
+      label: 'Paket',
+      href: `${prefix}/#paket`,
+      icon: Package,
     },
     {
       id: 'kemitraan',
@@ -61,11 +59,16 @@ export default function MobileBottomNavbar({ agent: providedAgent }: MobileBotto
       badge: 'PROMO',
     },
     {
-      id: 'paket',
-      label: 'Paket',
-      href: `${prefix}/#paket`,
-      icon: Package,
-      isSpecial: false,
+      id: 'galeri',
+      label: 'Galeri',
+      href: `${prefix}/galeri`,
+      icon: ImageIcon,
+    },
+    {
+      id: 'katalog',
+      label: 'Katalog',
+      href: `${prefix}/product-knowledge`,
+      icon: BookOpen,
     },
     {
       id: 'whatsapp',
@@ -78,8 +81,8 @@ export default function MobileBottomNavbar({ agent: providedAgent }: MobileBotto
   ];
 
   return (
-    <div className="fixed bottom-3 left-3 right-3 z-[99] md:hidden pointer-events-none">
-      <nav className="pointer-events-auto max-w-md mx-auto bg-slate-950/95 backdrop-blur-2xl rounded-full border-2 border-amber-400/80 p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] flex items-center justify-around relative overflow-visible">
+    <div className="fixed bottom-0 left-0 right-0 z-[999] md:hidden bg-[#061222]/95 backdrop-blur-2xl border-t-2 border-amber-400/80 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] px-1 py-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom,0px))]">
+      <nav className="w-full flex items-center justify-around">
         
         {items.map((item) => {
           const Icon = item.icon;
@@ -93,10 +96,10 @@ export default function MobileBottomNavbar({ agent: providedAgent }: MobileBotto
                 target="_blank"
                 rel="noopener noreferrer"
                 whileTap={{ scale: 0.88 }}
-                className="relative flex flex-col items-center justify-center py-1 px-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black shadow-md border border-emerald-300 cursor-pointer"
+                className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black shadow-md border border-emerald-300 shrink-0 cursor-pointer"
               >
-                <Icon className="w-5 h-5 animate-pulse" />
-                <span className="text-[9px] font-black tracking-tight mt-0.5">{item.label}</span>
+                <Icon className="w-4 h-4 animate-pulse" />
+                <span className="text-[8px] sm:text-[9px] font-black tracking-tight mt-0.5">{item.label}</span>
               </motion.a>
             );
           }
@@ -106,17 +109,17 @@ export default function MobileBottomNavbar({ agent: providedAgent }: MobileBotto
               <Link key={item.id} href={item.href} onClick={() => setActiveTab(item.id)}>
                 <motion.div
                   whileTap={{ scale: 0.88 }}
-                  className={`relative flex flex-col items-center justify-center py-1 px-3 rounded-full transition-all border cursor-pointer ${
+                  className={`relative flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all border cursor-pointer ${
                     isActive
                       ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md font-black'
                       : 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 border-amber-300'
                   }`}
                 >
-                  <span className="absolute -top-2.5 bg-slate-950 text-amber-400 text-[8px] font-black px-1.5 py-0.2 rounded-full border border-amber-400 uppercase tracking-widest shadow-sm animate-pulse">
+                  <span className="absolute -top-2 bg-slate-950 text-amber-400 text-[7px] font-black px-1.5 py-0.1 rounded-full border border-amber-400 uppercase tracking-widest animate-pulse">
                     {item.badge}
                   </span>
-                  <Icon className="w-5 h-5 text-slate-950" />
-                  <span className="text-[9px] font-headline font-black tracking-tight mt-0.5">{item.label}</span>
+                  <Icon className="w-4 h-4 text-slate-950" />
+                  <span className="text-[8px] sm:text-[9px] font-headline font-black tracking-tight mt-0.5">{item.label}</span>
                 </motion.div>
               </Link>
             );
@@ -126,7 +129,7 @@ export default function MobileBottomNavbar({ agent: providedAgent }: MobileBotto
             <Link key={item.id} href={item.href} onClick={() => setActiveTab(item.id)}>
               <motion.div
                 whileTap={{ scale: 0.88 }}
-                className={`relative flex flex-col items-center justify-center py-1 px-2.5 rounded-full transition-all cursor-pointer ${
+                className={`relative flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all cursor-pointer ${
                   isActive
                     ? 'text-amber-400 font-black'
                     : 'text-slate-400 hover:text-white'
@@ -134,13 +137,13 @@ export default function MobileBottomNavbar({ agent: providedAgent }: MobileBotto
               >
                 {isActive && (
                   <motion.div
-                    layoutId="activeMobileTab"
-                    className="absolute inset-0 bg-white/10 rounded-full border border-white/20"
+                    layoutId="activeMobileTabSticky"
+                    className="absolute inset-0 bg-white/10 rounded-xl border border-white/20"
                     transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   />
                 )}
-                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-amber-400' : ''}`} />
-                <span className={`text-[9px] font-bold tracking-tight mt-0.5 ${isActive ? 'text-amber-300' : 'text-slate-400'}`}>
+                <Icon className={`w-4 h-4 transition-transform ${isActive ? 'scale-110 text-amber-400' : ''}`} />
+                <span className={`text-[8px] sm:text-[9px] font-bold tracking-tight mt-0.5 ${isActive ? 'text-amber-300' : 'text-slate-400'}`}>
                   {item.label}
                 </span>
               </motion.div>
