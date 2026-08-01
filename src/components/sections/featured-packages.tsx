@@ -163,7 +163,7 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
           })}
         </div>
 
-        {/* Special Promo Kurma Bonus Banner */}
+        {/* Special Promo Umrah Package Bonus Banner */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -175,51 +175,51 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
 
           <div className="text-center max-w-3xl mx-auto mb-8">
             <span className="bg-amber-400 text-slate-950 text-[11px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full inline-block mb-3 shadow-md border border-amber-300">
-              🎁 PROMO SPESIAL KURMA PREMIUM SAMIRA
+              🎁 PROMO REWARD KEBERANGKATAN ROMBONGAN
             </span>
             <h3 className="text-2xl sm:text-3xl font-headline font-black text-white leading-tight">
-              Bonus Hadiah Kurma Pilihan Setiap Pembelian / Pendaftaran
+              Program Bonus Spesial Keberangkatan Paket Umrah Samira
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 mt-2 font-medium">
-              Nikmati bonus istimewa kurma kualitas terbaik dari Tanah Suci untuk setiap transaksi:
+              Dapatkan bonus GRATIS 1 pax/tiket keberangkatan Umrah untuk pendaftaran porsi jamaah rombongan berikut:
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <div className="bg-slate-950/80 p-5 rounded-2xl border-2 border-amber-400/40 hover:border-amber-400 transition-all flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-amber-400/10 rounded-2xl flex items-center justify-center text-amber-400 mb-3 border border-amber-400/20 font-black text-lg">
-                🌴
+                🕋
               </div>
-              <span className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Paket 5 Majol</span>
-              <strong className="text-lg font-black text-white mb-2">Beli 5 Majol</strong>
-              <div className="bg-emerald-500 text-slate-950 px-3 py-1 rounded-full font-black text-xs uppercase tracking-wider shadow-md">
-                ✨ FREE 1 SAFARA
+              <span className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Paket Majol</span>
+              <strong className="text-lg font-black text-white mb-2">Daftar 5 Jamaah Majol</strong>
+              <div className="bg-emerald-500 text-slate-950 px-3.5 py-1 rounded-full font-black text-xs uppercase tracking-wider shadow-md">
+                ✨ FREE 1 PAX PAKET SAFARA
               </div>
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">Gratis 1 Pack Kurma Safara Segar</p>
+              <p className="text-[11px] text-slate-400 mt-2 font-medium">Gratis 1 Keberangkatan Paket Safara</p>
             </div>
 
             <div className="bg-slate-950/80 p-5 rounded-2xl border-2 border-amber-400/40 hover:border-amber-400 transition-all flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-amber-400/10 rounded-2xl flex items-center justify-center text-amber-400 mb-3 border border-amber-400/20 font-black text-lg">
-                🌴
+                🕋
               </div>
-              <span className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Paket 7 Sukari</span>
-              <strong className="text-lg font-black text-white mb-2">Beli 7 Sukari</strong>
-              <div className="bg-emerald-500 text-slate-950 px-3 py-1 rounded-full font-black text-xs uppercase tracking-wider shadow-md">
-                ✨ FREE 1 SAFARA
+              <span className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Paket Sukari</span>
+              <strong className="text-lg font-black text-white mb-2">Daftar 7 Jamaah Sukari</strong>
+              <div className="bg-emerald-500 text-slate-950 px-3.5 py-1 rounded-full font-black text-xs uppercase tracking-wider shadow-md">
+                ✨ FREE 1 PAX PAKET SAFARA
               </div>
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">Gratis 1 Pack Kurma Safara Premium</p>
+              <p className="text-[11px] text-slate-400 mt-2 font-medium">Gratis 1 Keberangkatan Paket Safara</p>
             </div>
 
             <div className="bg-slate-950/80 p-5 rounded-2xl border-2 border-amber-400/40 hover:border-amber-400 transition-all flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-amber-400/10 rounded-2xl flex items-center justify-center text-amber-400 mb-3 border border-amber-400/20 font-black text-lg">
-                🌴
+                🕋
               </div>
-              <span className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Paket 10 Safawi</span>
-              <strong className="text-lg font-black text-white mb-2">Beli 10 Safawi</strong>
-              <div className="bg-amber-400 text-slate-950 px-3 py-1 rounded-full font-black text-xs uppercase tracking-wider shadow-md">
-                ✨ FREE 1 SAFAWI
+              <span className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Paket Safawi</span>
+              <strong className="text-lg font-black text-white mb-2">Daftar 10 Jamaah Safawi</strong>
+              <div className="bg-amber-400 text-slate-950 px-3.5 py-1 rounded-full font-black text-xs uppercase tracking-wider shadow-md">
+                ✨ FREE 1 PAX PAKET SAFAWI
               </div>
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">Gratis 1 Pack Kurma Safawi Madinah</p>
+              <p className="text-[11px] text-slate-400 mt-2 font-medium">Gratis 1 Keberangkatan Paket Safawi</p>
             </div>
           </div>
         </motion.div>

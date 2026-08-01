@@ -347,39 +347,42 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
               </div>
             </div>
 
-            {/* Special Promo Bonus Kurma Banner */}
+            {/* Special Promo Reward Keberangkatan Rombongan */}
             <div className="mt-12 bg-gradient-to-br from-[#0c223d] via-[#091b30] to-[#061222] border-2 border-amber-400/40 rounded-3xl p-6 sm:p-8 shadow-2xl">
               <div className="text-center max-w-3xl mx-auto mb-6">
                 <span className="bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full inline-block mb-2 shadow-md">
-                  🎁 BONUS PROMO KURMA SPESIAL MITRA & JAMAAH
+                  🎁 PROMO REWARD KEBERANGKATAN ROMBONGAN JAMAAH
                 </span>
                 <h3 className="text-xl sm:text-2xl font-headline font-black text-white">
-                  Bonus Hadiah Kurma Pilihan Setiap Pembelian / Pendaftaran
+                  Program Bonus Gratis 1 Pax Keberangkatan Paket Umrah Samira
                 </h3>
+                <p className="text-xs text-slate-300 mt-1 font-medium">
+                  Raih bonus 1 pax tiket keberangkatan Umrah gratis saat Anda mendaftarkan rombongan:
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-slate-950 p-4 rounded-2xl border border-amber-400/30 text-center flex flex-col items-center">
-                  <span className="text-amber-400 font-black text-xs uppercase mb-1">🌴 5 Majol</span>
-                  <strong className="text-white text-sm font-extrabold mb-1">Beli 5 Box Majol</strong>
-                  <span className="bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                    FREE 1 SAFARA
+                  <span className="text-amber-400 font-black text-xs uppercase mb-1">🕋 Paket Majol</span>
+                  <strong className="text-white text-sm font-extrabold mb-1.5">Daftar 5 Jamaah Majol</strong>
+                  <span className="bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md">
+                    ✨ FREE 1 PAX PAKET SAFARA
                   </span>
                 </div>
 
                 <div className="bg-slate-950 p-4 rounded-2xl border border-amber-400/30 text-center flex flex-col items-center">
-                  <span className="text-amber-400 font-black text-xs uppercase mb-1">🌴 7 Sukari</span>
-                  <strong className="text-white text-sm font-extrabold mb-1">Beli 7 Box Sukari</strong>
-                  <span className="bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                    FREE 1 SAFARA
+                  <span className="text-amber-400 font-black text-xs uppercase mb-1">🕋 Paket Sukari</span>
+                  <strong className="text-white text-sm font-extrabold mb-1.5">Daftar 7 Jamaah Sukari</strong>
+                  <span className="bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md">
+                    ✨ FREE 1 PAX PAKET SAFARA
                   </span>
                 </div>
 
                 <div className="bg-slate-950 p-4 rounded-2xl border border-amber-400/30 text-center flex flex-col items-center">
-                  <span className="text-amber-400 font-black text-xs uppercase mb-1">🌴 10 Safawi</span>
-                  <strong className="text-white text-sm font-extrabold mb-1">Beli 10 Box Safawi</strong>
-                  <span className="bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                    FREE 1 SAFAWI
+                  <span className="text-amber-400 font-black text-xs uppercase mb-1">🕋 Paket Safawi</span>
+                  <strong className="text-white text-sm font-extrabold mb-1.5">Daftar 10 Jamaah Safawi</strong>
+                  <span className="bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md">
+                    ✨ FREE 1 PAX PAKET SAFAWI
                   </span>
                 </div>
               </div>
