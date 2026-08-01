@@ -5,7 +5,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Menu, BookOpen, Eye } from 'lucide-react';
+import { Menu, BookOpen, Eye, Handshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,7 @@ export default function Header({ agent: providedAgent }: HeaderProps) {
     { href: `${prefix}/product-knowledge`, label: 'E-Katalog', icon: <BookOpen className="w-4 h-4 mr-1.5" /> },
     { href: `${prefix}/#tentang`, label: 'Tentang Kami' },
     { href: `${prefix}/#paket`, label: 'Paket' },
+    { href: `${prefix}/kemitraan`, label: 'Kemitraan', icon: <Handshake className="w-4 h-4 mr-1.5 text-amber-400" /> },
     { href: `${prefix}/galeri`, label: 'Galeri' },
     { href: `${prefix}/kontak`, label: 'Kontak' },
   ];

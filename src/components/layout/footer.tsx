@@ -70,6 +70,7 @@ export default function Footer({ agent: providedAgent }: FooterProps) {
             <ul className="space-y-2 text-xs md:text-sm">
               <li><Link href={`${prefix}/#tentang`} className="hover:text-accent text-primary-foreground/80 transition-colors">Tentang Kami</Link></li>
               <li><Link href={`${prefix}/#paket`} className="hover:text-accent text-primary-foreground/80 transition-colors">Paket</Link></li>
+              <li><Link href={`${prefix}/kemitraan`} className="hover:text-accent text-amber-300 font-extrabold transition-colors">Program Kemitraan</Link></li>
               <li><Link href={`${prefix}/#testimoni`} className="hover:text-accent text-primary-foreground/80 transition-colors">Testimoni</Link></li>
               <li><Link href={`${prefix}/#alur`} className="hover:text-accent text-primary-foreground/80 transition-colors">Cara Kerja</Link></li>
             </ul>
