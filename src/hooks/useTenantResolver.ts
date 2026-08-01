@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, increment, onSnapshot } from '@/lib/firestore-tracker';
 import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
 import { getAgent, Agent } from '@/lib/agents';
 import { Tenant, SYSTEM_PLANS } from '@/types/cms';

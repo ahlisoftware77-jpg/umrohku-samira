@@ -27,7 +27,7 @@ import {
   writeBatch,
   onSnapshot,
   orderBy
-} from 'firebase/firestore';
+} from '@/lib/firestore-tracker';
 import EditorSidebar from '@/components/editor/editor-sidebar';
 import EditorCanvas from '@/components/editor/editor-canvas';
 import { Button } from '@/components/ui/button';

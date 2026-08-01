@@ -15,7 +15,7 @@ import {
   where,
   setDoc,
   onSnapshot
-} from 'firebase/firestore';
+} from '@/lib/firestore-tracker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -101,6 +101,10 @@ export default function SuperAdminPage() {
   const [bPlanIsHidden, setBPlanIsHidden] = useState(false);
   const [bPlanOrder, setBPlanOrder] = useState(1);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
+
+  // Firestore Usage state
+  const [firestoreUsage, setFirestoreUsage] = useState<{ reads: number; writes: number; deletes: number; lastUpdated?: any } | null>(null);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
   
   const [dbLoading, setDbLoading] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
@@ -1093,6 +1097,9 @@ service cloud.firestore {
         } else if (localServers.length > 0) {
           setDbServers(localServers);
         }
+
+        // 7. Load Firestore Usage
+        await loadFirestoreUsage();
       } catch (err: any) {
         console.error('Fetch admin data error:', err);
       } finally {
@@ -1102,6 +1109,43 @@ service cloud.firestore {
 
     fetchAdminData();
   }, [user]);
+
+  const loadFirestoreUsage = async () => {
+    try {
+      setIsLoadingUsage(true);
+      const metricsRef = doc(db, 'system_metrics', 'firestore_usage');
+      const snap = await getDoc(metricsRef);
+      if (snap.exists()) {
+        setFirestoreUsage(snap.data() as any);
+      } else {
+        setFirestoreUsage({ reads: 0, writes: 0, deletes: 0 });
+      }
+    } catch (err) {
+      console.error('Failed to load firestore usage metrics:', err);
+    } finally {
+      setIsLoadingUsage(false);
+    }
+  };
+
+  const handleResetFirestoreUsage = async () => {
+    if (!confirm('Apakah Anda yakin ingin me-reset statistik penggunaan Firestore kembali ke nol?')) return;
+    try {
+      setIsLoadingUsage(true);
+      const metricsRef = doc(db, 'system_metrics', 'firestore_usage');
+      await setDoc(metricsRef, {
+        reads: 0,
+        writes: 0,
+        deletes: 0,
+        lastUpdated: serverTimestamp()
+      });
+      setFirestoreUsage({ reads: 0, writes: 0, deletes: 0 });
+      alert('✅ Statistik penggunaan Firestore berhasil di-reset!');
+    } catch (err: any) {
+      alert('Gagal me-reset: ' + err.message);
+    } finally {
+      setIsLoadingUsage(false);
+    }
+  };
 
   // Handle Suspend/Unsuspend
   const handleToggleStatus = async (tenant: Tenant) => {
@@ -2840,6 +2884,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
               <TabsTrigger value="builderPlans" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap shrink-0">Paket Builder Iklan</TabsTrigger>
               <TabsTrigger value="settings" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap shrink-0">Pengaturan API & Database</TabsTrigger>
               <TabsTrigger value="activity" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap shrink-0">Log Aktivitas</TabsTrigger>
+              <TabsTrigger value="firestoreUsage" onClick={loadFirestoreUsage} className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs flex items-center gap-1.5 whitespace-nowrap font-bold shrink-0"><Activity className="h-3.5 w-3.5 text-indigo-600 animate-pulse" /> Monitor Usage DB</TabsTrigger>
             </TabsList>
           </div>
 
@@ -5081,6 +5126,193 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                 </Card>
               </div>
             )}
+          </TabsContent>
+
+          {/* ==========================================
+              TAB FIRESTORE DATABASE USAGE MONITOR
+              ========================================== */}
+          <TabsContent value="firestoreUsage" className="space-y-6">
+            <Card className="rounded-3xl border shadow-none bg-white p-6">
+              <CardHeader className="px-0 pt-0 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 mb-4">
+                <div>
+                  <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-indigo-600 animate-pulse" /> Monitor Penggunaan Database Firestore
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Pantau akumulasi pembacaan (Reads), penulisan (Writes), dan penghapusan (Deletes) dokumen Firestore secara real-time dari seluruh aktivitas builder.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    type="button"
+                    onClick={loadFirestoreUsage} 
+                    disabled={isLoadingUsage}
+                    className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold rounded-full text-xs h-9 px-4 flex items-center gap-1.5 shadow-sm"
+                  >
+                    {isLoadingUsage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                    Refresh Stats
+                  </Button>
+                  <Button 
+                    type="button"
+                    onClick={handleResetFirestoreUsage} 
+                    disabled={isLoadingUsage}
+                    className="bg-red-50 text-red-700 hover:bg-red-100 font-bold rounded-full text-xs h-9 px-4 flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Reset Counter
+                  </Button>
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-0 space-y-6">
+                {/* 3 Metrics Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Reads */}
+                  <div className="p-5 rounded-2xl bg-blue-50/50 border border-blue-100 space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">Document Reads (Pembacaan)</span>
+                      <span className="bg-blue-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-full">getDoc / onSnapshot</span>
+                    </div>
+                    <div className="space-y-1">
+                      <h2 className="text-3xl font-extrabold text-blue-900">{(firestoreUsage?.reads || 0).toLocaleString()} <span className="text-xs text-blue-700/70 font-semibold">kali</span></h2>
+                      <p className="text-[10px] text-muted-foreground">Pembacaan data landing page, section, config, & testimoni.</p>
+                    </div>
+                    <div className="space-y-1.5 pt-2 border-t border-blue-100/60">
+                      <div className="flex justify-between text-[10px] text-blue-800 font-bold">
+                        <span>Batas Kuota Gratis Harian:</span>
+                        <span>{((firestoreUsage?.reads || 0) / 50000 * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-blue-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-600 rounded-full transition-all duration-500" 
+                          style={{ width: `${Math.min(((firestoreUsage?.reads || 0) / 50000 * 100), 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[9px] text-muted-foreground font-semibold">
+                        <span>0 / hari</span>
+                        <span>50,000 / hari (Firebase Free Tier)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Writes */}
+                  <div className="p-5 rounded-2xl bg-amber-50/50 border border-amber-100 space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Document Writes (Penulisan)</span>
+                      <span className="bg-amber-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-full">setDoc / updateDoc</span>
+                    </div>
+                    <div className="space-y-1">
+                      <h2 className="text-3xl font-extrabold text-amber-900">{(firestoreUsage?.writes || 0).toLocaleString()} <span className="text-xs text-amber-700/70 font-semibold">kali</span></h2>
+                      <p className="text-[10px] text-muted-foreground">Penulisan data seksi, publish edits, & setup mitra baru.</p>
+                    </div>
+                    <div className="space-y-1.5 pt-2 border-t border-amber-100/60">
+                      <div className="flex justify-between text-[10px] text-amber-800 font-bold">
+                        <span>Batas Kuota Gratis Harian:</span>
+                        <span>{((firestoreUsage?.writes || 0) / 20000 * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-amber-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-amber-500 rounded-full transition-all duration-500" 
+                          style={{ width: `${Math.min(((firestoreUsage?.writes || 0) / 20000 * 100), 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[9px] text-muted-foreground font-semibold">
+                        <span>0 / hari</span>
+                        <span>20,000 / hari (Firebase Free Tier)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Deletes */}
+                  <div className="p-5 rounded-2xl bg-red-50/50 border border-red-100 space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-red-800 uppercase tracking-wider">Document Deletes (Penghapusan)</span>
+                      <span className="bg-red-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-full">deleteDoc</span>
+                    </div>
+                    <div className="space-y-1">
+                      <h2 className="text-3xl font-extrabold text-red-900">{(firestoreUsage?.deletes || 0).toLocaleString()} <span className="text-xs text-red-700/70 font-semibold">kali</span></h2>
+                      <p className="text-[10px] text-muted-foreground">Penghapusan data seksi, hapus tenant, & pembersihan orphans.</p>
+                    </div>
+                    <div className="space-y-1.5 pt-2 border-t border-red-100/60">
+                      <div className="flex justify-between text-[10px] text-red-800 font-bold">
+                        <span>Batas Kuota Gratis Harian:</span>
+                        <span>{((firestoreUsage?.deletes || 0) / 20000 * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-red-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-red-500 rounded-full transition-all duration-500" 
+                          style={{ width: `${Math.min(((firestoreUsage?.deletes || 0) / 20000 * 100), 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[9px] text-muted-foreground font-semibold">
+                        <span>0 / hari</span>
+                        <span>20,000 / hari (Firebase Free Tier)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Firestore Cost Estimator & Info Box */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                  {/* Cost Estimator */}
+                  <div className="p-5 border rounded-2xl bg-slate-50 space-y-3">
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Estimasi Biaya Tambahan Firestore</h3>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Jika kuota gratis di atas terlewati, Firestore akan membebankan biaya per 100,000 operasi. Berikut estimasi akumulasi biaya berjalan saat ini:
+                    </p>
+                    <div className="pt-2 space-y-2">
+                      <div className="flex justify-between text-xs font-semibold text-slate-700">
+                        <span>Reads Cost ({Math.max(0, (firestoreUsage?.reads || 0) - 50000)} berbayar):</span>
+                        <span className="font-mono">$ {Math.max(0, (((firestoreUsage?.reads || 0) - 50000) * 0.06 / 100000)).toFixed(4)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-semibold text-slate-700">
+                        <span>Writes Cost ({Math.max(0, (firestoreUsage?.writes || 0) - 20000)} berbayar):</span>
+                        <span className="font-mono">$ {Math.max(0, (((firestoreUsage?.writes || 0) - 20000) * 0.18 / 100000)).toFixed(4)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-semibold text-slate-700">
+                        <span>Deletes Cost ({Math.max(0, (firestoreUsage?.deletes || 0) - 20000)} berbayar):</span>
+                        <span className="font-mono">$ {Math.max(0, (((firestoreUsage?.deletes || 0) - 20000) * 0.02 / 100000)).toFixed(4)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-extrabold text-primary pt-2 border-t">
+                        <span>Total Biaya Berjalan:</span>
+                        <span className="font-mono text-indigo-700">
+                          $ {(
+                            Math.max(0, (((firestoreUsage?.reads || 0) - 50000) * 0.06 / 100000)) + 
+                            Math.max(0, (((firestoreUsage?.writes || 0) - 20000) * 0.18 / 100000)) + 
+                            Math.max(0, (((firestoreUsage?.deletes || 0) - 20000) * 0.02 / 100000))
+                          ).toFixed(4)} USD
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Informational Notes */}
+                  <div className="p-5 border rounded-2xl bg-indigo-50/30 border-indigo-100/50 space-y-3">
+                    <h3 className="text-xs font-extrabold text-indigo-900 uppercase tracking-wider flex items-center gap-1">
+                      💡 Cara Kerja Pemantauan
+                    </h3>
+                    <ul className="text-[11px] text-indigo-950/80 space-y-2 list-disc pl-4 leading-relaxed">
+                      <li>
+                        <strong>Otomatis & Real-Time:</strong> Sistem memotong (intercept) query Firestore yang dieksekusi oleh web app dan mencatatnya ke local cache.
+                      </li>
+                      <li>
+                        <strong>Sinkronisasi Efisien:</strong> Total statistik akan diunggah (sync) ke koleksi <code className="bg-indigo-100 text-indigo-800 px-1 py-0.5 rounded font-mono font-bold">system_metrics/firestore_usage</code> secara berkala (dibungkus dalam increment offset) agar tidak menghasilkan loop query tambahan.
+                      </li>
+                      <li>
+                        <strong>Bebas Bulak-Balik Firebase:</strong> Anda dapat melihat perkembangan kuota harian Anda secara visual dari panel ini tanpa perlu terus-menerus membuka halaman Firebase Console resmi!
+                      </li>
+                      {firestoreUsage?.lastUpdated && (
+                        <li className="list-none pt-1 text-[10px] text-indigo-700/80 font-semibold italic">
+                          Pembaruan Terakhir: {
+                            firestoreUsage.lastUpdated.toDate ? firestoreUsage.lastUpdated.toDate().toLocaleString() : firestoreUsage.lastUpdated
+                          }
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>

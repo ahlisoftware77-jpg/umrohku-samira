@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, increment } from '@/lib/firestore-tracker';
 import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
 import { getAgent, Agent } from '@/lib/agents';
 import HomeTemplate from '@/components/templates/home-template';

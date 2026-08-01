@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Firestore } from 'firebase/firestore';
-import { doc, updateDoc, writeBatch, collection, deleteDoc, getDocs, query, where } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch, collection, deleteDoc, getDocs, query, where } from '@/lib/firestore-tracker';
 import { db } from '@/lib/firebase';
 import { LandingPage, Section, Content, SectionType } from '@/types/cms';
 
