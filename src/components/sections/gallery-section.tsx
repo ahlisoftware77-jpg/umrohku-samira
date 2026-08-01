@@ -314,22 +314,22 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                       sizes="(max-width: 1200px) 100vw, 1200px"
                     />
 
-                    {/* Slide Caption Overlay (Clean Compact Box without dark image gradient shadow) */}
-                    <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/15">
+                    {/* Slide Caption Overlay (100% Transparent Container) */}
+                    <div className="absolute bottom-3 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent p-0">
                       <div className="max-w-2xl">
                         <span className="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-0.5 rounded-full mb-1 inline-block">
                           ✨ {currentSlide.title}
                         </span>
-                        <p className="text-white text-xs sm:text-sm font-medium line-clamp-1">
+                        <p className="text-white text-xs sm:text-sm font-semibold line-clamp-1 drop-shadow-md">
                           {currentSlide.description}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="bg-slate-900 text-amber-300 text-xs font-black px-3 py-1 rounded-full border border-amber-400/40">
+                        <span className="bg-slate-950/80 text-amber-300 text-xs font-black px-3 py-1 rounded-full border border-amber-400/40">
                           {slideIndex + 1} / {galleryItems.length} Foto
                         </span>
-                        <div className="bg-slate-900 text-white p-2 rounded-full border border-white/20 hover:bg-amber-400 hover:text-slate-950 transition-colors">
+                        <div className="bg-slate-950/80 text-white p-2 rounded-full border border-white/20 hover:bg-amber-400 hover:text-slate-950 transition-colors">
                           <Maximize2 className="w-4 h-4" />
                         </div>
                       </div>
