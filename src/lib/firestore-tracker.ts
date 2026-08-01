@@ -1,16 +1,20 @@
 import * as firestore from 'firebase/firestore';
 
 // Global usage counters key
-const USAGE_KEY = 'samira_firestore_usage_offset';
+const USAGE_KEY = 'samira_firestore_usage_offset_map';
 
-interface UsageStats {
+interface ProjectStats {
   reads: number;
   writes: number;
   deletes: number;
   lastUpdated: string;
 }
 
-const getInitialStats = (): UsageStats => {
+interface UsageMap {
+  [projectId: string]: ProjectStats;
+}
+
+const getInitialStatsMap = (): UsageMap => {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem(USAGE_KEY);
     if (saved) {
@@ -19,37 +23,58 @@ const getInitialStats = (): UsageStats => {
       } catch (e) {}
     }
   }
-  return { reads: 0, writes: 0, deletes: 0, lastUpdated: new Date().toISOString() };
+  return {};
 };
 
-export const stats = getInitialStats();
+export const statsMap = getInitialStatsMap();
 
 const saveStats = () => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(USAGE_KEY, JSON.stringify(stats));
-    window.dispatchEvent(new CustomEvent('firestore-usage-updated', { detail: stats }));
+    localStorage.setItem(USAGE_KEY, JSON.stringify(statsMap));
+    window.dispatchEvent(new CustomEvent('firestore-usage-updated', { detail: statsMap }));
   }
 };
 
-// Debounced sync to database (using raw untracked firestore calls to avoid infinite loops)
-let syncTimeout: any = null;
+const getStatsForProject = (projectId: string): ProjectStats => {
+  if (!statsMap[projectId]) {
+    statsMap[projectId] = { reads: 0, writes: 0, deletes: 0, lastUpdated: new Date().toISOString() };
+  }
+  return statsMap[projectId];
+};
 
-const syncToFirestore = () => {
-  if (typeof window === 'undefined') return;
-  if (syncTimeout) clearTimeout(syncTimeout);
+const getDbInstance = (ref: any) => {
+  try {
+    if (ref) {
+      if (ref.firestore) return ref.firestore;
+      if (ref.query && ref.query.firestore) return ref.query.firestore;
+    }
+  } catch (e) {}
+  return null;
+};
 
-  syncTimeout = setTimeout(async () => {
+// Debounced sync timeouts map per project id
+const syncTimeouts: Record<string, any> = {};
+
+const syncToFirestore = (dbInstance: any, projectId: string) => {
+  if (typeof window === 'undefined' || !dbInstance) return;
+  
+  if (syncTimeouts[projectId]) {
+    clearTimeout(syncTimeouts[projectId]);
+  }
+
+  syncTimeouts[projectId] = setTimeout(async () => {
     try {
-      const { app } = await import('@/lib/firebase');
-      const rawDb = firestore.getFirestore(app);
-      const metricsRef = firestore.doc(rawDb, 'system_metrics', 'firestore_usage');
-      
-      const readsToSend = stats.reads;
-      const writesToSend = stats.writes;
-      const deletesToSend = stats.deletes;
+      const pStats = statsMap[projectId];
+      if (!pStats) return;
+
+      const readsToSend = pStats.reads;
+      const writesToSend = pStats.writes;
+      const deletesToSend = pStats.deletes;
 
       if (readsToSend === 0 && writesToSend === 0 && deletesToSend === 0) return;
 
+      const metricsRef = firestore.doc(dbInstance, 'system_metrics', 'firestore_usage');
+      
       await firestore.setDoc(metricsRef, {
         reads: firestore.increment(readsToSend),
         writes: firestore.increment(writesToSend),
@@ -58,79 +83,100 @@ const syncToFirestore = () => {
       }, { merge: true });
 
       // Deduct the sent amounts
-      stats.reads -= readsToSend;
-      stats.writes -= writesToSend;
-      stats.deletes -= deletesToSend;
+      pStats.reads -= readsToSend;
+      pStats.writes -= writesToSend;
+      pStats.deletes -= deletesToSend;
       saveStats();
     } catch (err) {
-      console.error('Failed to sync Firestore usage metrics:', err);
+      console.error(`Failed to sync Firestore usage metrics for project ${projectId}:`, err);
     }
   }, 4000);
 };
 
-export function trackRead(docCount: number = 1) {
-  stats.reads += docCount;
-  stats.lastUpdated = new Date().toISOString();
+export function trackRead(ref: any, docCount: number = 1) {
+  const dbInstance = getDbInstance(ref);
+  const projectId = dbInstance?.app?.options?.projectId || 'default';
+  
+  const pStats = getStatsForProject(projectId);
+  pStats.reads += docCount;
+  pStats.lastUpdated = new Date().toISOString();
   saveStats();
-  syncToFirestore();
+  
+  if (dbInstance) {
+    syncToFirestore(dbInstance, projectId);
+  }
 }
 
-export function trackWrite(docCount: number = 1) {
-  stats.writes += docCount;
-  stats.lastUpdated = new Date().toISOString();
+export function trackWrite(ref: any, docCount: number = 1) {
+  const dbInstance = getDbInstance(ref);
+  const projectId = dbInstance?.app?.options?.projectId || 'default';
+  
+  const pStats = getStatsForProject(projectId);
+  pStats.writes += docCount;
+  pStats.lastUpdated = new Date().toISOString();
   saveStats();
-  syncToFirestore();
+  
+  if (dbInstance) {
+    syncToFirestore(dbInstance, projectId);
+  }
 }
 
-export function trackDelete(docCount: number = 1) {
-  stats.deletes += docCount;
-  stats.lastUpdated = new Date().toISOString();
+export function trackDelete(ref: any, docCount: number = 1) {
+  const dbInstance = getDbInstance(ref);
+  const projectId = dbInstance?.app?.options?.projectId || 'default';
+  
+  const pStats = getStatsForProject(projectId);
+  pStats.deletes += docCount;
+  pStats.lastUpdated = new Date().toISOString();
   saveStats();
-  syncToFirestore();
+  
+  if (dbInstance) {
+    syncToFirestore(dbInstance, projectId);
+  }
 }
 
 // Proxied Firestore functions with exact signatures
-export const getDoc: typeof firestore.getDoc = async (...args) => {
-  trackRead(1);
-  return await firestore.getDoc(...args);
+export const getDoc: typeof firestore.getDoc = async (ref, ...args) => {
+  trackRead(ref, 1);
+  return await firestore.getDoc(ref, ...args);
 };
 
-export const getDocs: typeof firestore.getDocs = async (...args) => {
-  const result = await firestore.getDocs(...args);
-  trackRead(result.size || 1);
+export const getDocs: typeof firestore.getDocs = async (ref, ...args) => {
+  const result = await firestore.getDocs(ref, ...args);
+  trackRead(ref, result.size || 1);
   return result;
 };
 
-export const setDoc: typeof firestore.setDoc = async (...args) => {
-  trackWrite(1);
-  return await firestore.setDoc(...args);
+export const setDoc: typeof firestore.setDoc = async (ref, ...args) => {
+  trackWrite(ref, 1);
+  return await firestore.setDoc(ref, ...args);
 };
 
-export const updateDoc: typeof firestore.updateDoc = async (...args) => {
-  trackWrite(1);
-  return await firestore.updateDoc(...args);
+export const updateDoc: typeof firestore.updateDoc = async (ref, ...args) => {
+  trackWrite(ref, 1);
+  return await firestore.updateDoc(ref, ...args);
 };
 
-export const deleteDoc: typeof firestore.deleteDoc = async (...args) => {
-  trackDelete(1);
-  return await firestore.deleteDoc(...args);
+export const deleteDoc: typeof firestore.deleteDoc = async (ref, ...args) => {
+  trackDelete(ref, 1);
+  return await firestore.deleteDoc(ref, ...args);
 };
 
-export const onSnapshot: typeof firestore.onSnapshot = (...args) => {
-  const originalCallback = typeof args[1] === 'function' ? args[1] : (args[2] as any);
+export const onSnapshot: typeof firestore.onSnapshot = (ref, ...args) => {
+  const originalCallback = typeof args[0] === 'function' ? args[0] : (args[1] as any);
   const wrappedCallback = (snapshot: any) => {
     const count = snapshot.size !== undefined ? snapshot.size : 1;
-    trackRead(count || 1);
+    trackRead(ref, count || 1);
     if (originalCallback) originalCallback(snapshot);
   };
 
-  if (typeof args[1] === 'function') {
+  if (typeof args[0] === 'function') {
+    args[0] = wrappedCallback as any;
+  } else if (typeof args[1] === 'function') {
     args[1] = wrappedCallback as any;
-  } else if (typeof args[2] === 'function') {
-    args[2] = wrappedCallback as any;
   }
 
-  return firestore.onSnapshot(...args);
+  return firestore.onSnapshot(ref, ...args);
 };
 
 // Re-export standard query tools

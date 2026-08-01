@@ -105,6 +105,7 @@ export default function SuperAdminPage() {
   // Firestore Usage state
   const [firestoreUsage, setFirestoreUsage] = useState<{ reads: number; writes: number; deletes: number; lastUpdated?: any } | null>(null);
   const [isLoadingUsage, setIsLoadingUsage] = useState(false);
+  const [metricsDbServerId, setMetricsDbServerId] = useState<string>('primary');
   
   const [dbLoading, setDbLoading] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
@@ -1110,10 +1111,13 @@ service cloud.firestore {
     fetchAdminData();
   }, [user]);
 
-  const loadFirestoreUsage = async () => {
+  const loadFirestoreUsage = async (targetServerId: string = metricsDbServerId) => {
     try {
       setIsLoadingUsage(true);
-      const metricsRef = doc(db, 'system_metrics', 'firestore_usage');
+      const activeServerConfig = dbServers.find(s => s.serverId === targetServerId);
+      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+      const metricsRef = doc(targetDb, 'system_metrics', 'firestore_usage');
       const snap = await getDoc(metricsRef);
       if (snap.exists()) {
         setFirestoreUsage(snap.data() as any);
@@ -1131,7 +1135,10 @@ service cloud.firestore {
     if (!confirm('Apakah Anda yakin ingin me-reset statistik penggunaan Firestore kembali ke nol?')) return;
     try {
       setIsLoadingUsage(true);
-      const metricsRef = doc(db, 'system_metrics', 'firestore_usage');
+      const activeServerConfig = dbServers.find(s => s.serverId === metricsDbServerId);
+      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+      const metricsRef = doc(targetDb, 'system_metrics', 'firestore_usage');
       await setDoc(metricsRef, {
         reads: 0,
         writes: 0,
@@ -5142,10 +5149,32 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     Pantau akumulasi pembacaan (Reads), penulisan (Writes), dan penghapusan (Deletes) dokumen Firestore secara real-time dari seluruh aktivitas builder.
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Database Server Selector Dropdown */}
+                  <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 border rounded-full px-3.5 py-1.5 shadow-sm">
+                    <Database className="h-3.5 w-3.5 text-indigo-600 animate-pulse" />
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Database Target:</span>
+                    <select
+                      value={metricsDbServerId}
+                      onChange={(e) => {
+                        const newDbId = e.target.value;
+                        setMetricsDbServerId(newDbId);
+                        loadFirestoreUsage(newDbId);
+                      }}
+                      className="bg-transparent text-xs font-extrabold text-slate-800 focus:outline-none cursor-pointer"
+                    >
+                      <option value="primary">Database Utama (Primary)</option>
+                      {dbServers.map((srv) => (
+                        <option key={srv.serverId} value={srv.serverId}>
+                          {srv.serverName} ({srv.projectId})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <Button 
                     type="button"
-                    onClick={loadFirestoreUsage} 
+                    onClick={() => loadFirestoreUsage(metricsDbServerId)} 
                     disabled={isLoadingUsage}
                     className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold rounded-full text-xs h-9 px-4 flex items-center gap-1.5 shadow-sm"
                   >
