@@ -3633,6 +3633,8 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     </Button>
                   </div>
                 </Card>
+              </div>
+            )}
             {/* Modal Dialog Select Sync Destination Database */}
             {isSyncModalOpen && (
               <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
