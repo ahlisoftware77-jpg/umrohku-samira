@@ -1799,7 +1799,7 @@ export default function EditorSidebar() {
   };
 
   return (
-    <aside className="w-full md:w-80 h-full border-r bg-white shadow-sm flex flex-col z-30 shrink-0">
+    <aside className="w-full md:w-80 h-full border-r bg-white shadow-sm flex flex-col z-30 shrink-0 pb-16 md:pb-0">
       {/* Editor top controls: Undo/Redo & Save indicator */}
       <div className="h-14 border-b flex items-center justify-between px-4 bg-muted/30">
         <div className="flex gap-2">
