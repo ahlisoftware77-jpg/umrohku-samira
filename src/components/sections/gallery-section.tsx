@@ -314,25 +314,22 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                       sizes="(max-width: 1200px) 100vw, 1200px"
                     />
 
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent z-10" />
-
-                    {/* Slide Caption Overlay */}
-                    <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-8 sm:right-8 z-20 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    {/* Slide Caption Overlay (Clean Compact Box without dark image gradient shadow) */}
+                    <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/15">
                       <div className="max-w-2xl">
-                        <span className="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full mb-2 inline-block shadow-none">
+                        <span className="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-0.5 rounded-full mb-1 inline-block">
                           ✨ {currentSlide.title}
                         </span>
-                        <p className="text-white text-xs sm:text-base font-medium line-clamp-2">
+                        <p className="text-white text-xs sm:text-sm font-medium line-clamp-1">
                           {currentSlide.description}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="bg-slate-900/80 text-amber-300 text-xs font-black px-3 py-1.5 rounded-full border border-amber-400/40 backdrop-blur-md shadow-none">
+                        <span className="bg-slate-900 text-amber-300 text-xs font-black px-3 py-1 rounded-full border border-amber-400/40">
                           {slideIndex + 1} / {galleryItems.length} Foto
                         </span>
-                        <div className="bg-slate-900/80 text-white p-2 rounded-full border border-white/20 hover:bg-amber-400 hover:text-slate-950 transition-colors">
+                        <div className="bg-slate-900 text-white p-2 rounded-full border border-white/20 hover:bg-amber-400 hover:text-slate-950 transition-colors">
                           <Maximize2 className="w-4 h-4" />
                         </div>
                       </div>
