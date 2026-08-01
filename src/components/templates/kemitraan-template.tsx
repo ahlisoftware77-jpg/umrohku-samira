@@ -354,10 +354,10 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                   🎁 PROMO REWARD KEBERANGKATAN ROMBONGAN JAMAAH
                 </span>
                 <h3 className="text-xl sm:text-2xl font-headline font-black text-white">
-                  Program Bonus Gratis 1 Pax Keberangkatan Paket Umrah Samira
+                  Program Bonus Gratis Keberangkatan Rombongan Jamaah
                 </h3>
                 <p className="text-xs text-slate-300 mt-1 font-medium">
-                  Raih bonus 1 pax tiket keberangkatan Umrah gratis saat Anda mendaftarkan rombongan:
+                  Raih bonus 1 tiket keberangkatan Umrah gratis saat Anda mendaftarkan rombongan:
                 </p>
               </div>
 
@@ -366,7 +366,7 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                   <span className="text-amber-400 font-black text-xs uppercase mb-1">🕋 Paket Majol</span>
                   <strong className="text-white text-sm font-extrabold mb-1.5">Daftar 5 Jamaah Majol</strong>
                   <span className="bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md">
-                    ✨ FREE 1 PAX PAKET SAFARA
+                    ✨ GRATIS 1 ORANG PAKET SAFARA
                   </span>
                 </div>
 
@@ -374,7 +374,7 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                   <span className="text-amber-400 font-black text-xs uppercase mb-1">🕋 Paket Sukari</span>
                   <strong className="text-white text-sm font-extrabold mb-1.5">Daftar 7 Jamaah Sukari</strong>
                   <span className="bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md">
-                    ✨ FREE 1 PAX PAKET SAFARA
+                    ✨ GRATIS 1 ORANG PAKET SAFARA
                   </span>
                 </div>
 
@@ -382,7 +382,7 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                   <span className="text-amber-400 font-black text-xs uppercase mb-1">🕋 Paket Safawi</span>
                   <strong className="text-white text-sm font-extrabold mb-1.5">Daftar 10 Jamaah Safawi</strong>
                   <span className="bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md">
-                    ✨ FREE 1 PAX PAKET SAFAWI
+                    ✨ GRATIS 1 ORANG PAKET SAFAWI
                   </span>
                 </div>
               </div>

@@ -178,10 +178,10 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
               🎁 PROMO REWARD KEBERANGKATAN ROMBONGAN
             </span>
             <h3 className="text-2xl sm:text-3xl font-headline font-black text-white leading-tight">
-              Program Bonus Spesial Keberangkatan Paket Umrah Samira
+              Program Bonus Gratis Keberangkatan Rombongan Jamaah
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 mt-2 font-medium">
-              Dapatkan bonus GRATIS 1 pax/tiket keberangkatan Umrah untuk pendaftaran porsi jamaah rombongan berikut:
+              Dapatkan bonus GRATIS 1 Tiket Keberangkatan Umrah untuk setiap pendaftaran rombongan jamaah berikut:
             </p>
           </div>
 
@@ -193,9 +193,9 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
               <span className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Paket Majol</span>
               <strong className="text-lg font-black text-white mb-2">Daftar 5 Jamaah Majol</strong>
               <div className="bg-emerald-500 text-slate-950 px-3.5 py-1 rounded-full font-black text-xs uppercase tracking-wider shadow-md">
-                ✨ FREE 1 PAX PAKET SAFARA
+                ✨ GRATIS 1 ORANG PAKET SAFARA
               </div>
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">Gratis 1 Keberangkatan Paket Safara</p>
+              <p className="text-[11px] text-slate-400 mt-2 font-medium">Bonus 1 Tiket Keberangkatan Paket Safara</p>
             </div>
 
             <div className="bg-slate-950/80 p-5 rounded-2xl border-2 border-amber-400/40 hover:border-amber-400 transition-all flex flex-col items-center text-center">
@@ -205,9 +205,9 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
               <span className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Paket Sukari</span>
               <strong className="text-lg font-black text-white mb-2">Daftar 7 Jamaah Sukari</strong>
               <div className="bg-emerald-500 text-slate-950 px-3.5 py-1 rounded-full font-black text-xs uppercase tracking-wider shadow-md">
-                ✨ FREE 1 PAX PAKET SAFARA
+                ✨ GRATIS 1 ORANG PAKET SAFARA
               </div>
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">Gratis 1 Keberangkatan Paket Safara</p>
+              <p className="text-[11px] text-slate-400 mt-2 font-medium">Bonus 1 Tiket Keberangkatan Paket Safara</p>
             </div>
 
             <div className="bg-slate-950/80 p-5 rounded-2xl border-2 border-amber-400/40 hover:border-amber-400 transition-all flex flex-col items-center text-center">
@@ -217,9 +217,9 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
               <span className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Paket Safawi</span>
               <strong className="text-lg font-black text-white mb-2">Daftar 10 Jamaah Safawi</strong>
               <div className="bg-amber-400 text-slate-950 px-3.5 py-1 rounded-full font-black text-xs uppercase tracking-wider shadow-md">
-                ✨ FREE 1 PAX PAKET SAFAWI
+                ✨ GRATIS 1 ORANG PAKET SAFAWI
               </div>
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">Gratis 1 Keberangkatan Paket Safawi</p>
+              <p className="text-[11px] text-slate-400 mt-2 font-medium">Bonus 1 Tiket Keberangkatan Paket Safawi</p>
             </div>
           </div>
         </motion.div>
