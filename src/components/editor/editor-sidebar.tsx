@@ -231,24 +231,72 @@ export default function EditorSidebar() {
               />
             </div>
 
+            {/* Transition Effect Selection */}
             <div className="space-y-2 border-t pt-3 mt-3">
-              <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                <span>Gambar Latar Belakang (Server Media)</span>
+              <Label className="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Pilihan Efek Transisi Gambar Hero
+              </Label>
+              <select
+                value={activeSectionContent.transitionEffect || 'zoom'}
+                onChange={(e) => handleFieldChange('transitionEffect', e.target.value)}
+                className="w-full h-11 px-3 rounded-xl border border-input bg-white text-xs font-bold font-sans shadow-xs focus:outline-none focus:border-amber-500 cursor-pointer"
+              >
+                <option value="zoom">🔍 Zoom In Slow (Ken Burns Effect — Standar)</option>
+                <option value="fade">✨ Smooth Cross-Fade (Lembut & Elegan)</option>
+                <option value="slide">➡️ Slide Horizontal (Kiri ke Kanan)</option>
+                <option value="flip">🔄 Flip 3D Perspective (Mewah & Pro)</option>
+                <option value="blur">💧 Blur & Clear Glass (Bayangan Kaca)</option>
+              </select>
+            </div>
+
+            {/* 5 Background Image Upload Slots */}
+            <div className="space-y-3 border-t pt-3 mt-3">
+              <Label className="font-bold text-xs uppercase tracking-wider text-primary flex items-center justify-between">
+                <span>Gambar Latar Belakang Hero (Maks. 5 Gambar)</span>
                 <ImageIcon className="h-3.5 w-3.5 text-accent" />
               </Label>
-              {activeSectionContent.bgImage && (
-                <div className="relative aspect-video rounded-xl overflow-hidden border bg-muted mb-2">
-                  <img src={activeSectionContent.bgImage} alt="Hero BG" className="w-full h-full object-cover" />
-                </div>
-              )}
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => openMediaPicker((url) => handleFieldChange('bgImage', url))}
-                className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-9"
-              >
-                <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar (Server)
-              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                Unggah hingga 5 gambar latar belakang untuk diputar secara otomatis di hero slider.
+              </p>
+
+              {[
+                { key: 'bgImage', label: 'Gambar Latar 1 (Utama)' },
+                { key: 'bgImage2', label: 'Gambar Latar 2' },
+                { key: 'bgImage3', label: 'Gambar Latar 3' },
+                { key: 'bgImage4', label: 'Gambar Latar 4' },
+                { key: 'bgImage5', label: 'Gambar Latar 5' },
+              ].map((slot) => {
+                const imgUrl = activeSectionContent[slot.key];
+                return (
+                  <div key={slot.key} className="p-3 bg-muted/40 border rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800">{slot.label}</span>
+                      {imgUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(slot.key, '')}
+                          className="text-[10px] font-bold text-destructive hover:underline cursor-pointer"
+                        >
+                          Hapus
+                        </button>
+                      )}
+                    </div>
+                    {imgUrl && (
+                      <div className="relative aspect-video rounded-lg overflow-hidden border bg-muted">
+                        <img src={imgUrl} alt={slot.label} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => openMediaPicker((url) => handleFieldChange(slot.key, url))}
+                      className="w-full rounded-xl text-xs font-bold gap-2 border-primary text-primary hover:bg-primary hover:text-white h-8"
+                    >
+                      <Upload className="h-3.5 w-3.5" /> {imgUrl ? 'Ganti Gambar' : `Pilih / Unggah ${slot.label}`}
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );

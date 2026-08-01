@@ -1,9 +1,9 @@
-
 "use client";
 
 import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
@@ -20,15 +20,29 @@ export default function HeroSection({ data }: { data?: Record<string, any> }) {
   const secondaryBtnText = data?.secondaryBtnText || "Tentang Kami";
   const secondaryBtnUrl = data?.secondaryBtnUrl || "#tentang";
 
+  const transitionEffect = data?.transitionEffect || 'zoom'; // 'fade' | 'zoom' | 'slide' | 'flip' | 'blur'
+
   const heroImage1 = PlaceHolderImages.find(p => p.id === 'hero-masjidil-haram-1');
   const heroImage2 = PlaceHolderImages.find(p => p.id === 'hero-masjidil-haram-2');
-  
   const defaultImages = [heroImage1, heroImage2].filter((img): img is NonNullable<typeof img> => img !== undefined);
-  const images = data?.bgImage
-    ? [{ id: 'custom-bg', imageUrl: data.bgImage, description: 'Hero background', imageHint: 'hero-image' }]
-    : (data?.images && Array.isArray(data.images) && data.images.length > 0
-        ? data.images.map((url: string, idx: number) => ({ id: String(idx), imageUrl: url, description: 'Hero image', imageHint: 'hero-image' }))
-        : defaultImages);
+
+  // Support up to 5 background images
+  const imageList: string[] = [];
+  if (data?.images && Array.isArray(data.images) && data.images.length > 0) {
+    imageList.push(...data.images.filter(Boolean));
+  } else {
+    [data?.bgImage, data?.bgImage1, data?.bgImage2, data?.bgImage3, data?.bgImage4, data?.bgImage5]
+      .filter(Boolean)
+      .forEach(url => {
+        if (url && typeof url === 'string' && !imageList.includes(url)) {
+          imageList.push(url);
+        }
+      });
+  }
+
+  const images = imageList.length > 0
+    ? imageList.map((url, idx) => ({ id: String(idx), imageUrl: url, description: `Hero Slide ${idx + 1}`, imageHint: 'hero-image' }))
+    : defaultImages;
 
   React.useEffect(() => {
     if (images.length < 2) return;
@@ -38,32 +52,75 @@ export default function HeroSection({ data }: { data?: Record<string, any> }) {
     return () => clearInterval(interval);
   }, [images.length]);
 
+  // Framer Motion Animation Variants based on selected effect
+  const getVariants = () => {
+    switch (transitionEffect) {
+      case 'slide':
+        return {
+          initial: { opacity: 0, x: 120 },
+          animate: { opacity: 1, x: 0 },
+          exit: { opacity: 0, x: -120 }
+        };
+      case 'flip':
+        return {
+          initial: { opacity: 0, rotateY: 90, scale: 0.95 },
+          animate: { opacity: 1, rotateY: 0, scale: 1 },
+          exit: { opacity: 0, rotateY: -90, scale: 0.95 }
+        };
+      case 'blur':
+        return {
+          initial: { opacity: 0, filter: 'blur(16px)', scale: 1.05 },
+          animate: { opacity: 1, filter: 'blur(0px)', scale: 1 },
+          exit: { opacity: 0, filter: 'blur(16px)', scale: 0.95 }
+        };
+      case 'fade':
+        return {
+          initial: { opacity: 0 },
+          animate: { opacity: 1 },
+          exit: { opacity: 0 }
+        };
+      case 'zoom':
+      default:
+        return {
+          initial: { opacity: 0, scale: 1.15 },
+          animate: { opacity: 1, scale: 1 },
+          exit: { opacity: 0, scale: 0.95 }
+        };
+    }
+  };
+
+  const variants = getVariants();
+
   return (
     <section className="relative min-h-[100dvh] w-full flex items-center justify-center text-white overflow-hidden bg-primary/20 pt-20 pb-10">
       <div className="absolute inset-0 z-0">
         {images.length > 0 ? (
-          images.map((img, idx) => (
-            <div 
-              key={img.id}
-              className={cn(
-                "absolute inset-0 transition-opacity duration-1500 ease-in-out bg-primary/10",
-                activeImageIndex === idx ? "opacity-100" : "opacity-0"
-              )}
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={activeImageIndex}
+              initial={variants.initial}
+              animate={variants.animate}
+              exit={variants.exit}
+              transition={{ duration: 1.2, ease: [0.25, 1, 0.5, 1] }}
+              className="absolute inset-0 bg-primary/10"
             >
               <Image
-                src={img.imageUrl}
-                alt={img.description}
+                src={images[activeImageIndex]?.imageUrl || ''}
+                alt={images[activeImageIndex]?.description || 'Hero Image'}
                 fill
-                className="object-cover animate-zoom-slow"
-                priority={idx === 0}
-                data-ai-hint={img.imageHint}
+                className={cn(
+                  "object-cover",
+                  transitionEffect === 'zoom' && "animate-zoom-slow"
+                )}
+                priority={activeImageIndex === 0}
+                data-ai-hint={images[activeImageIndex]?.imageHint}
                 sizes="100vw"
               />
-            </div>
-          ))
+            </motion.div>
+          </AnimatePresence>
         ) : (
           <div className="absolute inset-0 bg-primary/40 flex items-center justify-center">
-            <p className="text-white/50">Memuat Keindahan Masjidil Haram...</p>
+            <p className="text-white/50 font-bold">Memuat Gambar Hero...</p>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/30 to-background/20 z-10"></div>
@@ -117,8 +174,8 @@ export default function HeroSection({ data }: { data?: Record<string, any> }) {
               key={idx}
               onClick={() => setActiveImageIndex(idx)}
               className={cn(
-                "h-1 md:h-1.5 rounded-full transition-all duration-300",
-                activeImageIndex === idx ? "w-6 md:w-8 bg-accent" : "w-1.5 md:w-2 bg-white/50 hover:bg-white"
+                "h-1.5 md:h-2 rounded-full transition-all duration-300 cursor-pointer",
+                activeImageIndex === idx ? "w-6 md:w-8 bg-accent" : "w-2 md:w-2.5 bg-white/50 hover:bg-white"
               )}
               aria-label={`Buka slide ${idx + 1}`}
             />
