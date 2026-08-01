@@ -73,9 +73,6 @@ export default function Template1({ agent, sectionsData = {} }: Template1Props) 
         {/* 7. Product Knowledge & E-Katalog (With Cloudinary PDF/Image Viewer) */}
         <ProductKnowledgeSection agent={agent} data={catalogData} />
 
-        {/* 8. Official Airlines Partner Section */}
-        <AirlinesSection agent={agent} data={sectionsData.airlines} />
-
         {/* 8. Gallery Section (With Cloudinary Media Gallery Uploads) */}
         <GallerySection agent={agent} data={galleryData} />
 
@@ -85,7 +82,10 @@ export default function Template1({ agent, sectionsData = {} }: Template1Props) 
         {/* 10. Testimonials (With Cloudinary Avatar Photos) */}
         <Testimonials agent={agent} data={testimonialData} />
 
-        {/* 11. Final CTA */}
+        {/* 11. Official Airlines Partner Section (Di Akhir Sebelum CTA) */}
+        <AirlinesSection agent={agent} data={sectionsData.airlines} />
+
+        {/* 12. Final CTA */}
         <FinalCta agent={agent} data={ctaData} />
       </main>
 
