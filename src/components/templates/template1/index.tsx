@@ -17,6 +17,7 @@ import FinalCta from '@/components/sections/final-cta';
 import BuilderPromoBanner from '@/components/sections/builder-promo-banner';
 import GallerySection from '@/components/sections/gallery-section';
 import ProductKnowledgeSection from '@/components/sections/product-knowledge-section';
+import AirlinesSection from '@/components/sections/airlines-section';
 import Footer from '@/components/layout/footer';
 import GooeyNav from '@/components/ui/gooey-nav';
 import { Agent } from '@/lib/agents';
@@ -71,6 +72,9 @@ export default function Template1({ agent, sectionsData = {} }: Template1Props) 
 
         {/* 7. Product Knowledge & E-Katalog (With Cloudinary PDF/Image Viewer) */}
         <ProductKnowledgeSection agent={agent} data={catalogData} />
+
+        {/* 8. Official Airlines Partner Section */}
+        <AirlinesSection agent={agent} data={sectionsData.airlines} />
 
         {/* 8. Gallery Section (With Cloudinary Media Gallery Uploads) */}
         <GallerySection agent={agent} data={galleryData} />

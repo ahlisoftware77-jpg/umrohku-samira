@@ -20,6 +20,7 @@ import ProductKnowledgeSection from '@/components/sections/product-knowledge-sec
 import FinalCta from '@/components/sections/final-cta';
 import GallerySection from '@/components/sections/gallery-section';
 import WhyChooseUs from '@/components/sections/why-choose-us';
+import AirlinesSection from '@/components/sections/airlines-section';
 import { Agent } from '@/lib/agents';
 import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Trash2, EyeOff } from 'lucide-react';
@@ -135,6 +136,8 @@ export default function EditorCanvas() {
         return <HotelExplanation data={data} />;
       case 'product-knowledge':
         return <ProductKnowledgeSection agent={agentCompat} data={data} />;
+      case 'airlines':
+        return <AirlinesSection agent={agentCompat} data={data} />;
       case 'final-cta':
         return <FinalCta agent={agentCompat} data={data} />;
       default:

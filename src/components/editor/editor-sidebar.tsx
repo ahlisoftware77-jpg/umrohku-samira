@@ -181,6 +181,7 @@ export default function EditorSidebar() {
     { type: 'cta', label: 'Ajakan Daftar' },
     { type: 'contact', label: 'Kontak & Form Konsultasi' },
     { type: 'social_media', label: 'Media Sosial' },
+    { type: 'airlines', label: 'Maskapai Penerbangan Resmi' },
   ];
 
   // Render inputs dynamically based on section type
@@ -1660,6 +1661,37 @@ export default function EditorSidebar() {
               >
                 <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar ke Server
               </Button>
+            </div>
+          </div>
+        );
+
+      case 'airlines':
+        return (
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-primary mb-2">Penyuntingan Seksi Maskapai Penerbangan</h3>
+            <div className="space-y-2">
+              <Label>Teks Lencana (Badge)</Label>
+              <Input 
+                value={activeSectionContent.badgeText || ''} 
+                onChange={(e) => handleFieldChange('badgeText', e.target.value)}
+                placeholder="Maskapai Penerbangan Resmi Partner Samira"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Judul Utama (Title)</Label>
+              <Textarea 
+                value={activeSectionContent.title || ''} 
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                placeholder="Terbang Nyaman & Nyaman ke Tanah Suci"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Deskripsi Singkat</Label>
+              <Textarea 
+                value={activeSectionContent.description || ''} 
+                onChange={(e) => handleFieldChange('description', e.target.value)}
+                placeholder="Samira Travel bekerja sama dengan maskapai penerbangan..."
+              />
             </div>
           </div>
         );
