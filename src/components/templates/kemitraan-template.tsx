@@ -116,6 +116,7 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
   const [activeTab, setActiveTab] = useState<'syarat' | 'kit' | 'keamanan'>('syarat');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
   const [isZoomImage, setIsZoomImage] = useState<boolean>(false);
+  const [isZoomPerlengkapan, setIsZoomPerlengkapan] = useState<boolean>(false);
 
   // Interactive Answers State
   const [answers, setAnswers] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true });
@@ -691,6 +692,133 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                 )}
               </AnimatePresence>
             </Card>
+
+          </div>
+        </motion.section>
+
+        {/* LAYER 6.5: Fasilitas Perlengkapan Umrah Premium Showcase (public/images/perlengkapan.jpeg) */}
+        <motion.section 
+          id="perlengkapan"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="py-16 md:py-24 bg-white border-b"
+        >
+          <div className="container mx-auto px-4 md:px-6 max-w-6xl">
+            
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 text-amber-900 font-black text-xs uppercase tracking-widest mb-3 border border-amber-300">
+                <Gift className="w-4 h-4 text-amber-700" /> FASILITAS PERLENGKAPAN JAMAAH EXCLUSIVE
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-headline font-black text-slate-900 leading-tight mb-2">
+                Fasilitas Perlengkapan Umrah Premium Samira
+              </h2>
+              <p className="text-xs sm:text-base text-slate-600 font-medium">
+                Setiap jamaah yang Anda daftarkan mendapatkan 1 set perlengkapan ibadah eksklusif berstandar internasional dengan batik khas Samira Travel:
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-3xl border-2 border-amber-300 p-6 sm:p-10 shadow-xl">
+              <div className="grid lg:grid-cols-12 gap-8 items-center">
+                
+                {/* Image Showcase Left */}
+                <div className="lg:col-span-6 space-y-3">
+                  <motion.div 
+                    whileHover={{ scale: 1.02, rotate: -0.5 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative rounded-2xl overflow-hidden border-2 border-amber-400 shadow-xl bg-white group cursor-pointer" 
+                    onClick={() => setIsZoomPerlengkapan(true)}
+                  >
+                    <img 
+                      src="/images/perlengkapan.jpeg" 
+                      alt="Fasilitas Perlengkapan Umrah Samira Travel" 
+                      className="w-full h-auto object-cover transition-transform duration-300"
+                    />
+                    <div className="absolute bottom-3 right-3 bg-slate-900/80 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md flex items-center gap-1.5 shadow-md">
+                      <Maximize2 className="w-3.5 h-3.5 text-amber-400" /> Perbesar Gambar Perlengkapan
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Detailed Features Right */}
+                <div className="lg:col-span-6 space-y-4">
+                  <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full border border-amber-300 inline-block shadow-sm">
+                    🧳 Full Set High-Quality Executive Equipment
+                  </span>
+
+                  <h3 className="text-xl sm:text-2xl font-headline font-black text-slate-900">
+                    Rincian Perlengkapan Berstandar Premium:
+                  </h3>
+
+                  <div className="grid sm:grid-cols-2 gap-3 text-xs sm:text-sm text-slate-700 font-medium">
+                    <motion.div whileHover={{ y: -2 }} className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                      <strong className="text-amber-700 font-extrabold flex items-center gap-1.5 text-sm">
+                        🧳 Koper Hardcase Exclusive
+                      </strong>
+                      <p className="text-xs text-slate-600">Koper 4 roda anti-pecah dengan kunci kombinasi & batik khas Samira.</p>
+                    </motion.div>
+
+                    <motion.div whileHover={{ y: -2 }} className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                      <strong className="text-amber-700 font-extrabold flex items-center gap-1.5 text-sm">
+                        💼 Tas Paspor & Kabin
+                      </strong>
+                      <p className="text-xs text-slate-600">Tas selempang dokumen penting agar paspor & tiket aman dan mudah diakses.</p>
+                    </motion.div>
+
+                    <motion.div whileHover={{ y: -2 }} className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                      <strong className="text-amber-700 font-extrabold flex items-center gap-1.5 text-sm">
+                        👔 Seragam Batik Official
+                      </strong>
+                      <p className="text-xs text-slate-600">Batik resmi bahan dingin premium untuk identitas kompak rombongan.</p>
+                    </motion.div>
+
+                    <motion.div whileHover={{ y: -2 }} className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                      <strong className="text-amber-700 font-extrabold flex items-center gap-1.5 text-sm">
+                        🤍 Kain Ihram / Bergo Syar'i
+                      </strong>
+                      <p className="text-xs text-slate-600">Kain ihram katun lembut (pria) / Bergo ibadah dingin syar'i (wanita).</p>
+                    </motion.div>
+
+                    <motion.div whileHover={{ y: -2 }} className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-1 sm:col-span-2">
+                      <strong className="text-emerald-700 font-extrabold flex items-center gap-1.5 text-sm">
+                        📖 Buku Doa, Buku Manasik & ID Card Boarding
+                      </strong>
+                      <p className="text-xs text-slate-600">Buku saku doa tawaf & sai serta ID card identitas jamaah berlisensi resmi.</p>
+                    </motion.div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Lightbox Zoom for Perlengkapan Image */}
+            <AnimatePresence>
+              {isZoomPerlengkapan && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsZoomPerlengkapan(false)}
+                  className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
+                >
+                  <motion.div 
+                    initial={{ scale: 0.9, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.9, y: 20 }}
+                    className="relative max-w-4xl w-full bg-white p-2 rounded-2xl overflow-hidden shadow-2xl"
+                  >
+                    <img src="/images/perlengkapan.jpeg" alt="Perlengkapan Zoom" className="w-full h-auto max-h-[85vh] object-contain rounded-xl" />
+                    <button 
+                      onClick={() => setIsZoomPerlengkapan(false)}
+                      className="absolute top-4 right-4 bg-slate-900 text-white rounded-full p-2 hover:bg-amber-500 transition-colors shadow-lg"
+                    >
+                      <Minimize2 className="w-5 h-5" />
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
           </div>
         </motion.section>
