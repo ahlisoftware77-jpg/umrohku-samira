@@ -2433,6 +2433,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   className="h-10 rounded-2xl border border-input bg-slate-50 px-3 text-xs font-bold text-slate-700 focus:outline-none w-full sm:w-60"
                 >
                   <option value="all">Semua Tenant ({tenants.length})</option>
+                  <option value="orphaned">⚠️ Gambar Tanpa Tenant Terdaftar</option>
                   {tenants.map(t => (
                     <option key={t.tenantId} value={t.tenantId}>
                       {t.name} ({t.subdomain})
@@ -2455,7 +2456,11 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {allImagesList
                     .filter(img => {
-                      const matchesTenant = selectedMediaTenant === 'all' || img.tenantId === selectedMediaTenant;
+                      const tenantExists = tenants.some(t => t.tenantId === img.tenantId);
+                      const matchesTenant = 
+                        selectedMediaTenant === 'all' ? true :
+                        selectedMediaTenant === 'orphaned' ? !tenantExists :
+                        img.tenantId === selectedMediaTenant;
                       const matchesSearch = 
                         img.imageId.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
                         img.tenantId.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
@@ -2497,9 +2502,16 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
 
                         {/* Card Footer Details */}
                         <div className="p-2.5 bg-slate-900 text-white flex flex-col gap-1.5 border-t border-slate-800">
-                          <p className="text-[10px] font-bold text-amber-300 truncate" title={img.tenantId}>
-                            📌 {tenants.find(t => t.tenantId === img.tenantId)?.subdomain || img.tenantId}
-                          </p>
+                          {tenants.some(t => t.tenantId === img.tenantId) ? (
+                            <p className="text-[10px] font-bold text-amber-300 truncate" title={img.tenantId}>
+                              📌 {tenants.find(t => t.tenantId === img.tenantId)?.subdomain || img.tenantId}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] font-bold text-red-400 truncate flex items-center gap-1.5" title={`${img.tenantId} (Tenant tidak terdaftar)`}>
+                              <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0 animate-pulse" />
+                              Tidak Terhubung ({img.tenantId.substring(0, 8)}...)
+                            </p>
+                          )}
 
                           <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-800/60">
                             <button
