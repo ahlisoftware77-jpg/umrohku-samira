@@ -311,6 +311,7 @@ export default function SuperAdminPage() {
   const [isScanningOrphans, setIsScanningOrphans] = useState(false);
   const [isPurgingOrphans, setIsPurgingOrphans] = useState(false);
   const [isRestoringOrphans, setIsRestoringOrphans] = useState(false);
+  const [orphansSearchQuery, setOrphansSearchQuery] = useState('');
 
   // View 2 (Cluster DB Content Checker) State
   const [selectedView2ServerId, setSelectedView2ServerId] = useState('');
@@ -3898,6 +3899,23 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
               </CardHeader>
 
               <div className="space-y-4">
+                {orphanedContents.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border">
+                    <div className="relative flex-1 max-w-md w-full">
+                      <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+                      <Input
+                        value={orphansSearchQuery}
+                        onChange={(e) => setOrphansSearchQuery(e.target.value)}
+                        placeholder="Cari berdasarkan Tenant ID, Dokumen ID, atau Field..."
+                        className="pl-9 pr-4 h-9 rounded-full text-xs bg-white border-slate-200 focus-visible:ring-primary shadow-xs w-full"
+                      />
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-500 hidden md:inline">
+                      🔍 Memastikan pencarian ID yang sama di DB Utama dan DB Cluster secara bersamaan.
+                    </span>
+                  </div>
+                )}
+
                 {orphanedContents.length === 0 ? (
                   <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                     <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-3 opacity-80" />
@@ -3907,8 +3925,24 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     </p>
                   </div>
                 ) : (() => {
-                  const mainDbOrphans = orphanedContents.filter(i => i.serverId === 'default');
-                  const clusterDbOrphans = orphanedContents.filter(i => i.serverId !== 'default');
+                  const queryLower = orphansSearchQuery.toLowerCase().trim();
+
+                  const mainDbOrphans = orphanedContents.filter(i => 
+                    i.serverId === 'default' &&
+                    (!queryLower || 
+                     i.tenantId.toLowerCase().includes(queryLower) ||
+                     i.docId.toLowerCase().includes(queryLower) ||
+                     i.key.toLowerCase().includes(queryLower) ||
+                     i.value.toLowerCase().includes(queryLower))
+                  );
+
+                  const filteredClusterContents = view2Contents.filter(i => 
+                    !queryLower ||
+                    i.tenantId.toLowerCase().includes(queryLower) ||
+                    i.docId.toLowerCase().includes(queryLower) ||
+                    i.key.toLowerCase().includes(queryLower) ||
+                    i.value.toLowerCase().includes(queryLower)
+                  );
 
                   const renderContentsTable = (items: typeof orphanedContents, dbColorClass: string) => (
                     <div className="rounded-2xl border overflow-hidden max-h-[300px] overflow-y-auto bg-white shadow-xs">
@@ -4040,9 +4074,9 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                             <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
                             <span>Memuat data konten cluster dan mendeteksi duplikasi...</span>
                           </div>
-                        ) : view2Contents.length === 0 ? (
+                        ) : filteredClusterContents.length === 0 ? (
                           <div className="p-4 bg-slate-50 rounded-2xl text-center text-xs text-slate-500 border border-dashed">
-                            Database Cluster kosong! Tidak ada dokumen konten terdaftar.
+                            {queryLower ? 'Tidak ada hasil pencarian yang cocok.' : 'Database Cluster kosong! Tidak ada dokumen konten terdaftar.'}
                           </div>
                         ) : (
                           <div className="rounded-2xl border overflow-hidden max-h-[350px] overflow-y-auto bg-white shadow-xs">
@@ -4058,7 +4092,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {view2Contents.map((item, idx) => (
+                                {filteredClusterContents.map((item, idx) => (
                                   <TableRow key={idx} className={`hover:bg-slate-50/50 ${item.isDuplicate ? 'bg-amber-50/15' : ''}`}>
                                     <TableCell className="text-xs text-slate-800 font-bold whitespace-nowrap">
                                       {item.tenantId}
