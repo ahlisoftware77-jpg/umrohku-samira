@@ -1,8 +1,8 @@
 "use client";
 
 import React, { use, useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { LandingPage } from '@/types/cms';
 
 import { loadGoogleFont } from '@/lib/fonts';
@@ -25,8 +25,43 @@ export default function TenantLayout({ children, params }: LayoutProps) {
     async function loadTheme() {
       if (!tenantSlug) return;
       try {
-        const pagesRef = collection(db, 'landingPages');
-        const qPage = query(pagesRef, where('tenantId', '==', tenantSlug.toLowerCase()));
+        // 1. Resolve tenant details from primary DB first
+        const tenantsRef = collection(db, 'tenants');
+        const qSub = query(tenantsRef, where('subdomain', '==', tenantSlug.toLowerCase()));
+        const subSnap = await getDocs(qSub);
+
+        let tenantData = subSnap.empty ? null : subSnap.docs[0].data();
+        let tenantIdResolved = tenantData ? (tenantData.tenantId || tenantData.uid) : tenantSlug.toLowerCase();
+        
+        if (!tenantData) {
+          try {
+            const docRef = doc(db, 'tenants', tenantSlug);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              tenantData = docSnap.data();
+              tenantIdResolved = tenantData.tenantId || tenantData.uid || tenantSlug;
+            }
+          } catch (dErr) {}
+        }
+
+        // 2. Resolve database instance (default or cluster)
+        let activeDb = db;
+        if (tenantData && tenantData.dbServerId && tenantData.dbServerId !== 'default') {
+          try {
+            const dbServersSnap = await getDocs(collection(db, 'databaseServers'));
+            const servers = dbServersSnap.docs.map(d => d.data() as any);
+            const serverConfig = servers.find(s => s.serverId === tenantData.dbServerId);
+            if (serverConfig) {
+              activeDb = getDynamicFirebaseInstance(serverConfig).db;
+            }
+          } catch (dbErr) {
+            console.error('Failed to resolve active db in layout:', dbErr);
+          }
+        }
+
+        // 3. Fetch theme from resolved DB landingPage config
+        const pagesRef = collection(activeDb, 'landingPages');
+        const qPage = query(pagesRef, where('tenantId', '==', tenantIdResolved));
         const pageSnap = await getDocs(qPage);
         
         if (!pageSnap.empty) {
@@ -38,27 +73,22 @@ export default function TenantLayout({ children, params }: LayoutProps) {
               borderRadius: pageData.theme.borderRadius || 'lg',
               fontFamily: pageData.theme.fontFamily || 'PT Sans',
             });
+            return;
           }
-        } else {
-          // Check by subdomain in tenants collection
-          const tenantsRef = collection(db, 'tenants');
-          const qSub = query(tenantsRef, where('subdomain', '==', tenantSlug.toLowerCase()));
-          const subSnap = await getDocs(qSub);
-          if (!subSnap.empty) {
-            const tenantData = subSnap.docs[0].data();
-            const qPage2 = query(pagesRef, where('tenantId', '==', tenantData.tenantId));
-            const pageSnap2 = await getDocs(qPage2);
-            if (!pageSnap2.empty) {
-              const pageData = pageSnap2.docs[0].data() as LandingPage;
-              if (pageData.theme) {
-                setTheme({
-                  primaryColor: pageData.theme.primaryColor || '#0A1E3B',
-                  secondaryColor: pageData.theme.secondaryColor || '#D4AF37',
-                  borderRadius: pageData.theme.borderRadius || 'lg',
-                  fontFamily: pageData.theme.fontFamily || 'PT Sans',
-                });
-              }
-            }
+        }
+
+        // Fallback: try querying by slug
+        const qPageSlug = query(pagesRef, where('tenantId', '==', tenantSlug.toLowerCase()));
+        const pageSnapSlug = await getDocs(qPageSlug);
+        if (!pageSnapSlug.empty) {
+          const pageData = pageSnapSlug.docs[0].data() as LandingPage;
+          if (pageData.theme) {
+            setTheme({
+              primaryColor: pageData.theme.primaryColor || '#0A1E3B',
+              secondaryColor: pageData.theme.secondaryColor || '#D4AF37',
+              borderRadius: pageData.theme.borderRadius || 'lg',
+              fontFamily: pageData.theme.fontFamily || 'PT Sans',
+            });
           }
         }
       } catch (err) {

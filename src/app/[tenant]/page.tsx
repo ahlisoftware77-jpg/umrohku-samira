@@ -106,30 +106,40 @@ export default function DynamicTenantPage({ params }: PageProps) {
         const validTenant: Tenant = foundTenant;
         setTenantData(validTenant);
 
+        // Resolve active database server instance dynamically
+        let activeDb = db;
+        if (validTenant.dbServerId && validTenant.dbServerId !== 'default') {
+          try {
+            if (typeof window !== 'undefined') {
+              const storedServers = localStorage.getItem('database_servers');
+              if (storedServers) {
+                const servers: any[] = JSON.parse(storedServers);
+                const serverConfig = servers.find(s => s.serverId === validTenant.dbServerId);
+                if (serverConfig) {
+                  activeDb = getDynamicFirebaseInstance(serverConfig).db;
+                }
+              }
+            }
+            // Fallback: fetch from databaseServers collection in primary DB
+            if (activeDb === db) {
+              const dbServersSnap = await getDocs(collection(db, 'databaseServers'));
+              const servers = dbServersSnap.docs.map(d => d.data() as any);
+              const serverConfig = servers.find(s => s.serverId === validTenant.dbServerId);
+              if (serverConfig) {
+                activeDb = getDynamicFirebaseInstance(serverConfig).db;
+              }
+            }
+          } catch (dbErr) {
+            console.error('Failed to resolve active DB for tenant layout:', dbErr);
+          }
+        }
+
         // Auto-increment visitor counter across dynamic database server cluster
         try {
           const sessionKey = `visited_tenant_${validTenant.subdomain}`;
           if (typeof window !== 'undefined' && !sessionStorage.getItem(sessionKey)) {
             sessionStorage.setItem(sessionKey, 'true');
-            
-            // Resolve active database server instance
-            let activeDb = db;
-            if (validTenant.dbServerId && validTenant.dbServerId !== 'default') {
-              try {
-                const storedServers = localStorage.getItem('database_servers');
-                if (storedServers) {
-                  const servers: any[] = JSON.parse(storedServers);
-                  const serverConfig = servers.find(s => s.serverId === validTenant.dbServerId);
-                  if (serverConfig) {
-                    activeDb = getDynamicFirebaseInstance(serverConfig).db;
-                  }
-                }
-              } catch (e) {}
-            }
-
             const docIdToUpdate = (validTenant as any).firestoreDocId || validTenant.tenantId || validTenant.subdomain;
-            
-            // Update visitor count on both target cluster DB and global registry DB
             const incrementOp = { visitorCount: increment(1) };
             updateDoc(doc(activeDb, 'tenants', docIdToUpdate), incrementOp).catch(() => {});
             if (activeDb !== db) {
@@ -138,10 +148,10 @@ export default function DynamicTenantPage({ params }: PageProps) {
           }
         } catch (vErr) {}
 
-        // 2. Fetch landingPage document for ANY of possibleTenantIds
+        // 2. Fetch landingPage document for ANY of possibleTenantIds from activeDb
         let foundPage: LandingPage | null = null;
         try {
-          const pagesRef = collection(db, 'landingPages');
+          const pagesRef = collection(activeDb, 'landingPages');
           for (const tid of possibleTenantIds) {
             const qPage = query(pagesRef, where('tenantId', '==', tid));
             const pageSnap = await getDocs(qPage);
@@ -171,10 +181,10 @@ export default function DynamicTenantPage({ params }: PageProps) {
         const validPage: LandingPage = foundPage;
         setPageData(validPage);
 
-        // 3. Fetch sections for pageId or tenantId
+        // 3. Fetch sections for pageId or tenantId from activeDb
         let sectionsList: Section[] = [];
         try {
-          const sectionsRef = collection(db, 'sections');
+          const sectionsRef = collection(activeDb, 'sections');
           const qSec = query(sectionsRef, where('landingPageId', '==', validPage.pageId));
           const secSnap = await getDocs(qSec);
           if (!secSnap.empty) {
@@ -232,9 +242,9 @@ export default function DynamicTenantPage({ params }: PageProps) {
         sectionsList.sort((a, b) => a.order - b.order);
         setSections(sectionsList);
 
-        // 4. Fetch contents for ALL possibleTenantIds
+        // 4. Fetch contents for ALL possibleTenantIds from activeDb
         try {
-          const contentsRef = collection(db, 'contents');
+          const contentsRef = collection(activeDb, 'contents');
           const contentsMap: Record<string, Record<string, any>> = {};
 
           for (const tid of possibleTenantIds) {

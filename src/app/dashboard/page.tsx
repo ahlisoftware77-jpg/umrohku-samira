@@ -25,7 +25,8 @@ import {
   getDocs, 
   serverTimestamp, 
   writeBatch,
-  onSnapshot
+  onSnapshot,
+  orderBy
 } from 'firebase/firestore';
 import EditorSidebar from '@/components/editor/editor-sidebar';
 import EditorCanvas from '@/components/editor/editor-canvas';
@@ -34,7 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye, PenLine, Monitor } from 'lucide-react';
+import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye, PenLine, Monitor, History, Save, Loader2 } from 'lucide-react';
 import { Tenant, LandingPage, Section, Content, SectionType, SYSTEM_PLANS } from '@/types/cms';
 
 function getReadableIdFromEmail(emailAddress: string): string {
@@ -84,6 +85,13 @@ export default function TenantDashboardPage() {
   const [subdomain, setSubdomain] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [authError, setAuthError] = useState('');
+
+  // Configuration Snapshot States
+  const [isSnapshotModalOpen, setIsSnapshotModalOpen] = useState(false);
+  const [snapshotLabel, setSnapshotLabel] = useState('');
+  const [snapshots, setSnapshots] = useState<any[]>([]);
+  const [isCreatingSnapshot, setIsCreatingSnapshot] = useState(false);
+  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(false);
 
   // Helper for auto-converting phone numbers to 62 format
   const formatPhoneNumber = (input: string) => {
@@ -640,6 +648,19 @@ export default function TenantDashboardPage() {
           };
           setInitialData(defaultPage, seedSections, contentsMap);
         }
+
+        // 5. Pre-load snapshots
+        try {
+          const snapRef = collection(resolvedDb, 'tenants', tenantIdString, 'configSnapshots');
+          const snapQuery = query(snapRef, orderBy('createdAt', 'desc'));
+          const querySnap = await getDocs(snapQuery);
+          const list = querySnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toLocaleString() : doc.data().createdAt
+          }));
+          setSnapshots(list);
+        } catch (sErr) {}
       } catch (err) {
         console.error('Error during editor initialization:', err);
       } finally {
@@ -675,6 +696,102 @@ export default function TenantDashboardPage() {
     } catch (err) {
       console.error(err);
       alert('Gagal menerbitkan halaman.');
+    }
+  };
+
+  // Fetch snapshots from targetDb subcollection under tenants
+  const handleLoadSnapshots = async () => {
+    if (!tenantId || !targetDb) return;
+    try {
+      setIsLoadingSnapshots(true);
+      const snapRef = collection(targetDb, 'tenants', tenantId as string, 'configSnapshots');
+      const snapQuery = query(snapRef, orderBy('createdAt', 'desc'));
+      const querySnap = await getDocs(snapQuery);
+      const list = querySnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toLocaleString() : doc.data().createdAt
+      }));
+      setSnapshots(list);
+    } catch (err) {
+      console.error('Failed loading snapshots:', err);
+    } finally {
+      setIsLoadingSnapshots(false);
+    }
+  };
+
+  // Create new configuration snapshot in targetDb
+  const handleCreateSnapshot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenantId || !targetDb || !page) return;
+    const label = snapshotLabel.trim() || `Cadangan Pengaturan ${new Date().toLocaleString()}`;
+    
+    try {
+      setIsCreatingSnapshot(true);
+      
+      const { sections: currentSections, contents: currentContents } = useCmsStore.getState();
+      const snapshotId = `snap_${Date.now()}`;
+      
+      const snapDocRef = doc(targetDb, 'tenants', tenantId as string, 'configSnapshots', snapshotId);
+      
+      await setDoc(snapDocRef, {
+        snapshotId,
+        tenantId,
+        label,
+        createdAt: serverTimestamp(),
+        sections: currentSections,
+        contents: currentContents,
+      });
+      
+      setSnapshotLabel('');
+      await handleLoadSnapshots();
+      alert('✅ Snapshot pengaturan berhasil dibuat!');
+    } catch (err: any) {
+      console.error('Failed creating snapshot:', err);
+      alert('Gagal membuat snapshot: ' + err.message);
+    } finally {
+      setIsCreatingSnapshot(false);
+    }
+  };
+
+  // Restore sections and contents state from a snapshot
+  const handleRestoreSnapshot = async (snapshot: any) => {
+    if (!confirm(`Apakah Anda yakin ingin memulihkan layout dan isi halaman dari cadangan "${snapshot.label}"?\n\nSemua perubahan yang belum terbit akan tertimpa.`)) return;
+
+    try {
+      // 1. Update CMS Store local state
+      const { setInitialData, page: storePage } = useCmsStore.getState();
+      if (!storePage) return;
+      
+      // Update store and write directly to targetDb Firestore
+      setInitialData(storePage, snapshot.sections, snapshot.contents);
+      
+      // Force autosave right away
+      const { saveToFirestore } = useCmsStore.getState();
+      await saveToFirestore();
+      
+      setIsSnapshotModalOpen(false);
+      alert('✅ Layout dan konten berhasil dipulihkan dari snapshot!');
+      
+      // Refresh page display
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Failed restoring snapshot:', err);
+      alert('Gagal memulihkan snapshot: ' + err.message);
+    }
+  };
+
+  // Delete a snapshot
+  const handleDeleteSnapshot = async (snapshotId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus snapshot cadangan ini secara permanen?')) return;
+    
+    try {
+      const snapDocRef = doc(targetDb, 'tenants', tenantId as string, 'configSnapshots', snapshotId);
+      await deleteDoc(snapDocRef);
+      await handleLoadSnapshots();
+    } catch (err: any) {
+      console.error('Failed deleting snapshot:', err);
+      alert('Gagal menghapus snapshot: ' + err.message);
     }
   };
 
@@ -871,6 +988,21 @@ export default function TenantDashboardPage() {
             </Button>
           )}
 
+          {tenantProfile && (
+            <Button
+              onClick={() => {
+                handleLoadSnapshots();
+                setIsSnapshotModalOpen(true);
+              }}
+              variant="outline"
+              className="rounded-full text-xs font-bold border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 hidden sm:flex items-center gap-1.5 h-9 px-3.5 shadow-sm"
+              title="Kelola Cadangan & Riwayat Pengaturan"
+            >
+              <History className="h-4 w-4 shrink-0 text-indigo-500" />
+              <span className="hidden lg:block">Snapshot</span>
+            </Button>
+          )}
+
           <Button 
             onClick={handlePublish}
             className="bg-primary text-white hover:bg-accent hover:text-accent-foreground font-bold px-4 md:px-6 h-9 rounded-full flex gap-1.5 text-xs md:text-sm"
@@ -948,6 +1080,17 @@ export default function TenantDashboardPage() {
               className="bg-amber-400 text-slate-950 hover:bg-amber-300 font-extrabold text-xs rounded-full h-7.5 px-3 flex items-center gap-1 shadow-md"
             >
               <Share2 className="h-3 w-3" /> Bagikan
+            </Button>
+
+            {/* Button Snapshot */}
+            <Button
+              onClick={() => {
+                handleLoadSnapshots();
+                setIsSnapshotModalOpen(true);
+              }}
+              className="bg-indigo-600 text-white hover:bg-indigo-700 font-extrabold text-xs rounded-full h-7.5 px-3 flex items-center gap-1 shadow-md"
+            >
+              <History className="h-3 w-3" /> Snapshot
             </Button>
           </div>
         </div>
@@ -1179,6 +1322,113 @@ export default function TenantDashboardPage() {
               <div className="pt-2 flex justify-end">
                 <Button 
                   onClick={() => setShowShareModal(false)}
+                  className="rounded-full px-6 font-bold text-xs bg-slate-200 text-slate-700 hover:bg-slate-300"
+                >
+                  Tutup
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal Dialog Snapshot Settings & Backup History */}
+      {isSnapshotModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg shadow-2xl rounded-3xl bg-white border-none overflow-hidden animate-in fade-in zoom-in duration-200">
+            <CardHeader className="bg-indigo-600 text-white p-6 relative">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/10 rounded-2xl">
+                  <History className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-headline font-bold">Snapshot & Riwayat Pengaturan</CardTitle>
+                  <CardDescription className="text-white/80 text-xs mt-0.5">
+                    Cadangkan dan pulihkan seluruh layout seksi serta konten halaman kapan saja secara aman.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-6">
+              {/* Form Create New Snapshot */}
+              <form onSubmit={handleCreateSnapshot} className="space-y-2 pb-4 border-b">
+                <Label className="text-xs font-bold text-slate-700">Buat Cadangan Pengaturan Baru</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={snapshotLabel}
+                    onChange={(e) => setSnapshotLabel(e.target.value)}
+                    placeholder="Contoh: Sebelum bersihkan duplikat / Desain A"
+                    className="text-xs rounded-2xl h-10 border-slate-200"
+                    required
+                    disabled={isCreatingSnapshot}
+                  />
+                  <Button 
+                    type="submit"
+                    disabled={isCreatingSnapshot}
+                    className="rounded-2xl h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-sm"
+                  >
+                    {isCreatingSnapshot ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Simpan
+                  </Button>
+                </div>
+              </form>
+
+              {/* List Existing Snapshots */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-700">Daftar Riwayat Cadangan ({snapshots.length})</Label>
+                {isLoadingSnapshots ? (
+                  <div className="text-center py-6 text-xs text-slate-500">
+                    Memuat riwayat cadangan...
+                  </div>
+                ) : snapshots.length === 0 ? (
+                  <div className="text-center py-8 bg-slate-50 rounded-2xl border border-dashed text-xs text-slate-500">
+                    Belum ada snapshot tersimpan. Silakan simpan cadangan pertama Anda di atas.
+                  </div>
+                ) : (
+                  <div className="max-h-[220px] overflow-y-auto space-y-2.5 pr-1">
+                    {snapshots.map((snap) => (
+                      <div key={snap.id} className="p-3 bg-slate-50 hover:bg-slate-100/70 border rounded-2xl flex items-center justify-between gap-3 transition-colors">
+                        <div className="space-y-0.5 min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate" title={snap.label}>
+                            {snap.label}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            ⏰ {snap.createdAt} • {(snap.sections || []).length} Seksi
+                          </p>
+                        </div>
+
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button
+                            type="button"
+                            onClick={() => handleRestoreSnapshot(snap)}
+                            className="bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-full font-bold text-[10px] h-7 px-3 border border-indigo-200 transition-all"
+                          >
+                            Restore
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => handleDeleteSnapshot(snap.id)}
+                            variant="ghost"
+                            className="text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full font-bold text-[10px] h-7 w-7 p-0 shrink-0"
+                            title="Hapus Cadangan"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <Button 
+                  onClick={() => setIsSnapshotModalOpen(false)}
                   className="rounded-full px-6 font-bold text-xs bg-slate-200 text-slate-700 hover:bg-slate-300"
                 >
                   Tutup
