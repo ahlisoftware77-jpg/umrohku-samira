@@ -312,6 +312,12 @@ export default function SuperAdminPage() {
   const [isPurgingOrphans, setIsPurgingOrphans] = useState(false);
   const [isRestoringOrphans, setIsRestoringOrphans] = useState(false);
 
+  // View 2 (Cluster DB Content Checker) State
+  const [selectedView2ServerId, setSelectedView2ServerId] = useState('');
+  const [view2Contents, setView2Contents] = useState<any[]>([]);
+  const [view2Duplicates, setView2Duplicates] = useState<any[]>([]);
+  const [isLoadingView2Contents, setIsLoadingView2Contents] = useState(false);
+
   // CLI Auth state
   const [firebaseTokenInput, setFirebaseTokenInput] = useState(() => 
     typeof window !== 'undefined' ? localStorage.getItem('fb_ci_token') || '' : ''
@@ -1909,6 +1915,105 @@ service cloud.firestore {
     } finally {
       setIsRestoringOrphans(false);
       e.target.value = '';
+    }
+  };
+
+  // Fetch all contents from a selected cluster DB server and compare with DB Utama to find duplicates
+  const handleLoadView2Contents = async (serverId: string) => {
+    if (!serverId) {
+      setView2Contents([]);
+      setView2Duplicates([]);
+      return;
+    }
+    try {
+      setIsLoadingView2Contents(true);
+      setView2Contents([]);
+      setView2Duplicates([]);
+
+      const serverConfig = dbServers.find(s => s.serverId === serverId);
+      if (!serverConfig) return;
+
+      const clusterInstance = getDynamicFirebaseInstance(serverConfig).db;
+
+      // 1. Fetch all contents from cluster DB
+      const clusterSnap = await getDocs(collection(clusterInstance, 'contents'));
+      const clusterItems = clusterSnap.docs.map(docSnap => {
+        const data = docSnap.data();
+        const createdAtRaw = data.createdAt || data.updatedAt;
+        const createdAtFormatted = createdAtRaw
+          ? new Date((createdAtRaw as any)?.seconds ? (createdAtRaw as any).seconds * 1000 : createdAtRaw).toLocaleDateString('id-ID', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : '-';
+
+        return {
+          docId: docSnap.id,
+          tenantId: data.tenantId || '-',
+          sectionId: data.sectionId || '-',
+          key: data.key || '-',
+          rawValue: data.value,
+          value: typeof data.value === 'object' ? JSON.stringify(data.value) : String(data.value || ''),
+          createdAt: createdAtFormatted,
+          serverId,
+          serverLabel: `${serverConfig.name} (${serverConfig.projectId})`,
+          projectId: serverConfig.projectId,
+        };
+      });
+
+      // 2. Fetch all contents from main DB (DB Utama) to check for duplicates
+      const mainSnap = await getDocs(collection(db, 'contents'));
+      const mainItemsMap = new Map<string, any>();
+      mainSnap.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        mainItemsMap.set(docSnap.id, {
+          docId: docSnap.id,
+          value: typeof data.value === 'object' ? JSON.stringify(data.value) : String(data.value || ''),
+        });
+      });
+
+      // 3. Match and flag duplicates
+      const duplicatesList: any[] = [];
+      const comparedItems = clusterItems.map(item => {
+        const mainDoc = mainItemsMap.get(item.docId);
+        const isDuplicate = !!mainDoc;
+        let duplicateType = 'none';
+        let diffMessage = '';
+
+        if (isDuplicate) {
+          if (item.value === mainDoc.value) {
+            duplicateType = 'identical';
+            diffMessage = 'Identik (Nilai Sama)';
+          } else {
+            duplicateType = 'different';
+            diffMessage = 'Berbeda (Nilai Berbeda)';
+          }
+
+          duplicatesList.push({
+            ...item,
+            duplicateType,
+            diffMessage,
+          });
+        }
+
+        return {
+          ...item,
+          isDuplicate,
+          duplicateType,
+          diffMessage,
+        };
+      });
+
+      setView2Contents(comparedItems);
+      setView2Duplicates(duplicatesList);
+    } catch (err: any) {
+      console.error('Failed loading cluster contents:', err);
+      alert('Gagal memuat isi konten server database cluster: ' + err.message);
+    } finally {
+      setIsLoadingView2Contents(false);
     }
   };
 
@@ -3863,13 +3968,13 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   );
 
                   return (
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                       {/* View 1: DB Utama */}
                       <div className="space-y-2.5">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between border-b pb-2">
                           <h4 className="text-xs font-bold text-emerald-700 flex items-center gap-1.5 uppercase tracking-wider">
                             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                            View 1: DB Utama (landing-umroh) — {mainDbOrphans.length} Dokumen
+                            View 1: DB Utama (landing-umroh) — {mainDbOrphans.length} Dokumen Terasing
                           </h4>
                           <span className="text-[10px] font-bold text-slate-400">SERVER: DEFAULT</span>
                         </div>
@@ -3883,20 +3988,119 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       </div>
 
                       {/* View 2: DB Cluster / DB2 */}
-                      <div className="space-y-2.5">
-                        <div className="flex items-center justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b pb-2">
                           <h4 className="text-xs font-bold text-purple-700 flex items-center gap-1.5 uppercase tracking-wider">
                             <span className="h-2.5 w-2.5 rounded-full bg-purple-500 inline-block"></span>
-                            View 2: DB Cluster / DB2 — {clusterDbOrphans.length} Dokumen
+                            View 2: Cek Isi & Deteksi Duplikat DB Cluster / Tenant
                           </h4>
                           <span className="text-[10px] font-bold text-slate-400">SERVER: CLUSTER</span>
                         </div>
-                        {clusterDbOrphans.length === 0 ? (
+
+                        {/* Interactive Dropdown Selector */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 p-4 rounded-2xl border">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-bold text-slate-700">Pilih Database Server Cluster / Tenant:</Label>
+                            <select
+                              value={selectedView2ServerId}
+                              onChange={(e) => {
+                                setSelectedView2ServerId(e.target.value);
+                                handleLoadView2Contents(e.target.value);
+                              }}
+                              className="bg-white border rounded-xl px-3 py-2 text-xs font-semibold text-primary focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-80 shadow-xs"
+                            >
+                              <option value="">-- Pilih Server Cluster / Tenant DB --</option>
+                              {dbServers.map(s => (
+                                <option key={s.serverId} value={s.serverId}>
+                                  {s.name} ({s.projectId})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {selectedView2ServerId && (
+                            <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600">
+                              <span className="bg-slate-100 px-2.5 py-1 rounded-lg border">
+                                Total Konten: <strong className="text-primary">{view2Contents.length}</strong>
+                              </span>
+                              <span className="bg-purple-50 border border-purple-200 text-purple-700 px-2.5 py-1 rounded-lg">
+                                Duplikat di DB Utama: <strong className="font-bold">{view2Duplicates.length}</strong>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Display Table Contents or Select State */}
+                        {!selectedView2ServerId ? (
+                          <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs text-slate-500">
+                            💡 Silakan pilih server database cluster/tenant di atas untuk menampilkan seluruh isi konten dan mendeteksi data ganda dengan DB Utama.
+                          </div>
+                        ) : isLoadingView2Contents ? (
+                          <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                            <span>Memuat data konten cluster dan mendeteksi duplikasi...</span>
+                          </div>
+                        ) : view2Contents.length === 0 ? (
                           <div className="p-4 bg-slate-50 rounded-2xl text-center text-xs text-slate-500 border border-dashed">
-                            Bersih! Tidak ada dokumen terasing di DB Cluster.
+                            Database Cluster kosong! Tidak ada dokumen konten terdaftar.
                           </div>
                         ) : (
-                          renderContentsTable(clusterDbOrphans, "bg-purple-50 text-purple-700 border-purple-200")
+                          <div className="rounded-2xl border overflow-hidden max-h-[350px] overflow-y-auto bg-white shadow-xs">
+                            <Table>
+                              <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                                <TableRow>
+                                  <TableHead className="text-xs font-bold">Tenant ID</TableHead>
+                                  <TableHead className="text-xs font-bold">Dokumen ID</TableHead>
+                                  <TableHead className="text-xs font-bold">Key / Field</TableHead>
+                                  <TableHead className="text-xs font-bold">Deteksi Duplikat di DB Utama</TableHead>
+                                  <TableHead className="text-xs font-bold">Isi Konten di DB Cluster</TableHead>
+                                  <TableHead className="text-xs font-bold text-center">Tanggal</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {view2Contents.map((item, idx) => (
+                                  <TableRow key={idx} className={`hover:bg-slate-50/50 ${item.isDuplicate ? 'bg-amber-50/15' : ''}`}>
+                                    <TableCell className="text-xs text-slate-800 font-bold whitespace-nowrap">
+                                      {item.tenantId}
+                                    </TableCell>
+                                    <TableCell className="font-mono text-[11px] text-slate-600 truncate max-w-[150px]" title={item.docId}>
+                                      {item.docId}
+                                    </TableCell>
+                                    <TableCell className="text-xs font-bold">{item.key}</TableCell>
+                                    <TableCell className="text-xs">
+                                      {item.isDuplicate ? (
+                                        item.duplicateType === 'identical' ? (
+                                          <span className="inline-flex flex-col">
+                                            <span className="bg-green-100 text-green-800 border border-green-200 font-bold px-2 py-0.5 rounded-full text-[10px] w-fit">
+                                              ✅ Duplikat (Identik)
+                                            </span>
+                                            <span className="text-[9px] text-slate-400 mt-0.5">Nilai sama persis</span>
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex flex-col">
+                                            <span className="bg-amber-100 text-amber-800 border border-amber-200 font-bold px-2 py-0.5 rounded-full text-[10px] w-fit">
+                                              ⚠️ Duplikat (Beda Nilai)
+                                            </span>
+                                            <span className="text-[9px] text-amber-600 mt-0.5">Nilai berbeda di DB Utama</span>
+                                          </span>
+                                        )
+                                      ) : (
+                                        <span className="bg-slate-100 text-slate-500 border border-slate-200 font-medium px-2 py-0.5 rounded-full text-[10px]">
+                                          Hanya di DB Cluster
+                                        </span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-slate-500 truncate max-w-[200px]" title={item.value}>
+                                      {item.value}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-slate-400 whitespace-nowrap text-center">
+                                      {item.createdAt}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
                         )}
                       </div>
                     </div>
