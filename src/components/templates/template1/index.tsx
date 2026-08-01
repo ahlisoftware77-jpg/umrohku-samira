@@ -20,7 +20,7 @@ import ProductKnowledgeSection from '@/components/sections/product-knowledge-sec
 import AirlinesSection from '@/components/sections/airlines-section';
 import AdPopupModal from '@/components/sections/ad-popup-modal';
 import Footer from '@/components/layout/footer';
-import GooeyNav from '@/components/ui/gooey-nav';
+import MobileBottomNavbar from '@/components/layout/mobile-bottom-navbar';
 import { Agent } from '@/lib/agents';
 
 export interface Template1Props {
@@ -96,17 +96,8 @@ export default function Template1({ agent, sectionsData = {} }: Template1Props) 
       {/* First Load Ad Popup Modal */}
       <AdPopupModal agent={agent} data={sectionsData.ad_popup} />
 
-      {/* 18. Floating Gooey Navigation */}
-      <GooeyNav 
-        items={navItems}
-        particleCount={15}
-        particleDistances={[90, 10]}
-        particleR={600}
-        initialActiveIndex={0}
-        animationTime={600}
-        timeVariance={800}
-        colors={[1, 2, 3, 1, 2, 3, 1, 4]}
-      />
+      {/* Ultra-Pro Floating Mobile Bottom Navigation Bar */}
+      <MobileBottomNavbar agent={agent} />
     </div>
   );
 }

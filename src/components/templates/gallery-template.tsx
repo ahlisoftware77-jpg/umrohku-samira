@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import MobileBottomNavbar from '@/components/layout/mobile-bottom-navbar';
 import GallerySection from '@/components/sections/gallery-section';
 import { Agent } from '@/lib/agents';
 import { motion } from 'framer-motion';
@@ -90,6 +91,7 @@ export default function GalleryTemplate({ agent }: GalleryTemplateProps) {
       </main>
 
       <Footer agent={agent} />
+      <MobileBottomNavbar agent={agent} />
     </div>
   );
 }

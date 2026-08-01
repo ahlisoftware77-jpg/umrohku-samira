@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import MobileBottomNavbar from '@/components/layout/mobile-bottom-navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Agent, getAgent } from '@/lib/agents';
@@ -1071,6 +1072,7 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
       </main>
 
       <Footer agent={agent} />
+      <MobileBottomNavbar agent={agent} />
     </div>
   );
 }

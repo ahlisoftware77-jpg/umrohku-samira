@@ -24,7 +24,7 @@ import GallerySection from '@/components/sections/gallery-section';
 import WhyChooseUs from '@/components/sections/why-choose-us';
 import AirlinesSection from '@/components/sections/airlines-section';
 import AdPopupModal from '@/components/sections/ad-popup-modal';
-import GooeyNav from '@/components/ui/gooey-nav';
+import MobileBottomNavbar from '@/components/layout/mobile-bottom-navbar';
 import { Tenant, LandingPage, Section, SectionType } from '@/types/cms';
 import { Agent } from '@/lib/agents';
 
@@ -189,16 +189,7 @@ export default function DynamicHomeTemplate({
       </main>
       <Footer agent={agentCompat} />
       
-      <GooeyNav 
-        items={navItems}
-        particleCount={12}
-        particleDistances={[80, 10]}
-        particleR={500}
-        initialActiveIndex={0}
-        animationTime={600}
-        timeVariance={800}
-        colors={[1, 2, 3, 1, 2, 3, 1, 4]}
-      />
+      <MobileBottomNavbar agent={agentCompat} />
     </div>
   );
 }

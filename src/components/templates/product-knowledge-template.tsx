@@ -1,10 +1,10 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import MobileBottomNavbar from '@/components/layout/mobile-bottom-navbar';
 import Image from 'next/image';
 import { 
   ChevronLeft, 
@@ -270,6 +270,7 @@ export default function ProductKnowledgeTemplate({ agent }: ProductKnowledgeTemp
       </main>
 
       <Footer agent={agent} />
+      <MobileBottomNavbar agent={agent} />
     </div>
   );
 }
