@@ -35,7 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye, PenLine, Monitor, History, Save, Loader2 } from 'lucide-react';
+import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye, PenLine, Monitor, History, Save, Loader2, MessageCircle } from 'lucide-react';
 import { Tenant, LandingPage, Section, Content, SectionType, SYSTEM_PLANS } from '@/types/cms';
 
 function getReadableIdFromEmail(emailAddress: string): string {
@@ -1500,6 +1500,23 @@ export default function TenantDashboardPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+      {/* Floating Developer Support WhatsApp Widget */}
+      {user && (
+        <a
+          href={`https://api.whatsapp.com/send?phone=6283815862300&text=${encodeURIComponent(
+            `Assalamu'alaikum Pengembang Samira Builder, saya ingin bertanya mengenai dashboard mitra:\nNama Mitra: ${tenantProfile?.name || '-'}\nSubdomain: ${tenantProfile?.subdomain || '-'}`
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-50 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 md:p-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 group border border-emerald-500/20"
+          title="Tanya via Chat dengan Pengembang"
+        >
+          <MessageCircle className="h-5 w-5 shrink-0 text-white" />
+          <span className="text-[11px] tracking-wide font-extrabold max-w-0 overflow-hidden group-hover:max-w-[200px] transition-all duration-300 ease-out whitespace-nowrap hidden md:inline-block">
+            Tanya Pengembang
+          </span>
+        </a>
       )}
     </div>
   );
