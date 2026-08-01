@@ -77,21 +77,47 @@ export default function Header({ agent: providedAgent }: HeaderProps) {
           </div>
         </Link>
         
-        <nav className="hidden md:flex items-center space-x-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "text-sm font-bold uppercase tracking-widest transition-all duration-300 hover:text-accent relative flex items-center after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-all hover:after:w-full",
-                isSolid ? "text-foreground" : "text-white hover:text-white",
-                (pathname === link.href || pathname === `${link.href}/`) && "text-accent after:w-full"
-              )}
-            >
-              {link.icon && link.icon}
-              {link.label}
-            </Link>
-          ))}
+        <nav className="hidden md:flex items-center space-x-6">
+          {navLinks.map((link) => {
+            const isKemitraan = link.label === 'Kemitraan';
+            const isActive = pathname === link.href || pathname === `${link.href}/`;
+
+            if (isKemitraan) {
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-headline font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-md hover:scale-105 active:scale-95 border cursor-pointer",
+                    isActive
+                      ? "bg-amber-400 text-slate-950 border-amber-300 ring-2 ring-amber-400/50 scale-105"
+                      : "bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 border-amber-300 hover:brightness-110 shadow-amber-500/20"
+                  )}
+                >
+                  <Handshake className="w-4 h-4 text-slate-950 shrink-0" />
+                  <span>Kemitraan</span>
+                  <span className="bg-slate-950 text-amber-400 text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase ml-0.5 border border-amber-400/50 animate-pulse">
+                    PROMO
+                  </span>
+                </Link>
+              );
+            }
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "text-sm font-bold uppercase tracking-widest transition-all duration-300 hover:text-accent relative flex items-center after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-all hover:after:w-full",
+                  isSolid ? "text-foreground" : "text-white hover:text-white",
+                  isActive && "text-accent after:w-full"
+                )}
+              >
+                {link.icon && link.icon}
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="hidden md:flex items-center space-x-3">
@@ -150,21 +176,45 @@ export default function Header({ agent: providedAgent }: HeaderProps) {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col space-y-6 p-8">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setIsOpen(false)}
-                      className={cn(
-                        "text-2xl font-headline font-bold hover:text-accent transition-colors flex items-center",
-                        (pathname === link.href || pathname === `${link.href}/`) && "text-accent"
-                      )}
-                    >
-                      {link.icon && <span className="mr-3">{link.icon}</span>}
-                      {link.label}
-                    </Link>
-                  ))}
+                <div className="flex flex-col space-y-5 p-6">
+                  {navLinks.map((link) => {
+                    const isKemitraan = link.label === 'Kemitraan';
+                    const isActive = pathname === link.href || pathname === `${link.href}/`;
+
+                    if (isKemitraan) {
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={() => setIsOpen(false)}
+                          className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 font-headline font-black text-xl px-5 py-3.5 rounded-2xl shadow-lg flex items-center justify-between border border-amber-300 my-1 hover:scale-102 transition-transform"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Handshake className="w-6 h-6 text-slate-950" />
+                            <span>Kemitraan Travel</span>
+                          </div>
+                          <span className="bg-slate-950 text-amber-400 text-xs font-black px-2.5 py-1 rounded-full uppercase border border-amber-400/50 animate-pulse">
+                            PROMO MITRA
+                          </span>
+                        </Link>
+                      );
+                    }
+
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className={cn(
+                          "text-2xl font-headline font-bold hover:text-accent transition-colors flex items-center",
+                          isActive && "text-accent"
+                        )}
+                      >
+                        {link.icon && <span className="mr-3">{link.icon}</span>}
+                        {link.label}
+                      </Link>
+                    );
+                  })}
                   <div className="pt-8">
                     <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-6 h-auto rounded-xl">
                       <Link href={`${prefix}/#daftar`} onClick={() => setIsOpen(false)}>Hubungi Kami</Link>
