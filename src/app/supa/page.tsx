@@ -3991,8 +3991,23 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                               <TableCell className="text-xs text-amber-700 font-bold">{item.tenantId}</TableCell>
                               <TableCell className="font-mono text-[11px] text-slate-600 truncate max-w-[150px]" title={item.docId}>{item.docId}</TableCell>
                               <TableCell className="text-xs font-bold">{item.key}</TableCell>
-                              <TableCell className="text-xs text-slate-500 truncate max-w-[200px]" title={item.value}>
-                                {item.value}
+                              <TableCell className="text-xs text-slate-500 max-w-[200px]">
+                                <div className="flex items-center gap-1.5 justify-between group/cell">
+                                  <span className="truncate" title={item.value}>
+                                    {item.value}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(item.value);
+                                      alert('✅ Isi konten berhasil disalin!');
+                                    }}
+                                    className="p-1 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors shrink-0 opacity-0 group-hover/cell:opacity-100 focus:opacity-100"
+                                    title="Salin isi konten"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -4124,8 +4139,23 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                                         </span>
                                       )}
                                     </TableCell>
-                                    <TableCell className="text-xs text-slate-500 truncate max-w-[200px]" title={item.value}>
-                                      {item.value}
+                                    <TableCell className="text-xs text-slate-500 max-w-[200px]">
+                                      <div className="flex items-center gap-1.5 justify-between group/cell">
+                                        <span className="truncate" title={item.value}>
+                                          {item.value}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(item.value);
+                                            alert('✅ Isi konten berhasil disalin!');
+                                          }}
+                                          className="p-1 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors shrink-0 opacity-0 group-hover/cell:opacity-100 focus:opacity-100"
+                                          title="Salin isi konten"
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </button>
+                                      </div>
                                     </TableCell>
                                     <TableCell className="text-xs text-slate-400 whitespace-nowrap text-center">
                                       {item.createdAt}
