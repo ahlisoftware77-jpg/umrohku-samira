@@ -150,43 +150,43 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
 
       <main className="flex-grow pt-24 md:pt-32 pb-20">
         
-        {/* 1. Hero Section: Program Kemitraan Travelpreneur (Light Luxury Theme) */}
+        {/* LAYER 1: Hero Section (Light Luxury Theme with Staggered Entrance) */}
         <section className="relative py-16 md:py-24 overflow-hidden bg-gradient-to-b from-[#f8fafc] via-[#fffdf5] to-[#f1f5f9] border-b border-amber-200/60">
           <div className="absolute top-0 right-0 w-96 h-96 bg-amber-300/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none" />
 
           <div className="container mx-auto px-4 md:px-6 relative z-10 max-w-6xl text-center">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.6 }}
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-widest mb-6 shadow-md border border-amber-300"
             >
-              <Sparkles className="w-4 h-4 fill-slate-950" /> PROGRAM KEMITRAAN TRAVELPRENEUR SAMIRA 2025/2026
+              <Sparkles className="w-4 h-4 fill-slate-950 animate-pulse" /> PROGRAM KEMITRAAN TRAVELPRENEUR SAMIRA 2025/2026
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 25 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
+              transition={{ duration: 0.7, delay: 0.15 }}
               className="text-3xl sm:text-5xl md:text-6xl font-headline font-black text-slate-900 leading-tight mb-6 tracking-tight drop-shadow-xs max-w-4xl mx-auto"
             >
               Raih Kesuksesan & Keberkahan Bersama <span className="text-amber-600 underline decoration-amber-400/60">Samira Travel</span>
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 25 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.7, delay: 0.25 }}
               className="text-slate-600 text-sm sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto mb-8 font-medium"
             >
-              Peluang Bisnis Travel Umrah Syariah tanpa beban, <strong>No MLM & No Money Game</strong>. Dapatkan kesempatan <strong>UMRAH GRATIS</strong> serta potensi komisi berlimpah dengan bimbingan resmi dari Samira Travel.
+              Peluang Bisnis Travel Umrah Syariah tanpa beban, <strong>No MLM & No Money Game</strong>. Dapatkan kesempatan <strong>UMROH GRATIS</strong> serta potensi komisi berlimpah dengan bimbingan resmi dari Samira Travel.
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.35 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 hover:scale-105 border border-amber-300 transition-all">
@@ -204,8 +204,14 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
           </div>
         </section>
 
-        {/* 2. Interactive Reflection Questions (Light Mode) */}
-        <section className="py-12 md:py-16 bg-white relative border-b">
+        {/* LAYER 2: Interactive Reflection Questions Layer */}
+        <motion.section 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="py-12 md:py-16 bg-white relative border-b"
+        >
           <div className="container mx-auto px-4 md:px-6 max-w-4xl">
             <Card className="bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 border-2 border-amber-300 rounded-3xl p-6 sm:p-10 shadow-xl text-slate-900">
               <h2 className="text-xl sm:text-2xl font-headline font-black text-slate-900 mb-6 text-center flex items-center justify-center gap-2">
@@ -218,10 +224,15 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                   { id: 1, text: "Apakah Anda ingin pergi Umrah secara GRATIS?" },
                   { id: 2, text: "Apakah Anda ingin memiliki Bisnis Travel Umrah Syariah sendiri?" },
                   { id: 3, text: "Apakah Anda ingin mendapat penghasilan tambahan yang halal & berkah?" },
-                ].map((item) => (
+                ].map((item, idx) => (
                   <motion.div 
                     key={item.id}
-                    whileHover={{ scale: 1.01 }}
+                    initial={{ opacity: 0, x: -30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: idx * 0.15 }}
+                    whileHover={{ scale: 1.015 }}
+                    whileTap={{ scale: 0.985 }}
                     onClick={() => setAnswers(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
                     className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer shadow-sm ${
                       answers[item.id] 
@@ -230,31 +241,112 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <CheckCircle2 className={`w-6 h-6 shrink-0 ${answers[item.id] ? 'text-emerald-600' : 'text-slate-300'}`} />
+                      <CheckCircle2 className={`w-6 h-6 shrink-0 transition-colors ${answers[item.id] ? 'text-emerald-600' : 'text-slate-300'}`} />
                       <span className="font-extrabold text-sm sm:text-base">{item.id}. {item.text}</span>
                     </div>
-                    <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider ${answers[item.id] ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                    <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider transition-colors ${answers[item.id] ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}`}>
                       {answers[item.id] ? 'YA (PASTI)' : 'TIDAK'}
                     </span>
                   </motion.div>
                 ))}
               </div>
 
-              <div className="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 p-5 rounded-2xl text-slate-950 text-center shadow-md">
+              <motion.div 
+                whileHover={{ scale: 1.01 }}
+                className="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 p-5 rounded-2xl text-slate-950 text-center shadow-md"
+              >
                 <p className="font-black text-sm sm:text-lg leading-snug">
                   Jika jawaban Anda <span className="underline uppercase font-black text-slate-950">"YA"</span>, maka memilih menjadi Mitra Samira Travel adalah keputusan terbaik untuk masa depan Anda! 🤲
                 </p>
-              </div>
+              </motion.div>
             </Card>
           </div>
-        </section>
+        </motion.section>
 
-        {/* 3. Interactive Commission & Reward Calculator (Kalkulator Komisi Light Mode) */}
-        <section id="kalkulator" className="py-16 md:py-24 bg-slate-50 relative border-b">
+        {/* LAYER 3: Legalitas & 8 Keunggulan Layer */}
+        <motion.section 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="py-16 md:py-24 bg-white border-b"
+        >
+          <div className="container mx-auto px-4 md:px-6 max-w-6xl">
+            
+            {/* Legalities Banner */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-slate-50 border-2 border-emerald-500/40 p-6 sm:p-8 rounded-3xl mb-16 shadow-lg flex flex-col md:flex-row items-center justify-between gap-6"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-300">
+                  <ShieldCheck className="w-8 h-8" />
+                </div>
+                <div>
+                  <span className="bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-1 inline-block">
+                    Izin Resmi Kemenag RI
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-headline font-black text-slate-900">PT. SAMIRA ALI WISATA</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                    PPIU No. <strong className="text-emerald-700">16092100475620005</strong> · PIHK No. <strong className="text-amber-700">160922100475620002</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-center md:text-right shrink-0">
+                <span className="text-xs text-slate-500 block mb-1">Keamanan & Keberkahan Terjamin</span>
+                <span className="text-xs sm:text-sm font-extrabold text-amber-900 bg-amber-100 px-3.5 py-1 rounded-full border border-amber-300">
+                  No MLM · No Money Game (Pure Syariah)
+                </span>
+              </div>
+            </motion.div>
+
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <p className="text-amber-600 font-black uppercase tracking-widest text-xs mb-2">Fasilitas & Keuntungan</p>
+              <h2 className="text-2xl sm:text-4xl font-headline font-black text-slate-900 leading-tight">
+                8 Keunggulan Utama Kemitraan Samira Travel
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {benefitsList.map((item, idx) => (
+                <motion.div 
+                  key={idx}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.08 }}
+                  whileHover={{ y: -6, scale: 1.02 }}
+                  className="bg-slate-50 p-5 rounded-2xl border border-slate-200 hover:border-amber-400 transition-all shadow-sm"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-900 font-black text-sm mb-4 flex items-center justify-center border border-amber-300">
+                    0{idx + 1}
+                  </div>
+                  <h3 className="font-headline font-extrabold text-base text-slate-900 mb-2">{item.title}</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+
+          </div>
+        </motion.section>
+
+        {/* LAYER 4: Interactive Ujrah & Bonus Calculator Layer */}
+        <motion.section 
+          id="kalkulator" 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="py-16 md:py-24 bg-slate-50 relative border-b"
+        >
           <div className="container mx-auto px-4 md:px-6 max-w-5xl">
             <div className="text-center max-w-3xl mx-auto mb-12">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-black text-xs uppercase tracking-widest mb-3 border border-emerald-300">
-                <Calculator className="w-4 h-4 text-emerald-700" /> KALKULATOR REWARD & KOMISI INTERAKTIF
+                <Calculator className="w-4 h-4 text-emerald-700 animate-bounce" /> KALKULATOR REWARD & KOMISI INTERAKTIF
               </div>
               <h2 className="text-2xl sm:text-4xl font-headline font-black text-slate-900 leading-tight mb-2">
                 Simulasi Keuntungan & Reward Keberangkatan
@@ -273,7 +365,7 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setJamaahCount(Math.max(1, jamaahCount - 1))}
-                      className="w-9 h-9 rounded-xl bg-slate-100 font-black text-lg text-slate-800 hover:bg-amber-400 transition-colors"
+                      className="w-9 h-9 rounded-xl bg-slate-100 font-black text-lg text-slate-800 hover:bg-amber-400 transition-colors active:scale-95"
                     >
                       -
                     </button>
@@ -282,7 +374,7 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                     </span>
                     <button
                       onClick={() => setJamaahCount(Math.min(50, jamaahCount + 1))}
-                      className="w-9 h-9 rounded-xl bg-slate-100 font-black text-lg text-slate-800 hover:bg-amber-400 transition-colors"
+                      className="w-9 h-9 rounded-xl bg-slate-100 font-black text-lg text-slate-800 hover:bg-amber-400 transition-colors active:scale-95"
                     >
                       +
                     </button>
@@ -308,8 +400,14 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                 </div>
               </div>
 
-              {/* Dynamic Output Box */}
-              <div className="bg-gradient-to-br from-[#0c223d] via-primary to-[#061222] text-white p-6 sm:p-8 rounded-2xl shadow-xl space-y-4">
+              {/* Dynamic Output Box with Motion Animation */}
+              <motion.div 
+                key={jamaahCount}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="bg-gradient-to-br from-[#0c223d] via-primary to-[#061222] text-white p-6 sm:p-8 rounded-2xl shadow-xl space-y-4"
+              >
                 <div className="flex items-center justify-between border-b border-white/15 pb-4">
                   <span className="text-xs uppercase font-extrabold text-amber-300 tracking-wider">Status Reward Keberangkatan:</span>
                   <span className="bg-emerald-500 text-slate-950 text-xs font-black uppercase px-3 py-1 rounded-full shadow-md">
@@ -329,18 +427,25 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                     <span className="text-xs text-slate-300 block">Fasilitas Tambahan Mitra:</span>
                     <strong className="text-xs sm:text-sm font-extrabold text-white">{currentReward.extraBonus}</strong>
                   </div>
-                  <Button asChild size="sm" className="bg-amber-400 hover:bg-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md shrink-0">
+                  <Button asChild size="sm" className="bg-amber-400 hover:bg-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md shrink-0 hover:scale-105 transition-transform">
                     <a href={waRegisterUrl} target="_blank" rel="noopener noreferrer">Klaim Promo WA</a>
                   </Button>
                 </div>
-              </div>
+              </motion.div>
 
             </Card>
           </div>
-        </section>
+        </motion.section>
 
-        {/* 4. Skema Ujrah Official Image (Light Card Container) */}
-        <section id="ujrah" className="py-16 md:py-24 bg-white relative border-b">
+        {/* LAYER 5: Skema Ujrah Official Image Layer (with Lightbox Zoom) */}
+        <motion.section 
+          id="ujrah" 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="py-16 md:py-24 bg-white relative border-b"
+        >
           <div className="container mx-auto px-4 md:px-6 max-w-6xl">
             
             <div className="text-center max-w-3xl mx-auto mb-12">
@@ -361,16 +466,21 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                 
                 {/* Image Left */}
                 <div className="lg:col-span-6 space-y-3">
-                  <div className="relative rounded-2xl overflow-hidden border-2 border-amber-400 shadow-xl bg-white group cursor-pointer" onClick={() => setIsZoomImage(true)}>
+                  <motion.div 
+                    whileHover={{ scale: 1.02, rotate: 0.5 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative rounded-2xl overflow-hidden border-2 border-amber-400 shadow-xl bg-white group cursor-pointer" 
+                    onClick={() => setIsZoomImage(true)}
+                  >
                     <img 
                       src="/images/ujroh.jpeg" 
                       alt="Tabel Ujrah Samira Travel" 
-                      className="w-full h-auto object-cover group-hover:scale-102 transition-transform duration-300"
+                      className="w-full h-auto object-cover transition-transform duration-300"
                     />
                     <div className="absolute bottom-3 right-3 bg-slate-900/80 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md flex items-center gap-1.5 shadow-md">
                       <Maximize2 className="w-3.5 h-3.5" /> Klik Untuk Perbesar
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
 
                 {/* Content Right */}
@@ -384,29 +494,29 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                   </h3>
 
                   <div className="space-y-3 text-xs sm:text-sm text-slate-700 font-medium">
-                    <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-start gap-3 shadow-xs">
+                    <motion.div whileHover={{ x: 4 }} className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-start gap-3 shadow-xs">
                       <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                       <div>
                         <strong className="text-slate-900 font-extrabold block text-sm">Langsung Cair Saat Booking Seat</strong>
                         <span>Komisi ujrah tidak perlu menunggu keberangkatan, langsung cair saat jamaah bayar DP.</span>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="bg-white p-3.5 rounded-2xl border border-amber-300 flex items-start gap-3 shadow-xs">
+                    <motion.div whileHover={{ x: 4 }} className="bg-white p-3.5 rounded-2xl border border-amber-300 flex items-start gap-3 shadow-xs">
                       <Gift className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                       <div>
                         <strong className="text-slate-900 font-extrabold block text-sm">Bawa 33 Jamaah = UMRAH GRATIS</strong>
                         <span>Menjadi Tour Leader resmi kelompok jamaah Anda sendiri + Komisi utuh tetap dibayarkan!</span>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-start gap-3 shadow-xs">
+                    <motion.div whileHover={{ x: 4 }} className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-start gap-3 shadow-xs">
                       <ShieldCheck className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
                       <div>
                         <strong className="text-slate-900 font-extrabold block text-sm">Tanpa Target Minimum & Sanksi</strong>
                         <span>Bebas dijalankan dari rumah kapan saja tanpa beban sistem piramida MLM.</span>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
                 </div>
 
@@ -423,7 +533,12 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                   onClick={() => setIsZoomImage(false)}
                   className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
                 >
-                  <div className="relative max-w-4xl w-full bg-white p-2 rounded-2xl overflow-hidden shadow-2xl">
+                  <motion.div 
+                    initial={{ scale: 0.9, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.9, y: 20 }}
+                    className="relative max-w-4xl w-full bg-white p-2 rounded-2xl overflow-hidden shadow-2xl"
+                  >
                     <img src="/images/ujroh.jpeg" alt="Tabel Ujrah Zoom" className="w-full h-auto max-h-[85vh] object-contain rounded-xl" />
                     <button 
                       onClick={() => setIsZoomImage(false)}
@@ -431,71 +546,23 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                     >
                       <Minimize2 className="w-5 h-5" />
                     </button>
-                  </div>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
 
           </div>
-        </section>
+        </motion.section>
 
-        {/* 6. Legalitas & 8 Keunggulan (Light Mode Grid) */}
-        <section className="py-16 md:py-24 bg-white border-b">
-          <div className="container mx-auto px-4 md:px-6 max-w-6xl">
-            
-            {/* Legalities Banner */}
-            <div className="bg-slate-50 border-2 border-emerald-500/40 p-6 sm:p-8 rounded-3xl mb-16 shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-300">
-                  <ShieldCheck className="w-8 h-8" />
-                </div>
-                <div>
-                  <span className="bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-1 inline-block">
-                    Izin Resmi Kemenag RI
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-headline font-black text-slate-900">PT. SAMIRA ALI WISATA</h3>
-                  <p className="text-xs sm:text-sm text-slate-600 font-medium">
-                    PPIU No. <strong className="text-emerald-700">16092100475620005</strong> · PIHK No. <strong className="text-amber-700">160922100475620002</strong>
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-center md:text-right shrink-0">
-                <span className="text-xs text-slate-500 block mb-1">Keamanan & Keberkahan Terjamin</span>
-                <span className="text-xs sm:text-sm font-extrabold text-amber-900 bg-amber-100 px-3.5 py-1 rounded-full border border-amber-300">
-                  No MLM · No Money Game (Pure Syariah)
-                </span>
-              </div>
-            </div>
-
-            <div className="text-center max-w-3xl mx-auto mb-12">
-              <p className="text-amber-600 font-black uppercase tracking-widest text-xs mb-2">Fasilitas & Keuntungan</p>
-              <h2 className="text-2xl sm:text-4xl font-headline font-black text-slate-900 leading-tight">
-                8 Keunggulan Utama Kemitraan Samira Travel
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {benefitsList.map((item, idx) => (
-                <motion.div 
-                  key={idx}
-                  whileHover={{ y: -4 }}
-                  className="bg-slate-50 p-5 rounded-2xl border border-slate-200 hover:border-amber-400 transition-all shadow-sm"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-900 font-black text-sm mb-4 flex items-center justify-center border border-amber-300">
-                    0{idx + 1}
-                  </div>
-                  <h3 className="font-headline font-extrabold text-base text-slate-900 mb-2">{item.title}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">{item.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-
-          </div>
-        </section>
-
-        {/* 7. Interactive Syarat & Tool Kit Tabs (Light Mode) */}
-        <section id="syarat" className="py-16 md:py-24 bg-slate-50 border-b">
+        {/* LAYER 6: Interactive Syarat & Tool Kit Tabs Layer */}
+        <motion.section 
+          id="syarat" 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="py-16 md:py-24 bg-slate-50 border-b"
+        >
           <div className="container mx-auto px-4 md:px-6 max-w-6xl">
             
             <div className="text-center max-w-3xl mx-auto mb-10">
@@ -509,7 +576,8 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
 
             {/* Tab Controls */}
             <div className="flex justify-center gap-2 mb-8">
-              <button
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('syarat')}
                 className={`px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer border ${
                   activeTab === 'syarat'
@@ -518,8 +586,9 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                 }`}
               >
                 📝 Persyaratan Registrasi
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('kit')}
                 className={`px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer border ${
                   activeTab === 'kit'
@@ -528,8 +597,9 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                 }`}
               >
                 👕 Starter Kit & Tool Kit Usaha
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('keamanan')}
                 className={`px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer border ${
                   activeTab === 'keamanan'
@@ -538,72 +608,101 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                 }`}
               >
                 🛡️ Keamanan Rekening Resmi
-              </button>
+              </motion.button>
             </div>
 
-            {/* Tab Contents */}
-            <Card className="bg-white border-2 border-slate-200 rounded-3xl p-6 sm:p-10 shadow-xl">
-              {activeTab === 'syarat' && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-headline font-black text-slate-900 mb-4">Syarat Registrasi Mitra (Seluruh Indonesia)</h3>
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                      <strong className="text-slate-900 font-extrabold text-sm block mb-1">1. Identitas KTP</strong>
-                      <p className="text-xs text-slate-600">Fotokopi / Foto KTP asli yang difoto jelas lalu dikirim via WhatsApp.</p>
+            {/* Tab Contents with AnimatePresence */}
+            <Card className="bg-white border-2 border-slate-200 rounded-3xl p-6 sm:p-10 shadow-xl overflow-hidden">
+              <AnimatePresence mode="wait">
+                {activeTab === 'syarat' && (
+                  <motion.div
+                    key="syarat"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-4"
+                  >
+                    <h3 className="text-xl font-headline font-black text-slate-900 mb-4">Syarat Registrasi Mitra (Seluruh Indonesia)</h3>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <strong className="text-slate-900 font-extrabold text-sm block mb-1">1. Identitas KTP</strong>
+                        <p className="text-xs text-slate-600">Fotokopi / Foto KTP asli yang difoto jelas lalu dikirim via WhatsApp.</p>
+                      </div>
+                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <strong className="text-slate-900 font-extrabold text-sm block mb-1">2. Pasfoto Terbaru</strong>
+                        <p className="text-xs text-slate-600">Pasfoto berwarna ukuran 4×6 sebanyak 1 lembar.</p>
+                      </div>
+                      <div className="bg-amber-50 p-5 rounded-2xl border-2 border-amber-400">
+                        <strong className="text-amber-900 font-extrabold text-sm block mb-1">3. Biaya Registrasi: Rp 1.550.000,-</strong>
+                        <p className="text-xs text-slate-700">Dibayarkan langsung ke Kasir atau transfer ke rekening resmi PT Samira Ali Wisata.</p>
+                      </div>
                     </div>
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                      <strong className="text-slate-900 font-extrabold text-sm block mb-1">2. Pasfoto Terbaru</strong>
-                      <p className="text-xs text-slate-600">Pasfoto berwarna ukuran 4×6 sebanyak 1 lembar.</p>
-                    </div>
-                    <div className="bg-amber-50 p-5 rounded-2xl border-2 border-amber-400">
-                      <strong className="text-amber-900 font-extrabold text-sm block mb-1">3. Biaya Registrasi: Rp 1.550.000,-</strong>
-                      <p className="text-xs text-slate-700">Dibayarkan langsung ke Kasir atau transfer ke rekening resmi PT Samira Ali Wisata.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
 
-              {activeTab === 'kit' && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-headline font-black text-slate-900 mb-4">Fasilitas Starter Kit Usaha Resmi Mitra</h3>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-300 flex items-center gap-3">
-                      <Shirt className="w-6 h-6 text-amber-700 shrink-0" />
-                      <span className="text-xs font-black text-slate-900">Baju Seragam Mitra Samira</span>
+                {activeTab === 'kit' && (
+                  <motion.div
+                    key="kit"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-4"
+                  >
+                    <h3 className="text-xl font-headline font-black text-slate-900 mb-4">Fasilitas Starter Kit Usaha Resmi Mitra</h3>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="bg-amber-50 p-4 rounded-2xl border border-amber-300 flex items-center gap-3">
+                        <Shirt className="w-6 h-6 text-amber-700 shrink-0" />
+                        <span className="text-xs font-black text-slate-900">Baju Seragam Mitra Samira</span>
+                      </div>
+                      <div className="bg-amber-50 p-4 rounded-2xl border border-amber-300 flex items-center gap-3">
+                        <FileText className="w-6 h-6 text-amber-700 shrink-0" />
+                        <span className="text-xs font-black text-slate-900">Spanduk Promosi Resmi</span>
+                      </div>
+                      <div className="bg-amber-50 p-4 rounded-2xl border border-amber-300 flex items-center gap-3">
+                        <BookOpen className="w-6 h-6 text-amber-700 shrink-0" />
+                        <span className="text-xs font-black text-slate-900">Brosur Cetak (1 Rim / 500 Lembar)</span>
+                      </div>
+                      <div className="bg-amber-50 p-4 rounded-2xl border border-amber-300 flex items-center gap-3">
+                        <IdCard className="w-6 h-6 text-amber-700 shrink-0" />
+                        <span className="text-xs font-black text-slate-900">ID Card Resmi & Kartu Nama</span>
+                      </div>
                     </div>
-                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-300 flex items-center gap-3">
-                      <FileText className="w-6 h-6 text-amber-700 shrink-0" />
-                      <span className="text-xs font-black text-slate-900">Spanduk Promosi Resmi</span>
-                    </div>
-                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-300 flex items-center gap-3">
-                      <BookOpen className="w-6 h-6 text-amber-700 shrink-0" />
-                      <span className="text-xs font-black text-slate-900">Brosur Cetak (1 Rim / 500 Lembar)</span>
-                    </div>
-                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-300 flex items-center gap-3">
-                      <IdCard className="w-6 h-6 text-amber-700 shrink-0" />
-                      <span className="text-xs font-black text-slate-900">ID Card Resmi & Kartu Nama</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
 
-              {activeTab === 'keamanan' && (
-                <div className="bg-red-50 border-2 border-red-400 p-6 rounded-2xl text-red-950 space-y-2">
-                  <h4 className="font-extrabold text-base flex items-center gap-2 text-red-900">
-                    <AlertTriangle className="w-5 h-5 text-red-600" /> PERINGATAN HUKUM KEAMANAN TRANSAKSI:
-                  </h4>
-                  <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                    Kami <strong>TIDAK BERTANGGUNG JAWAB</strong> apabila transaksi keuangan dilakukan di luar nomor rekening resmi perusahaan. Seluruh pembayaran registrasi kemitraan maupun pendaftaran DP jamaah dianggap sah hanya jika masuk ke Rekening Resmi Perusahaan <strong>a/n PT. SAMIRA ALI WISATA</strong>.
-                  </p>
-                </div>
-              )}
+                {activeTab === 'keamanan' && (
+                  <motion.div
+                    key="keamanan"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-red-50 border-2 border-red-400 p-6 rounded-2xl text-red-950 space-y-2"
+                  >
+                    <h4 className="font-extrabold text-base flex items-center gap-2 text-red-900">
+                      <AlertTriangle className="w-5 h-5 text-red-600" /> PERINGATAN HUKUM KEAMANAN TRANSAKSI:
+                    </h4>
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                      Kami <strong>TIDAK BERTANGGUNG JAWAB</strong> apabila transaksi keuangan dilakukan di luar nomor rekening resmi perusahaan. Seluruh pembayaran registrasi kemitraan maupun pendaftaran DP jamaah dianggap sah hanya jika masuk ke Rekening Resmi Perusahaan <strong>a/n PT. SAMIRA ALI WISATA</strong>.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Card>
 
           </div>
-        </section>
+        </motion.section>
 
-        {/* 8. Target Audience Grid */}
-        <section className="py-16 md:py-24 bg-white border-b">
+        {/* LAYER 7: Target Audience Grid Layer */}
+        <motion.section 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="py-16 md:py-24 bg-white border-b"
+        >
           <div className="container mx-auto px-4 md:px-6 max-w-6xl">
             <div className="text-center max-w-3xl mx-auto mb-12">
               <p className="text-amber-600 font-black uppercase tracking-widest text-xs mb-2">Terbuka Untuk Umum</p>
@@ -614,7 +713,15 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {targetAudiences.map((item, idx) => (
-                <div key={idx} className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex items-start gap-3.5 hover:border-amber-400 transition-colors shadow-xs">
+                <motion.div 
+                  key={idx}
+                  initial={{ opacity: 0, y: 25 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.07 }}
+                  whileHover={{ scale: 1.03, y: -4 }}
+                  className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex items-start gap-3.5 hover:border-amber-400 transition-colors shadow-xs"
+                >
                   <div className="p-3 bg-amber-100 rounded-xl border border-amber-300 shrink-0">
                     {item.icon}
                   </div>
@@ -622,14 +729,20 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                     <h3 className="font-headline font-extrabold text-sm text-slate-900 mb-1">{item.title}</h3>
                     <p className="text-xs text-slate-600 font-medium">{item.desc}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        {/* 9. Interactive FAQ Accordion */}
-        <section className="py-16 md:py-24 bg-slate-50 border-b">
+        {/* LAYER 8: Hal Yang Sering Ditanyakan (FAQ Accordion Layer) */}
+        <motion.section 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="py-16 md:py-24 bg-slate-50 border-b"
+        >
           <div className="container mx-auto px-4 md:px-6 max-w-4xl">
             <div className="text-center max-w-2xl mx-auto mb-10">
               <span className="bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full inline-block mb-3 shadow-sm border border-amber-300">
@@ -642,8 +755,12 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
 
             <div className="space-y-4">
               {faqs.map((faq, idx) => (
-                <div 
+                <motion.div 
                   key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.1 }}
                   onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
                   className="bg-white rounded-2xl border-2 border-slate-200/90 overflow-hidden shadow-sm cursor-pointer transition-all hover:border-amber-400"
                 >
@@ -651,19 +768,33 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
                     <strong className="font-extrabold text-sm sm:text-base text-slate-900">{faq.q}</strong>
                     <ChevronDown className={`w-5 h-5 text-amber-600 shrink-0 transition-transform ${expandedFaq === idx ? 'rotate-180' : ''}`} />
                   </div>
-                  {expandedFaq === idx && (
-                    <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-600 border-t border-slate-100 font-medium leading-relaxed bg-slate-50/50">
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
+                  <AnimatePresence>
+                    {expandedFaq === idx && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-600 border-t border-slate-100 font-medium leading-relaxed bg-slate-50/50"
+                      >
+                        {faq.a}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
               ))}
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        {/* 9.5. Running Marquee Airlines (Posisi Di Akhir Sebelum CTA) */}
-        <section className="py-14 md:py-20 bg-gradient-to-r from-amber-500/10 via-white to-amber-500/10 border-y border-amber-300 overflow-hidden relative">
+        {/* LAYER 9: Running Marquee Airlines Layer (Posisi Di Akhir Sebelum CTA) */}
+        <motion.section 
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="py-14 md:py-20 bg-gradient-to-r from-amber-500/10 via-white to-amber-500/10 border-y border-amber-300 overflow-hidden relative"
+        >
           <style jsx>{`
             @keyframes marqueeLeft {
               0% { transform: translateX(0%); }
@@ -776,10 +907,16 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
               ))}
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        {/* 10. High Impact Light CTA Banner */}
-        <section className="py-16 md:py-24 bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 text-slate-950 text-center relative overflow-hidden shadow-2xl">
+        {/* LAYER 10: High Impact Light CTA Banner Layer */}
+        <motion.section 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="py-16 md:py-24 bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 text-slate-950 text-center relative overflow-hidden shadow-2xl"
+        >
           <div className="container mx-auto px-4 md:px-6 max-w-4xl relative z-10">
             <span className="bg-slate-950 text-amber-300 text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full inline-block mb-4 shadow-md">
               ⚡ PENDAFTARAN MITRA BISA DILAKUKAN ONLINE 24/7
@@ -793,13 +930,15 @@ export default function KemitraanTemplate({ agent: providedAgent }: KemitraanTem
               Jangan lewatkan peluang bisnis syariah penuh keberkahan ini. Hubungi Konsultan Samira Travel sekarang dan kami siap membantu seluruh prosesnya!
             </p>
 
-            <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-slate-950 text-white font-black text-base sm:text-lg shadow-2xl hover:scale-105 hover:bg-white hover:text-slate-950 transition-all border border-amber-300">
-              <a href={waRegisterUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
-                <Send className="w-5 h-5 text-amber-400" /> DAFTAR KEMITRAAN VIA WA NOW <ChevronRight className="w-5 h-5" />
-              </a>
-            </Button>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
+              <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-slate-950 text-white font-black text-base sm:text-lg shadow-2xl hover:bg-white hover:text-slate-950 transition-all border border-amber-300">
+                <a href={waRegisterUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
+                  <Send className="w-5 h-5 text-amber-400" /> DAFTAR KEMITRAAN VIA WA NOW <ChevronRight className="w-5 h-5" />
+                </a>
+              </Button>
+            </motion.div>
           </div>
-        </section>
+        </motion.section>
 
       </main>
 
