@@ -23,6 +23,7 @@ import FinalCta from '@/components/sections/final-cta';
 import GallerySection from '@/components/sections/gallery-section';
 import WhyChooseUs from '@/components/sections/why-choose-us';
 import AirlinesSection from '@/components/sections/airlines-section';
+import AdPopupModal from '@/components/sections/ad-popup-modal';
 import GooeyNav from '@/components/ui/gooey-nav';
 import { Tenant, LandingPage, Section, SectionType } from '@/types/cms';
 import { Agent } from '@/lib/agents';
@@ -143,6 +144,8 @@ export default function DynamicHomeTemplate({
         return <SocialMediaSection key={section.sectionId} data={data} />;
       case 'airlines':
         return <AirlinesSection key={section.sectionId} agent={agentCompat} data={data} />;
+      case 'ad_popup':
+        return <AdPopupModal key={section.sectionId} agent={agentCompat} data={data} />;
       default:
         return null;
     }

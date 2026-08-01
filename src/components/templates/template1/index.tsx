@@ -18,6 +18,7 @@ import BuilderPromoBanner from '@/components/sections/builder-promo-banner';
 import GallerySection from '@/components/sections/gallery-section';
 import ProductKnowledgeSection from '@/components/sections/product-knowledge-section';
 import AirlinesSection from '@/components/sections/airlines-section';
+import AdPopupModal from '@/components/sections/ad-popup-modal';
 import Footer from '@/components/layout/footer';
 import GooeyNav from '@/components/ui/gooey-nav';
 import { Agent } from '@/lib/agents';
@@ -91,6 +92,9 @@ export default function Template1({ agent, sectionsData = {} }: Template1Props) 
 
       {/* 17. Footer */}
       <Footer agent={agent} />
+
+      {/* First Load Ad Popup Modal */}
+      <AdPopupModal agent={agent} data={sectionsData.ad_popup} />
 
       {/* 18. Floating Gooey Navigation */}
       <GooeyNav 

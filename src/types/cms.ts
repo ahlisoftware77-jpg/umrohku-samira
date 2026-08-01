@@ -147,7 +147,8 @@ export const SectionTypeSchema = z.enum([
   'flow',
   'social_media',
   'hotel_explanation',
-  'airlines'
+  'airlines',
+  'ad_popup'
 ]);
 export type SectionType = z.infer<typeof SectionTypeSchema>;
 

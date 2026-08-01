@@ -182,6 +182,7 @@ export default function EditorSidebar() {
     { type: 'contact', label: 'Kontak & Form Konsultasi' },
     { type: 'social_media', label: 'Media Sosial' },
     { type: 'airlines', label: 'Maskapai Penerbangan Resmi' },
+    { type: 'ad_popup', label: '📢 Iklan Popup (Awal Muat Halaman)' },
   ];
 
   // Render inputs dynamically based on section type
@@ -1691,6 +1692,105 @@ export default function EditorSidebar() {
                 value={activeSectionContent.description || ''} 
                 onChange={(e) => handleFieldChange('description', e.target.value)}
                 placeholder="Samira Travel bekerja sama dengan maskapai penerbangan..."
+              />
+            </div>
+          </div>
+        );
+
+      case 'ad_popup':
+        return (
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-primary mb-2">Penyuntingan Iklan Popup (Awal Muat Halaman)</h3>
+            
+            <div className="flex items-center justify-between p-3 bg-muted/40 rounded-xl border">
+              <div>
+                <Label className="font-bold text-xs">Status Iklan Popup</Label>
+                <p className="text-[11px] text-muted-foreground">Tampilkan iklan popup otomatis saat jamaah pertama kali membuka web.</p>
+              </div>
+              <input 
+                type="checkbox"
+                checked={activeSectionContent.enabled !== false}
+                onChange={(e) => handleFieldChange('enabled', e.target.checked)}
+                className="w-5 h-5 accent-amber-500 cursor-pointer"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Teks Lencana Promo (Badge)</Label>
+              <Input 
+                value={activeSectionContent.badgeText || ''} 
+                onChange={(e) => handleFieldChange('badgeText', e.target.value)} 
+                placeholder="🎁 PROMO SPESIAL HARI INI"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Judul Promo Iklan (Title)</Label>
+              <Textarea 
+                value={activeSectionContent.title || ''} 
+                onChange={(e) => handleFieldChange('title', e.target.value)} 
+                placeholder="PROMO SPESIAL KEBERANGKATAN UMRAH SAMIRA TRAVEL"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Deskripsi / Subtitle Promo</Label>
+              <Textarea 
+                value={activeSectionContent.subtitle || ''} 
+                onChange={(e) => handleFieldChange('subtitle', e.target.value)} 
+                placeholder="Dapatkan Potongan Harga Spesial & Reward Keberangkatan Rombongan Jamaah Hari Ini!"
+              />
+            </div>
+
+            {/* Banner Image Upload */}
+            <div className="space-y-2">
+              <Label>Gambar Poster Promo / Banner Iklan</Label>
+              {activeSectionContent.imageUrl && (
+                <div className="relative aspect-video rounded-lg overflow-hidden border bg-muted mb-2">
+                  <img src={activeSectionContent.imageUrl} alt="Banner Iklan" className="w-full h-full object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => handleFieldChange('imageUrl', '')}
+                    className="absolute top-2 right-2 bg-destructive text-white text-[10px] px-2 py-0.5 rounded font-bold"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input 
+                  value={activeSectionContent.imageUrl || ''} 
+                  onChange={(e) => handleFieldChange('imageUrl', e.target.value)} 
+                  placeholder="/images/NEWLOGO-MILAD-10.png atau URL Gambar"
+                  className="text-xs"
+                />
+                <Button 
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openMediaPicker((url) => handleFieldChange('imageUrl', url))}
+                  className="shrink-0 text-xs font-bold"
+                >
+                  Unggah
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Teks Tombol CTA</Label>
+              <Input 
+                value={activeSectionContent.buttonText || ''} 
+                onChange={(e) => handleFieldChange('buttonText', e.target.value)} 
+                placeholder="Klaim Promo WhatsApp Now"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Link Tujuan Tombol (URL Target / WA)</Label>
+              <Input 
+                value={activeSectionContent.targetUrl || ''} 
+                onChange={(e) => handleFieldChange('targetUrl', e.target.value)} 
+                placeholder="https://api.whatsapp.com/send?phone=..."
               />
             </div>
           </div>

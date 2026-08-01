@@ -21,6 +21,7 @@ import FinalCta from '@/components/sections/final-cta';
 import GallerySection from '@/components/sections/gallery-section';
 import WhyChooseUs from '@/components/sections/why-choose-us';
 import AirlinesSection from '@/components/sections/airlines-section';
+import AdPopupModal from '@/components/sections/ad-popup-modal';
 import { Agent } from '@/lib/agents';
 import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Trash2, EyeOff } from 'lucide-react';
@@ -138,6 +139,8 @@ export default function EditorCanvas() {
         return <ProductKnowledgeSection agent={agentCompat} data={data} />;
       case 'airlines':
         return <AirlinesSection agent={agentCompat} data={data} />;
+      case 'ad_popup':
+        return <AdPopupModal agent={agentCompat} data={data} isPreview={true} />;
       case 'final-cta':
         return <FinalCta agent={agentCompat} data={data} />;
       default:
