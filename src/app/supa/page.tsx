@@ -295,6 +295,7 @@ export default function SuperAdminPage() {
   const [newServerSenderId, setNewServerSenderId] = useState('');
   const [newServerAppId, setNewServerAppId] = useState('');
   const [newServerStatus, setNewServerStatus] = useState<'active' | 'full' | 'maintenance'>('active');
+  const [rawFirebaseConfig, setRawFirebaseConfig] = useState('');
 
   // Connection testing state
   const [isTestingConn, setIsTestingConn] = useState(false);
@@ -2239,6 +2240,43 @@ service cloud.firestore {
     }
   };
 
+  // Helper to parse Firebase Config block and auto-fill input fields
+  const handleParseFirebaseConfig = (rawText: string) => {
+    try {
+      const extractKey = (key: string, text: string): string => {
+        const regex = new RegExp(`['"]?${key}['"]?\\s*:\\s*['"]([^'"]+)['"]`, 'i');
+        const match = regex.exec(text);
+        return match ? match[1].trim() : '';
+      };
+
+      const apiKey = extractKey('apiKey', rawText);
+      const authDomain = extractKey('authDomain', rawText);
+      const projectId = extractKey('projectId', rawText);
+      const storageBucket = extractKey('storageBucket', rawText);
+      const messagingSenderId = extractKey('messagingSenderId', rawText);
+      const appId = extractKey('appId', rawText);
+
+      if (apiKey) setNewServerApiKey(apiKey);
+      if (authDomain) setNewServerAuthDomain(authDomain);
+      if (projectId) {
+        setNewServerProjectId(projectId);
+        if (!newServerName) {
+          setNewServerName(`Server Cluster - ${projectId}`);
+        }
+      }
+      if (storageBucket) setNewServerStorageBucket(storageBucket);
+      if (messagingSenderId) setNewServerSenderId(messagingSenderId);
+      if (appId) setNewServerAppId(appId);
+
+      if (apiKey || projectId) {
+        return true;
+      }
+    } catch (e) {
+      console.warn("Failed parsing Firebase config text:", e);
+    }
+    return false;
+  };
+
   // Create Database Cluster Server (Fail-Safe)
   const handleCreateDatabaseServer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2283,6 +2321,7 @@ service cloud.firestore {
       setNewServerStorageBucket('');
       setNewServerSenderId('');
       setNewServerAppId('');
+      setRawFirebaseConfig('');
       alert(`Server database '${newServerName}' berhasil ditambahkan ke cluster!`);
     } catch (err: any) {
       console.error(err);
@@ -3912,7 +3951,18 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
 
                   <Button 
                     type="button" 
-                    onClick={() => setIsAddServerOpen(true)}
+                    onClick={() => {
+                      setIsAddServerOpen(true);
+                      setNewServerName('');
+                      setNewServerApiKey('');
+                      setNewServerAuthDomain('');
+                      setNewServerProjectId('');
+                      setNewServerStorageBucket('');
+                      setNewServerSenderId('');
+                      setNewServerAppId('');
+                      setRawFirebaseConfig('');
+                      setTestResult(null);
+                    }}
                     className="bg-primary text-white hover:bg-accent hover:text-accent-foreground font-bold rounded-full px-5 h-9 text-xs flex items-center gap-1.5 shadow-sm"
                   >
                     <PlusCircle className="h-4 w-4" /> Tambah Server DB Baru
@@ -4133,6 +4183,22 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   </CardHeader>
                   
                   <form onSubmit={handleCreateDatabaseServer} className="py-4 space-y-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold text-slate-700">Paste Firebase Config (JSON / JS Object)</Label>
+                      <textarea
+                        value={rawFirebaseConfig}
+                        onChange={(e) => {
+                          setRawFirebaseConfig(e.target.value);
+                          handleParseFirebaseConfig(e.target.value);
+                        }}
+                        placeholder={`Paste objek config Firebase di sini untuk mengisi otomatis:\n\nconst firebaseConfig = {\n  apiKey: "AIzaSy...",\n  authDomain: "...",\n  projectId: "..."\n};`}
+                        className="w-full min-h-[90px] text-xs font-mono p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary leading-normal placeholder:text-slate-400"
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        💡 Salin langsung dari Firebase Console &gt; Project Settings &gt; Web App SDK config.
+                      </p>
+                    </div>
+
                     <div className="space-y-1">
                       <Label className="text-xs font-bold">Nama Server Cluster</Label>
                       <Input value={newServerName} onChange={(e) => setNewServerName(e.target.value)} placeholder="Server Cluster 2 - Asia" required />
