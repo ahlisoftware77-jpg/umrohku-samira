@@ -234,8 +234,8 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
   }, [galleryItems, activeCategory, searchQuery]);
 
   const handlePrev = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (isFullPage) {
+    if (e) e.stopPropagation();
+    if (isLightboxOpen) {
       if (selectedIndex === null || filteredItems.length === 0) return;
       setSelectedIndex((prev) => (prev !== null ? (prev - 1 + filteredItems.length) % filteredItems.length : 0));
     } else {
@@ -244,8 +244,8 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
   };
 
   const handleNext = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (isFullPage) {
+    if (e) e.stopPropagation();
+    if (isLightboxOpen) {
       if (selectedIndex === null || filteredItems.length === 0) return;
       setSelectedIndex((prev) => (prev !== null ? (prev + 1) % filteredItems.length : 0));
     } else {
@@ -292,9 +292,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
             onMouseLeave={() => setIsAutoPlaying(true)}
           >
             {/* Main Interactive Slideshow Card */}
-            <div className="relative aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.2/1] rounded-3xl overflow-hidden border-2 border-amber-400 shadow-none bg-slate-950 group cursor-pointer"
-                 onClick={() => setSelectedIndex(slideIndex)}
-            >
+            <div className="relative aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.2/1] rounded-3xl overflow-hidden border-2 border-amber-400 shadow-none bg-slate-950 group">
               <AnimatePresence mode="wait">
                 {currentSlide && (
                   <motion.div
@@ -303,7 +301,8 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.96 }}
                     transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
-                    className="absolute inset-0"
+                    className="absolute inset-0 cursor-pointer"
+                    onClick={() => setSelectedIndex(slideIndex)}
                   >
                     <Image
                       src={currentSlide.image}
@@ -315,7 +314,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                     />
 
                     {/* Slide Caption Overlay (100% Transparent Container) */}
-                    <div className="absolute bottom-3 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent p-0">
+                    <div className="absolute bottom-3 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent p-0 pointer-events-none">
                       <div className="max-w-2xl">
                         <span className="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-0.5 rounded-full mb-1 inline-block">
                           ✨ {currentSlide.title}
@@ -325,11 +324,14 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
                         <span className="bg-slate-950/80 text-amber-300 text-xs font-black px-3 py-1 rounded-full border border-amber-400/40">
                           {slideIndex + 1} / {galleryItems.length} Foto
                         </span>
-                        <div className="bg-slate-950/80 text-white p-2 rounded-full border border-white/20 hover:bg-amber-400 hover:text-slate-950 transition-colors">
+                        <div 
+                          onClick={(e) => { e.stopPropagation(); setSelectedIndex(slideIndex); }}
+                          className="bg-slate-950/80 text-white p-2 rounded-full border border-white/20 hover:bg-amber-400 hover:text-slate-950 transition-colors cursor-pointer"
+                        >
                           <Maximize2 className="w-4 h-4" />
                         </div>
                       </div>
@@ -341,8 +343,12 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
               {/* Prev / Next Slider Arrows */}
               <button
                 type="button"
-                onClick={handlePrev}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/70 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-80 group-hover:opacity-100 cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSlideIndex((prev) => (prev - 1 + galleryItems.length) % galleryItems.length);
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/80 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-90 hover:scale-110 cursor-pointer"
                 aria-label="Foto Sebelumnya"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -350,8 +356,12 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
 
               <button
                 type="button"
-                onClick={handleNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/70 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-80 group-hover:opacity-100 cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSlideIndex((prev) => (prev + 1) % galleryItems.length);
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/80 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-90 hover:scale-110 cursor-pointer"
                 aria-label="Foto Selanjutnya"
               >
                 <ChevronRight className="w-6 h-6" />
