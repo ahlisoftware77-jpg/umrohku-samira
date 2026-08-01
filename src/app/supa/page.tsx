@@ -81,6 +81,8 @@ export default function SuperAdminPage() {
   const [selectedMediaTenant, setSelectedMediaTenant] = useState('all');
   const [isDeletingMedia, setIsDeletingMedia] = useState<string | null>(null);
   const [previewImageModal, setPreviewImageModal] = useState<MediaImage | null>(null);
+  const [selectedImages, setSelectedImages] = useState<(MediaImage & { dbServerId?: string })[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   // Builder Plans state
   const [builderPlans, setBuilderPlans] = useState<BuilderPlan[]>([]);
@@ -445,6 +447,7 @@ service cloud.firestore {
   // Helper to load all uploaded images from all cluster database servers
   const loadAllAdminImages = async () => {
     try {
+      setSelectedImages([]);
       const dbsToQuery = [{ dbInstance: db, serverId: 'default' }];
       for (const s of dbServers) {
         if (s.status === 'active') {
@@ -498,6 +501,89 @@ service cloud.firestore {
       alert('Gagal menghapus gambar: ' + (err.message || 'Terjadi kesalahan'));
     } finally {
       setIsDeletingMedia(null);
+    }
+  };
+
+  // Selection Handlers for Bulk Actions
+  const handleToggleSelectImage = (img: MediaImage & { dbServerId?: string }) => {
+    setSelectedImages(prev => {
+      if (prev.some(si => si.imageId === img.imageId)) {
+        return prev.filter(si => si.imageId !== img.imageId);
+      } else {
+        return [...prev, img];
+      }
+    });
+  };
+
+  const filteredImages = allImagesList.filter(img => {
+    const tenantExists = tenants.some(t => t.tenantId === img.tenantId);
+    const matchesTenant = 
+      selectedMediaTenant === 'all' ? true :
+      selectedMediaTenant === 'orphaned' ? !tenantExists :
+      img.tenantId === selectedMediaTenant;
+    const matchesSearch = 
+      img.imageId.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
+      img.tenantId.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
+      (img.category && img.category.toLowerCase().includes(mediaSearchQuery.toLowerCase())) ||
+      (img.format && img.format.toLowerCase().includes(mediaSearchQuery.toLowerCase()));
+    return matchesTenant && matchesSearch;
+  });
+
+  const handleToggleSelectAll = () => {
+    const allSelected = filteredImages.length > 0 && filteredImages.every(img => selectedImages.some(si => si.imageId === img.imageId));
+    if (allSelected) {
+      setSelectedImages(prev => prev.filter(si => !filteredImages.some(fi => fi.imageId === si.imageId)));
+    } else {
+      setSelectedImages(prev => {
+        const newSelection = [...prev];
+        filteredImages.forEach(fi => {
+          if (!newSelection.some(ns => ns.imageId === fi.imageId)) {
+            newSelection.push(fi);
+          }
+        });
+        return newSelection;
+      });
+    }
+  };
+
+  const handleBulkDeleteImages = async () => {
+    if (selectedImages.length === 0) return;
+    const confirmMsg = `Apakah Anda yakin ingin MENGHAPUS ${selectedImages.length} berkas gambar terpilih secara permanen?\n\nTindakan ini akan menghapusnya dari storage Cloudinary dan records database server.`;
+    if (!confirm(confirmMsg)) return;
+
+    setIsBulkDeleting(true);
+    let successCount = 0;
+    let failCount = 0;
+    const successfullyDeletedIds: string[] = [];
+    let freedBytes = 0;
+
+    for (const img of selectedImages) {
+      try {
+        const activeServerConfig = dbServers.find(s => s.serverId === img.dbServerId);
+        const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+        await cloudinaryService.deleteImage(img.imageId, img.cloudinaryPublicId, img.secureUrl, targetDb);
+        successfullyDeletedIds.push(img.imageId);
+        freedBytes += img.sizeBytes || 350000;
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to delete image ${img.imageId}:`, err);
+        failCount++;
+      }
+    }
+
+    setAllImagesList(prev => prev.filter(i => !successfullyDeletedIds.includes(i.imageId)));
+    setTotalImagesCount(prev => Math.max(0, prev - successCount));
+    const freedMb = freedBytes / (1024 * 1024);
+    setCloudinaryStorageMb(prev => Math.max(0, parseFloat(prev) - freedMb).toFixed(1));
+    
+    setSelectedImages(prev => prev.filter(i => !successfullyDeletedIds.includes(i.imageId)));
+    setIsBulkDeleting(false);
+
+    if (failCount > 0) {
+      alert(`Selesai menghapus gambar. Berhasil: ${successCount}, Gagal: ${failCount}.`);
+    } else {
+      alert(`✅ Berhasil menghapus ${successCount} berkas gambar terpilih secara permanen!`);
     }
   };
 
@@ -2440,7 +2526,54 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     </option>
                   ))}
                 </select>
-              </div>
+              </div>              {/* Bulk Action Toolbar */}
+              {allImagesList.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 mb-6 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleToggleSelectAll}
+                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 bg-white border rounded-xl px-3.5 py-2 hover:bg-slate-50 transition-colors shadow-xs"
+                    >
+                      {filteredImages.length > 0 && filteredImages.every(img => selectedImages.some(si => si.imageId === img.imageId)) ? (
+                        <>
+                          <CheckSquare className="h-4 w-4 text-emerald-600" />
+                          Batal Pilih Semua ({filteredImages.length})
+                        </>
+                      ) : (
+                        <>
+                          <Square className="h-4 w-4 text-slate-400" />
+                          Pilih Semua di Filter ({filteredImages.length})
+                        </>
+                      )}
+                    </button>
+                    {selectedImages.length > 0 && (
+                      <span className="text-xs font-semibold text-slate-500 bg-slate-200/60 px-2.5 py-1 rounded-lg">
+                        {selectedImages.length} gambar terpilih
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedImages.length > 0 && (
+                    <Button
+                      onClick={handleBulkDeleteImages}
+                      disabled={isBulkDeleting}
+                      className="w-full sm:w-auto rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-1.5 h-10 px-4 shadow-sm"
+                    >
+                      {isBulkDeleting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Menghapus ({selectedImages.length})...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4" />
+                          Hapus {selectedImages.length} Gambar Terpilih
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {/* Media Grid */}
               {allImagesList.length === 0 ? (
@@ -2454,94 +2587,98 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {allImagesList
-                    .filter(img => {
-                      const tenantExists = tenants.some(t => t.tenantId === img.tenantId);
-                      const matchesTenant = 
-                        selectedMediaTenant === 'all' ? true :
-                        selectedMediaTenant === 'orphaned' ? !tenantExists :
-                        img.tenantId === selectedMediaTenant;
-                      const matchesSearch = 
-                        img.imageId.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
-                        img.tenantId.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
-                        (img.category && img.category.toLowerCase().includes(mediaSearchQuery.toLowerCase())) ||
-                        (img.format && img.format.toLowerCase().includes(mediaSearchQuery.toLowerCase()));
-                      return matchesTenant && matchesSearch;
-                    })
-                    .map((img) => (
+                  {filteredImages.map((img) => (
+                    <div 
+                      key={img.imageId} 
+                      className="group relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col justify-between"
+                    >
+                      {/* Thumbnail Container */}
                       <div 
-                        key={img.imageId} 
-                        className="group relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col justify-between"
+                        className="relative aspect-square w-full bg-slate-950 overflow-hidden group"
                       >
-                        {/* Thumbnail Container */}
-                        <div 
+                        <img 
                           onClick={() => setPreviewImageModal(img)}
-                          className="relative aspect-square w-full bg-slate-950 cursor-pointer overflow-hidden group-hover:opacity-90 transition-opacity"
-                        >
-                          <img 
-                            src={img.secureUrl} 
-                            alt={img.imageId} 
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-                          />
-                          
-                          {/* Category & Format Badges */}
-                          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                            <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-900/80 backdrop-blur-md text-amber-300 px-2 py-0.5 rounded-md border border-white/10">
-                              {img.category || 'media'}
-                            </span>
-                            <span className="text-[9px] font-bold uppercase bg-black/60 text-white px-1.5 py-0.5 rounded-md w-fit">
-                              {img.format || 'img'}
-                            </span>
-                          </div>
-
-                          {/* Size Badge */}
-                          <span className="absolute bottom-2 right-2 text-[9px] font-bold bg-slate-950/80 text-emerald-400 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
-                            {((img.sizeBytes || 350000) / 1024).toFixed(0)} KB
+                          src={img.secureUrl} 
+                          alt={img.imageId} 
+                          className="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105" 
+                        />
+                        
+                        {/* Selection Checkbox (Absolute Overlaid) */}
+                        <div className="absolute top-2 right-2 z-20">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleSelectImage(img);
+                            }}
+                            className="h-7 w-7 rounded-lg bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-black/85 transition-colors shadow-sm"
+                            title={selectedImages.some(si => si.imageId === img.imageId) ? "Batal pilih gambar" : "Pilih gambar"}
+                          >
+                            {selectedImages.some(si => si.imageId === img.imageId) ? (
+                              <CheckSquare className="h-4.5 w-4.5 text-emerald-400" />
+                            ) : (
+                              <Square className="h-4.5 w-4.5 text-white/60 hover:text-white" />
+                            )}
+                          </button>
+                        </div>
+                        
+                        {/* Category & Format Badges */}
+                        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                          <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-900/80 backdrop-blur-md text-amber-300 px-2 py-0.5 rounded-md border border-white/10">
+                            {img.category || 'media'}
+                          </span>
+                          <span className="text-[9px] font-bold uppercase bg-black/60 text-white px-1.5 py-0.5 rounded-md w-fit">
+                            {img.format || 'img'}
                           </span>
                         </div>
 
-                        {/* Card Footer Details */}
-                        <div className="p-2.5 bg-slate-900 text-white flex flex-col gap-1.5 border-t border-slate-800">
-                          {tenants.some(t => t.tenantId === img.tenantId) ? (
-                            <p className="text-[10px] font-bold text-amber-300 truncate" title={img.tenantId}>
-                              📌 {tenants.find(t => t.tenantId === img.tenantId)?.subdomain || img.tenantId}
-                            </p>
-                          ) : (
-                            <p className="text-[10px] font-bold text-red-400 truncate flex items-center gap-1.5" title={`${img.tenantId} (Tenant tidak terdaftar)`}>
-                              <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0 animate-pulse" />
-                              Tidak Terhubung ({img.tenantId.substring(0, 8)}...)
-                            </p>
-                          )}
+                        {/* Size Badge */}
+                        <span className="absolute bottom-2 right-2 text-[9px] font-bold bg-slate-950/80 text-emerald-400 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
+                          {((img.sizeBytes || 350000) / 1024).toFixed(0)} KB
+                        </span>
+                      </div>
 
-                          <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-800/60">
-                            <button
-                              onClick={() => window.open(img.secureUrl, '_blank')}
-                              className="text-[10px] text-slate-300 hover:text-white flex items-center gap-1 font-medium"
-                              title="Buka gambar full"
-                            >
-                              <ExternalLink className="h-3 w-3" /> Full
-                            </button>
+                      {/* Card Footer Details */}
+                      <div className="p-2.5 bg-slate-900 text-white flex flex-col gap-1.5 border-t border-slate-800">
+                        {tenants.some(t => t.tenantId === img.tenantId) ? (
+                          <p className="text-[10px] font-bold text-amber-300 truncate" title={img.tenantId}>
+                            📌 {tenants.find(t => t.tenantId === img.tenantId)?.subdomain || img.tenantId}
+                          </p>
+                        ) : (
+                          <p className="text-[10px] font-bold text-red-400 truncate flex items-center gap-1.5" title={`${img.tenantId} (Tenant tidak terdaftar)`}>
+                            <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0 animate-pulse" />
+                            Tidak Terhubung ({img.tenantId.substring(0, 8)}...)
+                          </p>
+                        )}
 
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              disabled={isDeletingMedia === img.imageId}
-                              onClick={() => handleDeleteImageFromAdmin(img)}
-                              className="h-6 px-2 text-[10px] font-bold text-red-400 hover:bg-red-950/60 hover:text-red-300 rounded-lg flex items-center gap-1"
-                              title="Hapus gambar dari Cloudinary & Storage"
-                            >
-                              {isDeletingMedia === img.imageId ? (
-                                <Loader2 className="h-3 w-3 animate-spin text-red-400" />
-                              ) : (
-                                <>
-                                  <Trash2 className="h-3 w-3" /> Hapus
-                                </>
-                              )}
-                            </Button>
-                          </div>
+                        <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-800/60">
+                          <button
+                            onClick={() => window.open(img.secureUrl, '_blank')}
+                            className="text-[10px] text-slate-300 hover:text-white flex items-center gap-1 font-medium"
+                            title="Buka gambar full"
+                          >
+                            <ExternalLink className="h-3 w-3" /> Full
+                          </button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={isDeletingMedia === img.imageId}
+                            onClick={() => handleDeleteImageFromAdmin(img)}
+                            className="h-6 px-2 text-[10px] font-bold text-red-400 hover:bg-red-950/60 hover:text-red-300 rounded-lg flex items-center gap-1"
+                            title="Hapus gambar dari Cloudinary & Storage"
+                          >
+                            {isDeletingMedia === img.imageId ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-red-400" />
+                            ) : (
+                              <>
+                                <Trash2 className="h-3 w-3" /> Hapus
+                              </>
+                            )}
+                          </Button>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
               )}
             </Card>
