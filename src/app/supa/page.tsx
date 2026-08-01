@@ -312,6 +312,8 @@ export default function SuperAdminPage() {
   const [isPurgingOrphans, setIsPurgingOrphans] = useState(false);
   const [isRestoringOrphans, setIsRestoringOrphans] = useState(false);
   const [orphansSearchQuery, setOrphansSearchQuery] = useState('');
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [syncTargetServerId, setSyncTargetServerId] = useState('assigned');
 
   // View 2 (Cluster DB Content Checker) State
   const [selectedView2ServerId, setSelectedView2ServerId] = useState('');
@@ -2018,15 +2020,13 @@ service cloud.firestore {
     }
   };
 
-  // Move Misplaced Contents (Sisa Migrasi) to Target Cluster DB and Purge Old Copy
-  const handleSyncMisplacedContents = async () => {
+  // Move Misplaced Contents (Sisa Migrasi) to Selected DB Server and Purge Old Copy
+  const handleSyncMisplacedContents = async (targetServerSelection: string) => {
     const misplacedItems = orphanedContents.filter(i => i.status === 'misplaced');
     if (misplacedItems.length === 0) {
       alert('Tidak ada dokumen sisa migrasi yang perlu dipindahkan.');
       return;
     }
-
-    if (!confirm(`Apakah Anda yakin ingin memindahkan ${misplacedItems.length} dokumen sisa migrasi ke Database Cluster tujuan, lalu membersihkan salinan lamanya?`)) return;
 
     try {
       setIsPurgingOrphans(true);
@@ -2034,12 +2034,19 @@ service cloud.firestore {
 
       for (const item of misplacedItems) {
         try {
-          // Resolve target cluster DB instance
-          const activeTenantInfo = tenants.find(t => t.tenantId === item.tenantId || t.subdomain === item.tenantId);
-          const targetServerConfig = dbServers.find(s => s.serverId === activeTenantInfo?.dbServerId);
-          const targetDbInstance = targetServerConfig 
-            ? getDynamicFirebaseInstance(targetServerConfig).db 
-            : db;
+          let resolvedServerId = 'default';
+          if (targetServerSelection === 'assigned') {
+            const activeTenantInfo = tenants.find(t => t.tenantId === item.tenantId || t.subdomain === item.tenantId || t.email === item.tenantId);
+            resolvedServerId = activeTenantInfo?.dbServerId || 'default';
+          } else {
+            resolvedServerId = targetServerSelection;
+          }
+
+          // Resolve target DB instance
+          const targetServerConfig = dbServers.find(s => s.serverId === resolvedServerId);
+          const targetDbInstance = resolvedServerId === 'default' 
+            ? db 
+            : (targetServerConfig ? getDynamicFirebaseInstance(targetServerConfig).db : db);
 
           // 1. Copy document to Target Cluster DB
           const targetDocRef = doc(targetDbInstance, 'contents', item.docId);
@@ -2052,16 +2059,19 @@ service cloud.firestore {
             updatedAt: new Date(),
           }, { merge: true });
 
-          // 2. Delete old copy from source DB (e.g. DB Utama)
-          await deleteDoc(doc(item.instanceDb, 'contents', item.docId));
+          // 2. Delete old copy from source DB if they are different database instances
+          if (targetDbInstance !== item.instanceDb) {
+            await deleteDoc(doc(item.instanceDb, 'contents', item.docId));
+          }
           successCount++;
         } catch (e) {
           console.warn('Failed moving misplaced content:', item.docId, e);
         }
       }
 
-      alert(`✅ Berhasil memindahkan & merapikan ${successCount} dari ${misplacedItems.length} dokumen konten ke Server Database Cluster tujuan.`);
-      // Refresh scan
+      setIsSyncModalOpen(false);
+      await handleScanOrphanedContents();
+      alert(`✅ Berhasil memindahkan & merapikan ${successCount} dari ${misplacedItems.length} dokumen konten ke server database tujuan.`);
     } catch (err: any) {
       console.error('Failed syncing misplaced contents:', err);
       alert('Gagal memindahkan dokumen sisa migrasi.');
@@ -3623,6 +3633,79 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     </Button>
                   </div>
                 </Card>
+            {/* Modal Dialog Select Sync Destination Database */}
+            {isSyncModalOpen && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <Card className="w-full max-w-md shadow-2xl rounded-3xl bg-white border-none p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+                  <CardHeader className="px-0 pt-0 border-b pb-4">
+                    <CardTitle className="text-lg font-headline font-bold text-primary flex items-center gap-2">
+                      <ArrowRightLeft className="h-5 w-5 text-indigo-600" />
+                      Pilih Tujuan Pemindahan Sisa Migrasi
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Tentukan ke server database mana dokumen sisa migrasi (misplaced) ini akan dipindahkan secara massal.
+                    </CardDescription>
+                  </CardHeader>
+
+                  <div className="space-y-4 py-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-slate-700">Server Database Tujuan:</Label>
+                      <select
+                        value={syncTargetServerId}
+                        onChange={(e) => setSyncTargetServerId(e.target.value)}
+                        className="bg-white border rounded-xl px-3 py-2 text-xs font-semibold text-primary focus:outline-none focus:ring-1 focus:ring-primary w-full shadow-xs"
+                      >
+                        <option value="assigned">🚀 Server Database Cluster Default Tenant (Otomatis)</option>
+                        <option value="default">🖥️ Server Utama (landing-umroh)</option>
+                        {dbServers.map(s => (
+                          <option key={s.serverId} value={s.serverId}>
+                            📦 {s.name} ({s.projectId})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl text-[11px] text-indigo-900 leading-normal space-y-1">
+                      <p className="font-bold flex items-center gap-1">
+                        💡 Catatan Pemindahan:
+                      </p>
+                      <ul className="list-disc pl-4 space-y-0.5 text-indigo-950 font-medium">
+                        <li>Dokumen akan disalin ke database tujuan yang Anda pilih.</li>
+                        <li>Salinan dokumen lama di database asal akan dihapus secara otomatis demi kebersihan data (*zero redundancy*).</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 justify-end pt-4 border-t">
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      className="rounded-full text-xs font-bold" 
+                      onClick={() => setIsSyncModalOpen(false)}
+                      disabled={isPurgingOrphans}
+                    >
+                      Batal
+                    </Button>
+                    <Button 
+                      type="button"
+                      onClick={() => handleSyncMisplacedContents(syncTargetServerId)}
+                      disabled={isPurgingOrphans}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-bold text-xs px-5 shadow-md flex items-center gap-1.5"
+                    >
+                      {isPurgingOrphans ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Memproses...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          Pindahkan Sekarang
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </Card>
               </div>
             )}
 
@@ -3874,10 +3957,13 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                   {orphanedContents.some(i => i.status === 'misplaced') && (
                     <Button 
                       type="button"
-                      onClick={handleSyncMisplacedContents} 
+                      onClick={() => {
+                        setIsSyncModalOpen(true);
+                        setSyncTargetServerId('assigned');
+                      }}
                       disabled={isPurgingOrphans}
                       className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-xs px-4 h-9 flex items-center gap-2 shadow-md"
-                      title="Pindahkan seluruh dokumen sisa migrasi ke Server Cluster terhubung lalu bersihkan salinan di DB Utama"
+                      title="Pindahkan seluruh dokumen sisa migrasi ke Server Cluster pilihan lalu bersihkan salinan di database asal"
                     >
                       {isPurgingOrphans ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}
                       Pindahkan Sisa Migrasi ({orphanedContents.filter(i => i.status === 'misplaced').length})
