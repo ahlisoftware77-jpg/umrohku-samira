@@ -26,13 +26,13 @@ export default function Footer({ agent: providedAgent }: FooterProps) {
   const prefix = agentSlug === 'default' ? '' : `/${agentSlug}`;
   
   return (
-    <footer className="bg-primary text-primary-foreground overflow-hidden w-full max-w-full">
+    <footer className="bg-primary text-primary-foreground overflow-hidden w-full max-w-full pb-24 sm:pb-12">
       <div className="container mx-auto py-10 md:py-16 px-4 max-w-full overflow-hidden">
         <motion.div 
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-8"
         >
           <div className="space-y-4 text-center sm:text-left">
@@ -110,15 +110,21 @@ export default function Footer({ agent: providedAgent }: FooterProps) {
           </div>
         </motion.div>
         
-        <motion.div 
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.5, delay: 0.5 }}
-          className="mt-12 border-t border-primary-foreground/20 pt-6 text-center text-[10px] md:text-sm text-primary-foreground/60"
+        <div 
+          className="mt-10 sm:mt-12 border-t border-white/20 pt-6 text-center text-xs md:text-sm text-white/90 font-medium"
         >
-          <p>&copy; {year} SAMIRA. Dibuat oleh <a href="https://yadikomputer.my.id" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors font-medium">Yadikomputer</a>.</p>
-        </motion.div>
+          <p className="leading-relaxed">
+            &copy; {year} SAMIRA TRAVEL. Dibuat & Dikembangkan oleh{' '}
+            <a 
+              href="https://yadikomputer.my.id" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-amber-300 font-black hover:text-amber-200 underline decoration-amber-300/50 underline-offset-4 transition-colors"
+            >
+              Yadi Komputer
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );
