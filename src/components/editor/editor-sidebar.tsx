@@ -1940,87 +1940,105 @@ export default function EditorSidebar() {
                   <div 
                     key={sec.sectionId}
                     onClick={() => setActiveSectionId(sec.sectionId)}
-                    className="flex items-center justify-between p-2.5 sm:p-3 bg-muted/40 hover:bg-muted/80 border rounded-xl cursor-pointer transition-all duration-200 group"
+                    className={`p-3 bg-white hover:bg-slate-50 border rounded-2xl cursor-pointer transition-all duration-200 shadow-xs space-y-2.5 ${
+                      activeSectionId === sec.sectionId ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
+                    }`}
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-md shrink-0">
-                        #{idx + 1}
-                      </span>
-                      <span className="text-xs sm:text-sm font-semibold text-primary truncate">{getSectionLabel(sec.type)}</span>
+                    {/* Top Row: Section Index & Full Un-truncated Title */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[11px] font-extrabold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md shrink-0">
+                          #{idx + 1}
+                        </span>
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+                          {getSectionLabel(sec.type)}
+                        </span>
+                      </div>
+                      
+                      {sec.isHidden && (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full shrink-0">
+                          Disembunyikan
+                        </span>
+                      )}
                     </div>
-                    
-                    <div className="flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                      {/* Move Up Arrow Button */}
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        disabled={idx === 0}
-                        className="h-7 w-7 text-slate-700 hover:bg-slate-200 disabled:opacity-20 disabled:hover:bg-transparent"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (idx > 0) reorderSections(idx, idx - 1);
-                        }}
-                        title="Pindahkan Ke Atas"
-                      >
-                        <ChevronUp className="h-4 w-4 stroke-[2.5]" />
-                      </Button>
 
-                      {/* Move Down Arrow Button */}
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        disabled={idx === sections.length - 1}
-                        className="h-7 w-7 text-slate-700 hover:bg-slate-200 disabled:opacity-20 disabled:hover:bg-transparent"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (idx < sections.length - 1) reorderSections(idx, idx + 1);
-                        }}
-                        title="Pindahkan Ke Bawah"
-                      >
-                        <ChevronDown className="h-4 w-4 stroke-[2.5]" />
-                      </Button>
+                    {/* Bottom Row: Controls & Up/Down Action Buttons */}
+                    <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 flex-wrap gap-1">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Posisi & Aksi:</span>
+                      
+                      <div className="flex items-center gap-1">
+                        {/* Move Up Arrow Button */}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          disabled={idx === 0}
+                          className="h-7 px-2 text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-25 shadow-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (idx > 0) reorderSections(idx, idx - 1);
+                          }}
+                          title="Pindahkan Ke Atas"
+                        >
+                          <ChevronUp className="h-3.5 w-3.5 mr-0.5 text-slate-800 stroke-[3]" /> Ke Atas
+                        </Button>
 
-                      {/* Hide / Show Button */}
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7 text-muted-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSectionVisibility(sec.sectionId);
-                        }}
-                        title={sec.isHidden ? "Tampilkan Seksi" : "Sembunyikan Seksi"}
-                      >
-                        {sec.isHidden ? <EyeOff className="h-3.5 w-3.5 text-amber-600" /> : <Eye className="h-3.5 w-3.5" />}
-                      </Button>
+                        {/* Move Down Arrow Button */}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          disabled={idx === sections.length - 1}
+                          className="h-7 px-2 text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-25 shadow-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (idx < sections.length - 1) reorderSections(idx, idx + 1);
+                          }}
+                          title="Pindahkan Ke Bawah"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5 mr-0.5 text-slate-800 stroke-[3]" /> Ke Bawah
+                        </Button>
 
-                      {/* Duplicate Button */}
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7 text-muted-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          duplicateSection(sec.sectionId);
-                        }}
-                        title="Duplikat Seksi"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
+                        {/* Hide / Show Button */}
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-slate-500 hover:bg-slate-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSectionVisibility(sec.sectionId);
+                          }}
+                          title={sec.isHidden ? "Tampilkan Seksi" : "Sembunyikan Seksi"}
+                        >
+                          {sec.isHidden ? <EyeOff className="h-3.5 w-3.5 text-amber-600" /> : <Eye className="h-3.5 w-3.5" />}
+                        </Button>
 
-                      {/* Delete Button */}
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeSection(sec.sectionId);
-                        }}
-                        title="Hapus Seksi"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                        {/* Duplicate Button */}
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-slate-500 hover:bg-slate-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            duplicateSection(sec.sectionId);
+                          }}
+                          title="Duplikat Seksi"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+
+                        {/* Delete Button */}
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-red-600 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSection(sec.sectionId);
+                          }}
+                          title="Hapus Seksi"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
