@@ -292,7 +292,7 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
             onMouseLeave={() => setIsAutoPlaying(true)}
           >
             {/* Main Interactive Slideshow Card */}
-            <div className="relative aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.2/1] rounded-3xl overflow-hidden border-2 border-amber-400 shadow-none bg-slate-950 group">
+            <div className="relative aspect-[4/3] sm:aspect-[21/9] md:aspect-[2.2/1] rounded-3xl overflow-hidden border-2 border-amber-400 shadow-none bg-slate-950 group">
               <AnimatePresence mode="wait">
                 {currentSlide && (
                   <motion.div
@@ -313,26 +313,26 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                       sizes="(max-width: 1200px) 100vw, 1200px"
                     />
 
-                    {/* Slide Caption Overlay (100% Transparent Container) */}
-                    <div className="absolute bottom-3 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent p-0 pointer-events-none">
+                    {/* Slide Caption Overlay (Compact & Gradient Backdropped) */}
+                    <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent p-3 sm:p-6 pt-8 pointer-events-none">
                       <div className="max-w-2xl">
-                        <span className="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-0.5 rounded-full mb-1 inline-block">
+                        <span className="bg-amber-400 text-slate-950 text-[9px] sm:text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-1 inline-block shadow-sm">
                           ✨ {currentSlide.title}
                         </span>
-                        <p className="text-white text-xs sm:text-sm font-semibold line-clamp-1 drop-shadow-md">
+                        <p className="text-white text-[11px] sm:text-sm font-semibold line-clamp-1 drop-shadow-md leading-tight">
                           {currentSlide.description}
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
-                        <span className="bg-slate-950/80 text-amber-300 text-xs font-black px-3 py-1 rounded-full border border-amber-400/40">
+                      <div className="flex items-center gap-2 shrink-0 pointer-events-auto self-end sm:self-center">
+                        <span className="bg-slate-950/80 text-amber-300 text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full border border-amber-400/40 backdrop-blur-sm">
                           {slideIndex + 1} / {galleryItems.length} Foto
                         </span>
                         <div 
                           onClick={(e) => { e.stopPropagation(); setSelectedIndex(slideIndex); }}
-                          className="bg-slate-950/80 text-white p-2 rounded-full border border-white/20 hover:bg-amber-400 hover:text-slate-950 transition-colors cursor-pointer"
+                          className="bg-slate-950/80 text-white p-1.5 sm:p-2 rounded-full border border-white/20 hover:bg-amber-400 hover:text-slate-950 transition-colors cursor-pointer backdrop-blur-sm"
                         >
-                          <Maximize2 className="w-4 h-4" />
+                          <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </div>
                       </div>
                     </div>
@@ -348,10 +348,10 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                   e.stopPropagation();
                   setSlideIndex((prev) => (prev - 1 + galleryItems.length) % galleryItems.length);
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/80 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-90 hover:scale-110 cursor-pointer"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-slate-950/70 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-90 hover:scale-110 cursor-pointer"
                 aria-label="Foto Sebelumnya"
               >
-                <ChevronLeft className="w-6 h-6" />
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
 
               <button
@@ -361,10 +361,10 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                   e.stopPropagation();
                   setSlideIndex((prev) => (prev + 1) % galleryItems.length);
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/80 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-90 hover:scale-110 cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-slate-950/70 text-white hover:bg-amber-400 hover:text-slate-950 transition-all flex items-center justify-center border border-white/20 shadow-none opacity-90 hover:scale-110 cursor-pointer"
                 aria-label="Foto Selanjutnya"
               >
-                <ChevronRight className="w-6 h-6" />
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
 
@@ -563,11 +563,11 @@ export default function GallerySection({ agent, data, isFullPage = false }: Gall
                     quality={95}
                   />
 
-                  <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-6 sm:right-6 bg-slate-950/85 backdrop-blur-md p-3 sm:p-5 rounded-2xl text-center text-white border border-white/10 shadow-2xl pointer-events-none">
-                    <span className="text-[10px] sm:text-xs text-amber-400 uppercase font-black tracking-widest block mb-0.5">
+                  <div className="absolute bottom-2 left-3 right-3 sm:bottom-4 sm:left-6 sm:right-6 bg-slate-950/80 backdrop-blur-md p-2.5 sm:p-4 rounded-2xl text-center text-white border border-white/10 shadow-2xl pointer-events-none max-w-xl mx-auto">
+                    <span className="text-[9px] sm:text-xs text-amber-400 uppercase font-black tracking-widest block mb-0.5">
                       {selectedImage.title}
                     </span>
-                    <p className="text-[11px] sm:text-xs md:text-sm text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto line-clamp-2">
+                    <p className="text-[10px] sm:text-xs md:text-sm text-slate-200 font-medium leading-tight max-w-xl mx-auto line-clamp-2">
                       {selectedImage.description}
                     </p>
                   </div>
