@@ -31,7 +31,6 @@ import {
   Save,
   Upload,
   Image as ImageIcon,
-  GripVertical,
   Sparkles,
   Layers,
   ArrowLeft,
@@ -117,58 +116,7 @@ export default function EditorSidebar() {
     setIsMediaManagerOpen(true);
   };
 
-  // Drag and Drop reordering state and handlers (HTML5 Desktop & Touch Mobile)
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [touchTargetIndex, setTouchTargetIndex] = useState<number | null>(null);
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', index.toString());
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    if (draggedIndex !== null && draggedIndex !== dropIndex) {
-      reorderSections(draggedIndex, dropIndex);
-    }
-    setDraggedIndex(null);
-  };
-
-  const handleTouchStart = (index: number) => {
-    setDraggedIndex(index);
-    setTouchTargetIndex(index);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (draggedIndex === null) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-
-    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (!targetElement) return;
-
-    const sectionItem = targetElement.closest('[data-section-index]');
-    if (sectionItem) {
-      const targetIdx = Number(sectionItem.getAttribute('data-section-index'));
-      if (!isNaN(targetIdx) && targetIdx !== touchTargetIndex) {
-        setTouchTargetIndex(targetIdx);
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (draggedIndex !== null && touchTargetIndex !== null && draggedIndex !== touchTargetIndex) {
-      reorderSections(draggedIndex, touchTargetIndex);
-    }
-    setDraggedIndex(null);
-    setTouchTargetIndex(null);
-  };
   
   const handleApplyPreset = (presetKey: string) => {
     if (sections.length > 0) {
@@ -1984,31 +1932,20 @@ export default function EditorSidebar() {
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Susunan Halaman</p>
                   <span className="text-[10px] text-muted-foreground italic flex items-center gap-1">
-                    <GripVertical className="h-3 w-3" /> Geser/Drag atau Gunakan Panah
+                    Gunakan panah untuk ubah posisi
                   </span>
                 </div>
 
                 {sections.map((sec, idx) => (
                   <div 
                     key={sec.sectionId}
-                    data-section-index={idx}
-                    draggable={true}
-                    onDragStart={(e) => handleDragStart(e, idx)}
-                    onDragOver={(e) => handleDragOver(e, idx)}
-                    onDrop={(e) => handleDrop(e, idx)}
-                    onDragEnd={() => setDraggedIndex(null)}
-                    onTouchStart={() => handleTouchStart(idx)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
                     onClick={() => setActiveSectionId(sec.sectionId)}
-                    className={`flex items-center justify-between p-2.5 sm:p-3 bg-muted/40 hover:bg-muted/80 border rounded-xl cursor-grab active:cursor-grabbing transition-all duration-200 group ${
-                      draggedIndex === idx ? 'opacity-50 border-amber-500 border-dashed bg-amber-50 scale-[0.99]' : ''
-                    } ${touchTargetIndex === idx && draggedIndex !== idx ? 'border-indigo-500 border-2 bg-indigo-50/60' : ''}`}
+                    className="flex items-center justify-between p-2.5 sm:p-3 bg-muted/40 hover:bg-muted/80 border rounded-xl cursor-pointer transition-all duration-200 group"
                   >
-                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                      <div className="p-0.5 touch-none cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 shrink-0">
-                        <GripVertical className="h-4 w-4" />
-                      </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-md shrink-0">
+                        #{idx + 1}
+                      </span>
                       <span className="text-xs sm:text-sm font-semibold text-primary truncate">{getSectionLabel(sec.type)}</span>
                     </div>
                     
