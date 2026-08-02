@@ -290,17 +290,17 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[96vw] sm:w-full max-w-4xl h-[92vh] sm:h-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col rounded-[2rem] sm:rounded-3xl overflow-hidden p-3.5 sm:p-6 bg-white">
-        <DialogHeader className="border-b pb-3">
-          <DialogTitle className="text-base sm:text-xl font-headline font-bold text-primary flex items-center justify-between gap-2 flex-wrap">
-            <span>Media Manager</span>
+      <DialogContent className="w-[96vw] sm:w-full max-w-4xl h-[92vh] sm:h-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col rounded-[2rem] sm:rounded-3xl overflow-hidden p-4 pt-6 sm:p-6 bg-white shadow-2xl">
+        <DialogHeader className="border-b pb-3 pt-1 text-left pr-8">
+          <DialogTitle className="text-lg sm:text-xl font-headline font-bold text-primary flex items-center justify-between gap-2 flex-wrap">
+            <span className="leading-tight">Media Manager</span>
             {activeSectionType && activeSectionType !== 'general' && (
               <span className="text-[10px] sm:text-xs font-bold text-accent bg-accent/10 px-2.5 py-0.5 rounded-full border border-accent/20">
                 Mode Seksi: {activeSectionType.toUpperCase()}
               </span>
             )}
           </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm">
+          <DialogDescription className="text-xs sm:text-sm text-slate-600 mt-1">
             Pilih atau unggah gambar ke Server Media. Gambar dikelompokkan otomatis per Seksi Website.
           </DialogDescription>
         </DialogHeader>
