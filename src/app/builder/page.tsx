@@ -33,34 +33,36 @@ export default function BuilderLandingPage() {
   const defaultPlans: BuilderPlan[] = [
     {
       planId: 'free',
-      name: 'Gratis Selamanya',
-      badge: 'PAKET MITRA FREE',
+      name: 'Uji Coba Gratis',
+      badge: 'GRATIS 14 HARI PERTAMA',
       price: 'Rp 0',
-      period: '/ selamanya',
-      description: 'Cocok untuk agen baru yang ingin langsung memasarkan paket umrah.',
+      period: '/ 14 hari pertama',
+      description: 'Uji coba gratis seluruh fitur selama 14 hari pertama untuk langsung memasarkan paket umrah Anda.',
       features: [
+        'Akses Gratis 14 Hari Pertama',
         '1 Halaman Landing Page Utama',
-        'Subdomain Gratis Pemilik Akun',
-        '8 Seksi Komplit (Hero, Paket, Katalog, dll)',
-        'Integrasi WhatsApp Konsultan',
+        'Subdomain Pemilik Akun Gratis',
+        '13 Seksi Komplit Siap Pakai (Hero, Paket, Katalog 47 Hal, Pembiayaan, MURI, Hotel, dll)',
+        'Integrasi Form WhatsApp Konsultan',
         'Pustaka Server Media Upload'
       ],
       order: 1
     },
     {
       planId: 'pro',
-      name: 'Pro Business',
-      badge: 'PAKET PRO AGENT',
+      name: 'Pro Agent Samira',
+      badge: 'PAKET PRO BERLANGGANAN',
       price: 'Rp 199.000',
       period: '/ bulan',
       isPopular: true,
-      description: 'Fitur lengkap untuk memperkuat branding biro travel umrah Anda.',
+      description: 'Perpanjang dan buka fitur lengkap untuk memperkuat branding biro travel umrah Anda.',
       features: [
-        'Semua Fitur Paket Gratis',
+        'Semua Fitur Uji Coba Gratis',
+        'Perpanjangan Masa Aktif Langganan',
         'Dukungan Domain Kustom (`domainanda.com`)',
         'Kapasitas Storage Server Media 500MB',
         'Bebas Hapus Branding Platform',
-        'Dukungan Prioritas Konsultan 24/7'
+        'Dukungan Prioritas Konsultan'
       ],
       order: 2
     }
@@ -285,9 +287,9 @@ export default function BuilderLandingPage() {
                 <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center mb-5 group-hover:rotate-180 transition-transform duration-700">
                   <Clock className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-950 mb-2 group-hover:text-amber-700 transition-colors">Langsung Siap Pakai Dalam 1 Menit</h3>
+                <h3 className="text-lg font-bold text-slate-950 mb-2 group-hover:text-amber-700 transition-colors">13 Seksi Komplit Siap Pakai Dalam 1 Menit</h3>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                  Begitu mendaftar, sistem otomatis membuatkan 8 seksi lengkap (Hero, Paket, E-Katalog, Peta, Form WA, dll).
+                  Begitu mendaftar, sistem otomatis membuatkan 13 seksi lengkap (Banner Hero, Paket Umrah, Pembiayaan, E-Katalog 47 Hal, Rekor MURI, Galeri, Hotel, Peta, dll).
                 </p>
               </Card>
             </motion.div>

@@ -121,6 +121,9 @@ export default function TenantDashboardPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
 
+  // Subscription Renewal Modal State
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+
   // Tenant Profile state for displaying dashboard info
   const [tenantProfile, setTenantProfile] = useState<Tenant | null>(null);
 
@@ -962,6 +965,28 @@ export default function TenantDashboardPage() {
                   {(tenantProfile.visitorCount || 0).toLocaleString()} <span className="font-medium text-amber-700/80 text-[11px]">Pengunjung</span>
                 </span>
               </div>
+
+              {/* Subscription Active Period & Renewal Badge */}
+              <button
+                type="button"
+                onClick={() => setIsSubscriptionModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs hover:bg-emerald-100 transition-colors cursor-pointer"
+                title="Klik untuk melihat rincian masa aktif & perpanjangan langganan"
+              >
+                <Clock className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="text-xs font-bold whitespace-nowrap">
+                  {tenantProfile.expiresAt ? (
+                    <>
+                      Sisa {Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Hari
+                    </>
+                  ) : (
+                    'Gratis 14 Hari'
+                  )}
+                </span>
+                <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-full ml-1">
+                  Perpanjang
+                </span>
+              </button>
             </div>
           )}
         </div>
@@ -1439,46 +1464,132 @@ export default function TenantDashboardPage() {
         </div>
       )}
 
+      {/* Subscription Active Period & Renewal Info Modal */}
+      {isSubscriptionModalOpen && tenantProfile && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg shadow-2xl rounded-3xl bg-white border-none overflow-hidden">
+            <CardHeader className="bg-slate-900 text-white p-6 relative">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-headline font-bold">Informasi Langganan & Masa Aktif</CardTitle>
+                    <CardDescription className="text-slate-300 text-xs">
+                      Detail status akun, sisa hari aktif, dan opsi perpanjangan.
+                    </CardDescription>
+                  </div>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setIsSubscriptionModalOpen(false)}
+                  className="text-slate-400 hover:text-white rounded-full"
+                >
+                  ✕
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3.5 bg-slate-50 border rounded-2xl">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Status Masa Aktif</span>
+                  <span className="text-sm font-extrabold text-emerald-700 flex items-center gap-1.5 mt-0.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                    {tenantProfile.status === 'suspended' ? 'Tidak Aktif' : 'Aktif (14 Hari Trial)'}
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 border rounded-2xl">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Sisa Hari</span>
+                  <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">
+                    {tenantProfile.expiresAt ? (
+                      `${Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Hari Tersisa`
+                    ) : (
+                      '14 Hari (Uji Coba)'
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl text-left space-y-1.5">
+                <span className="text-xs font-bold text-amber-900 block">🗓️ Tanggal Berakhir Masa Aktif:</span>
+                <p className="text-xs font-mono font-bold text-amber-800">
+                  {tenantProfile.expiresAt ? new Date(tenantProfile.expiresAt).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  }) : '14 Hari Sejak Pendaftaran'}
+                </p>
+                <p className="text-[11px] text-amber-700 leading-relaxed pt-1 border-t border-amber-200">
+                  Layanan gratis aktif selama 14 hari pertama. Lakukan perpanjangan langganan secara berkala untuk menjaga website dan subdomain Anda tetap terpublikasi 24/7.
+                </p>
+              </div>
+
+              <div className="pt-2 space-y-2">
+                <a
+                  href={`https://api.whatsapp.com/send?phone=6283815862300&text=${encodeURIComponent(
+                    `Halo Admin Samira, saya ingin memperpanjang masa aktif langganan akun website:\nNama: ${tenantProfile.name || '-'}\nSubdomain: ${tenantProfile.subdomain || '-'}\nEmail: ${tenantProfile.email || '-'}\nMohon informasi perpanjangan langganan.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-all transform active:scale-95"
+                >
+                  <Clock className="w-4 h-4" /> Perpanjang Masa Aktif Langganan
+                </a>
+
+                <Button 
+                  onClick={() => setIsSubscriptionModalOpen(false)}
+                  className="w-full rounded-2xl py-3 font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200"
+                >
+                  Tutup
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Expired / Suspended Account Modal Overlay */}
       {isTenantExpired && (
         <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md shadow-2xl rounded-3xl bg-white border-none overflow-hidden text-center">
-            <CardHeader className="bg-red-600 text-white p-6 relative">
+            <CardHeader className="bg-amber-600 text-white p-6 relative">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-2 border border-white/20">
-                <AlertTriangle className="h-8 w-8 text-amber-300 animate-bounce" />
+                <AlertTriangle className="h-8 w-8 text-amber-200 animate-bounce" />
               </div>
-              <CardTitle className="text-xl font-headline font-bold">Masa Aktif Berakhir</CardTitle>
+              <CardTitle className="text-xl font-headline font-bold">Masa Aktif Halaman Berakhir</CardTitle>
               <CardDescription className="text-white/90 text-xs mt-1">
-                Masa trial 14 hari atau langganan aktif untuk subdomain <strong className="underline">{tenantProfile?.subdomain}</strong> telah habis.
+                Masa aktif langganan untuk subdomain <strong className="underline">{tenantProfile?.subdomain}</strong> telah selesai.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="p-6 space-y-5">
-              <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-left space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-red-900">
-                  <span>Status Akun:</span>
-                  <span className="bg-red-600 text-white px-2.5 py-0.5 rounded-full uppercase text-[10px] font-extrabold">Tangguh (Expired)</span>
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-left space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-900">
+                  <span>Status Subdomain:</span>
+                  <span className="bg-amber-600 text-white px-2.5 py-0.5 rounded-full uppercase text-[10px] font-extrabold">Tidak Aktif</span>
                 </div>
-                <p className="text-xs text-red-700 leading-relaxed">
-                  Untuk mengaktifkan kembali akses editor landing page dan mempublikasikan website Anda, silakan hubungi Customer Support / Admin via WhatsApp.
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  Subdomain Anda saat ini sedang tidak aktif. Untuk mempublikasikan kembali website Anda, silakan lakukan perpanjangan langganan di bawah ini.
                 </p>
               </div>
 
               <div className="space-y-3 pt-2">
                 <a
                   href={`https://api.whatsapp.com/send?phone=6283815862300&text=${encodeURIComponent(
-                    `Assalamu'alaikum Admin, saya ingin memperpanjang masa aktif akun landing page:\nNama: ${tenantProfile?.name || '-'}\nPerusahaan: ${tenantProfile?.company || '-'}\nSubdomain: ${tenantProfile?.subdomain || '-'}\nEmail: ${tenantProfile?.email || '-'}\nMohon dibantu perpanjangan akses.`
+                    `Halo Admin Samira, saya ingin memperpanjang masa aktif akun landing page:\nNama: ${tenantProfile?.name || '-'}\nSubdomain: ${tenantProfile?.subdomain || '-'}\nEmail: ${tenantProfile?.email || '-'}\nMohon diproses perpanjangan langganan.`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-all transform active:scale-95"
                 >
-                  <span className="text-lg">💬</span> Hubungi Admin WhatsApp
+                  <Clock className="w-4 h-4" /> Perpanjang Langganan
                 </a>
-
-                <p className="text-[11px] text-slate-500">
-                  Nomor WhatsApp CS: <strong className="text-slate-800 font-mono">6283815862300</strong>
-                </p>
               </div>
 
               <div className="pt-3 border-t flex justify-center">
