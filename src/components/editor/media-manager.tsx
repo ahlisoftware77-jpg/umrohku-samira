@@ -267,23 +267,23 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col rounded-3xl overflow-hidden p-6 bg-white">
+      <DialogContent className="w-[96vw] sm:w-full max-w-4xl h-[92vh] sm:h-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col rounded-[2rem] sm:rounded-3xl overflow-hidden p-3.5 sm:p-6 bg-white">
         <DialogHeader className="border-b pb-3">
-          <DialogTitle className="text-xl font-headline font-bold text-primary flex items-center justify-between">
+          <DialogTitle className="text-base sm:text-xl font-headline font-bold text-primary flex items-center justify-between gap-2 flex-wrap">
             <span>Media Manager</span>
             {activeSectionType && activeSectionType !== 'general' && (
-              <span className="text-xs font-bold text-accent bg-accent/10 px-3 py-1 rounded-full border border-accent/20">
+              <span className="text-[10px] sm:text-xs font-bold text-accent bg-accent/10 px-2.5 py-0.5 rounded-full border border-accent/20">
                 Mode Seksi: {activeSectionType.toUpperCase()}
               </span>
             )}
           </DialogTitle>
-          <DialogDescription className="text-sm">
+          <DialogDescription className="text-xs sm:text-sm">
             Pilih atau unggah gambar ke Server Media. Gambar dikelompokkan otomatis per Seksi Website.
           </DialogDescription>
         </DialogHeader>
 
         {/* Category Filter Tabs */}
-        <div className="py-2.5 px-1 border-b flex items-center gap-1.5 overflow-x-auto no-scrollbar bg-muted/20">
+        <div className="py-2 px-1 border-b flex items-center gap-1.5 overflow-x-auto no-scrollbar bg-muted/20">
           {CATEGORIES.map(cat => {
             const count = cat.key === 'all' 
               ? images.length 
@@ -296,14 +296,14 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
                 variant={selectedCategory === cat.key ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedCategory(cat.key)}
-                className={`rounded-full text-xs font-bold shrink-0 h-8 px-3.5 transition-all ${
+                className={`rounded-full text-[11px] sm:text-xs font-bold shrink-0 h-8 px-3 sm:px-3.5 transition-all ${
                   selectedCategory === cat.key
                     ? 'bg-primary text-white shadow-sm'
                     : 'border-muted-foreground/20 text-muted-foreground hover:bg-muted'
                 }`}
               >
                 {cat.label}
-                <span className={`ml-1.5 px-1.5 py-0.2 text-[10px] rounded-full ${
+                <span className={`ml-1 px-1.5 py-0.2 text-[9px] rounded-full ${
                   selectedCategory === cat.key ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
                 }`}>
                   {count}
@@ -314,8 +314,8 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
         </div>
 
         {/* Upload bar */}
-        <div className="py-3 border-b flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="py-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -327,7 +327,7 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
             <Button 
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="bg-primary text-white hover:bg-accent hover:text-accent-foreground font-bold rounded-full px-6 h-10 flex gap-2"
+              className="w-full sm:w-auto bg-primary text-white hover:bg-accent hover:text-accent-foreground font-bold rounded-full px-5 h-10 flex gap-2 text-xs sm:text-sm shadow-xs justify-center"
             >
               {uploading ? (
                 <>
@@ -335,56 +335,56 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
                 </>
               ) : (
                 <>
-                  <Upload className="h-4 w-4" /> Unggah Berkas ke {CATEGORIES.find(c => c.key === selectedCategory)?.label || 'Media'}
+                  <Upload className="h-4 w-4 shrink-0" /> Unggah Berkas ke {CATEGORIES.find(c => c.key === selectedCategory)?.label.split(' ').slice(1).join(' ') || 'Media'}
                 </>
               )}
             </Button>
           </div>
 
-          <p className="text-xs text-muted-foreground">Maksimal ukuran unggahan: 2MB (Batas Paket Free)</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground text-center sm:text-right">Maksimal ukuran unggahan: 2MB (Batas Paket Free)</p>
         </div>
 
         {/* Batch Selection Controls Bar */}
         {filteredImages.length > 0 && (
-          <div className="py-2 px-3 bg-muted/20 border-b flex items-center justify-between rounded-2xl my-2">
-            <div className="flex items-center gap-2">
+          <div className="py-2 px-3 bg-muted/20 border-b flex flex-col gap-2 sm:flex-row items-stretch sm:items-center justify-between rounded-2xl my-2">
+            <div className="flex items-center justify-between sm:justify-start gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={handleToggleSelectAll}
-                className="rounded-full text-xs font-bold gap-1.5 h-8 bg-white"
+                className="rounded-full text-[11px] sm:text-xs font-bold gap-1.5 h-8 bg-white shrink-0"
               >
                 <Check className={`h-3.5 w-3.5 ${isAllSelected ? 'text-emerald-600' : ''}`} />
-                {isAllSelected ? 'Batalkan Pilih Semua' : `Pilih Semua (${filteredImages.length})`}
+                {isAllSelected ? 'Batal Pilih Semua' : `Pilih Semua (${filteredImages.length})`}
               </Button>
 
               {selectedImageIds.length > 0 && (
-                <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                  {selectedImageIds.length} foto dipilih
+                <span className="text-[10px] sm:text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20 whitespace-nowrap shrink-0">
+                  {selectedImageIds.length} terpilih
                 </span>
               )}
             </div>
 
             {selectedImageIds.length > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button
                   type="button"
                   variant="destructive"
                   size="sm"
                   onClick={handleDeleteSelected}
-                  className="rounded-full text-xs font-bold gap-1.5 h-8 shadow-sm"
+                  className="flex-1 sm:flex-none rounded-full text-[11px] sm:text-xs font-bold gap-1.5 h-8 shadow-sm justify-center"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Hapus ({selectedImageIds.length}) Terpilih
+                  <Trash2 className="h-3.5 w-3.5" /> Hapus ({selectedImageIds.length})
                 </Button>
 
                 <Button
                   type="button"
                   size="sm"
                   onClick={handleApplySelected}
-                  className="rounded-full text-xs font-bold gap-1.5 h-8 bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+                  className="flex-1 sm:flex-none rounded-full text-[11px] sm:text-xs font-bold gap-1.5 h-8 bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm justify-center"
                 >
-                  <Check className="h-3.5 w-3.5" /> Gunakan ({selectedImageIds.length}) Terpilih
+                  <Check className="h-3.5 w-3.5" /> Terapkan ({selectedImageIds.length})
                 </Button>
               </div>
             )}
@@ -392,14 +392,14 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
         )}
 
         {/* Images Grid */}
-        <div className="flex-1 overflow-y-auto py-4 min-h-[300px]">
+        <div className="flex-1 overflow-y-auto py-3 min-h-[300px]">
           {loading ? (
             <div className="h-full flex items-center justify-center flex-col py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
               <p className="text-xs text-muted-foreground">Memuat media pustaka...</p>
             </div>
           ) : filteredImages.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-4">
               {filteredImages.map(img => {
                 const isSelected = selectedImageIds.includes(img.imageId);
                 return (
@@ -427,7 +427,7 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
 
                     {/* Section Category Badge on Card */}
                     {img.category && (
-                      <span className="absolute top-2 left-2 text-[9px] font-bold text-white bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-white/20 uppercase tracking-wider">
+                      <span className="absolute top-2 left-2 text-[8px] font-bold text-white bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-white/20 uppercase tracking-wider">
                         {img.category}
                       </span>
                     )}
@@ -448,18 +448,19 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
                     {/* Hover Select indicator */}
                     {!isSelected && (
                       <div className="absolute inset-0 bg-primary/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                        <span className="bg-white/90 text-primary font-bold text-xs px-3 py-1.5 rounded-full shadow-lg">
+                        <span className="bg-white/90 text-primary font-bold text-[10px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-full shadow-lg">
                           Pilih Gambar
                         </span>
                       </div>
                     )}
                     
-                    {/* Single Delete button */}
+                    {/* Single Delete button (visible on mobile, hover-only on desktop) */}
                     <Button 
                       size="icon" 
                       variant="destructive"
                       onClick={(e) => handleDelete(e, img)}
-                      className="absolute bottom-2 right-2 h-7 w-7 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute bottom-2 right-2 h-7.5 w-7.5 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center bg-red-600 text-white border border-red-500/10"
+                      title="Hapus Foto"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
