@@ -38,6 +38,8 @@ import { Agent, getAgent } from '@/lib/agents';
 import { getPackage } from '@/lib/packages';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
+import { doc, getDoc, collection, query, where, getDocs } from '@/lib/firestore-tracker';
 
 const commonRequirements = [
   'Paspor dengan nama minimal 2 kata yang masih berlaku minimal 8 bulan sebelum tanggal keberangkatan',
@@ -190,6 +192,74 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
   const prefix = agentSlug === 'default' ? '' : `/${agentSlug}`;
   const activeWhatsapp = (agent?.whatsapp || agent?.phone || '6283815862300').replace(/[^0-9]/g, '') || '6283815862300';
 
+  const [customPackageData, setCustomPackageData] = useState<{
+    imageUrl?: string;
+    title?: string;
+    price?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    async function fetchCustomPackage() {
+      if (!agent) return;
+      try {
+        const tenantId = agent.slug || agent.id || 'default';
+        const possibleTenantIds = Array.from(new Set([tenantId, agent.slug, agent.id].filter(Boolean)));
+        
+        let activeDb = db;
+        try {
+          const tenantRef = doc(db, 'tenants', tenantId);
+          const tenantSnap = await getDoc(tenantRef);
+          if (tenantSnap.exists()) {
+            const tData = tenantSnap.data();
+            if (tData.dbServerId && tData.dbServerId !== 'server-1') {
+              const dynObj = getDynamicFirebaseInstance(tData.dbServerId);
+              if (dynObj && dynObj.db) activeDb = dynObj.db;
+            }
+          }
+        } catch (e) {}
+
+        const contentsRef = collection(activeDb, 'contents');
+        let matchedContent: Record<string, any> = {};
+
+        for (const tid of possibleTenantIds) {
+          const qContent = query(contentsRef, where('tenantId', '==', tid));
+          const cSnap = await getDocs(qContent);
+          if (!cSnap.empty) {
+            cSnap.docs.forEach(docSnap => {
+              const c = docSnap.data();
+              if (c.sectionId?.includes('pricing') || c.sectionId?.includes('service')) {
+                matchedContent[c.key] = c.value;
+              }
+            });
+          }
+        }
+
+        let pkgNum = '1';
+        const pkgKey = packageId.toLowerCase();
+        if (pkgKey === 'reguler' || pkgKey === 'pkg1') pkgNum = '1';
+        else if (pkgKey === 'plus' || pkgKey === 'pkg2') pkgNum = '2';
+        else if (pkgKey === 'ramadan' || pkgKey === 'pkg3') pkgNum = '3';
+        else if (pkgKey === 'haji' || pkgKey === 'pkg4') pkgNum = '4';
+
+        const customImg = matchedContent[`package${pkgNum}_imageUrl`];
+        const customName = matchedContent[`package${pkgNum}_name`];
+        const customPrice = matchedContent[`package${pkgNum}_price`];
+
+        if (customImg || customName || customPrice) {
+          setCustomPackageData({
+            imageUrl: customImg || undefined,
+            title: customName || undefined,
+            price: customPrice || undefined,
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching custom package detail:', err);
+      }
+    }
+
+    fetchCustomPackage();
+  }, [packageId, agent]);
+
   if (!pkg) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
@@ -199,7 +269,10 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
     );
   }
 
-  const image = PlaceHolderImages.find(p => p.id === pkg.imageId);
+  const defaultImage = PlaceHolderImages.find(p => p.id === pkg.imageId)?.imageUrl;
+  const displayImageUrl = customPackageData?.imageUrl || defaultImage || PlaceHolderImages[0]?.imageUrl || '';
+  const displayTitle = customPackageData?.title || pkg.title;
+  const displayPrice = customPackageData?.price || pkg.price;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f5f7] pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden relative">
@@ -208,8 +281,8 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
 
         {/* ── HERO BANNER ── */}
         <div className="relative h-[380px] sm:h-[48vh] md:h-[65vh] w-full overflow-hidden">
-          {image && (
-            <Image src={image.imageUrl} alt={pkg.title} fill className="object-cover scale-105" priority />
+          {displayImageUrl && (
+            <Image src={displayImageUrl} alt={displayTitle} fill className="object-cover scale-105" priority />
           )}
           {/* Deep gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
@@ -221,7 +294,7 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
               <ChevronLeft className="w-3.5 h-3.5" /> Beranda
             </button>
             <ChevronRight className="w-3 h-3 opacity-50" />
-            <span className="text-white font-bold truncate max-w-[140px] sm:max-w-none">{pkg.title}</span>
+            <span className="text-white font-bold truncate max-w-[140px] sm:max-w-none">{displayTitle}</span>
           </div>
 
           {/* Hero content */}
@@ -244,7 +317,7 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
                 </span>
               </div>
               <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-headline font-extrabold text-white mb-2 leading-tight drop-shadow-lg">
-                {pkg.title}
+                {displayTitle}
               </h1>
               <div className="flex items-center gap-1 mb-2 sm:mb-4">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -589,7 +662,7 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
 
                   <div className="relative p-6 sm:p-8">
                     <p className="text-white/60 font-bold uppercase text-[10px] sm:text-xs tracking-widest mb-1">Mulai dari</p>
-                    <h3 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline text-accent mb-1">{pkg.price}</h3>
+                    <h3 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline text-accent mb-1">{displayPrice}</h3>
                     <p className="text-white/50 text-xs mb-6 sm:mb-8">/ orang · sudah termasuk pajak</p>
 
                     <div className="space-y-2.5 mb-6 sm:mb-8">
@@ -606,7 +679,7 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
                     </div>
 
                     <Button asChild className="w-full bg-accent text-accent-foreground h-12 sm:h-14 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base hover:bg-white hover:text-primary transition-all shadow-lg shadow-accent/20">
-                      <Link href={`https://api.whatsapp.com/send?phone=${activeWhatsapp}&text=Assalamu'alaikum, saya ingin mengetahui lebih lanjut tentang Paket ${pkg.title}`}>
+                      <Link href={`https://api.whatsapp.com/send?phone=${activeWhatsapp}&text=Assalamu'alaikum, saya ingin mengetahui lebih lanjut tentang Paket ${displayTitle}`}>
                         Bismillah, Daftar Sekarang <ArrowRight className="ml-1.5 w-4 h-4" />
                       </Link>
                     </Button>
