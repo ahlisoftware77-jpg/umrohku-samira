@@ -43,6 +43,29 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
   const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Mobile Back Button Interceptor for Media Manager Modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Push dummy history state to intercept physical/gesture back button on mobile
+    window.history.pushState({ modal: 'media-manager' }, '');
+
+    const handlePopState = () => {
+      // Close modal on back button press
+      onClose();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      // Clean up pushed history entry if closed via UI click
+      if (typeof window !== 'undefined' && window.history.state?.modal === 'media-manager') {
+        window.history.back();
+      }
+    };
+  }, [isOpen, onClose]);
+
   // Set default category filter based on active section
   useEffect(() => {
     if (isOpen) {
