@@ -28,21 +28,24 @@ export default function TenantPackagePage({ params }: PageProps) {
   // Define packages based on route type
   const packageType = type.toLowerCase();
   
-  if (packageType === 'reguler') {
+  if (packageType === 'reguler' || packageType === 'pkg1') {
     return <PackageDetailView agent={agent} packageId="reguler" />;
   }
   
-  if (packageType === 'plus') {
+  if (packageType === 'plus' || packageType === 'pkg2') {
     return <PackageDetailView agent={agent} packageId="plus" />;
   }
   
-  if (packageType === 'ramadan') {
+  if (packageType === 'ramadan' || packageType === 'pkg3') {
     return <PackageDetailView agent={agent} packageId="ramadan" />;
   }
   
-  if (packageType === 'haji') {
+  if (packageType === 'haji' || packageType === 'pkg4') {
     return <PackageDetailView agent={agent} packageId="haji" />;
   }
+
+  // Fallback for any custom packageId
+  return <PackageDetailView agent={agent} packageId={type} />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background flex-col">

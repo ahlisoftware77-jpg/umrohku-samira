@@ -202,18 +202,48 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
     async function fetchCustomPackage() {
       if (!agent) return;
       try {
-        const tenantId = agent.slug || agent.id || 'default';
-        const possibleTenantIds = Array.from(new Set([tenantId, agent.slug, agent.id].filter(Boolean)));
+        const tenantSlug = agent.slug || agent.id || 'default';
+        const possibleTenantIds: string[] = [tenantSlug.toLowerCase()];
         
+        let foundTenant: any = null;
         let activeDb = db;
+
         try {
-          const tenantRef = doc(db, 'tenants', tenantId);
-          const tenantSnap = await getDoc(tenantRef);
-          if (tenantSnap.exists()) {
-            const tData = tenantSnap.data();
-            if (tData.dbServerId && tData.dbServerId !== 'server-1') {
-              const dynObj = getDynamicFirebaseInstance(tData.dbServerId);
-              if (dynObj && dynObj.db) activeDb = dynObj.db;
+          const tenantsRef = collection(db, 'tenants');
+          const qSub = query(tenantsRef, where('subdomain', '==', tenantSlug.toLowerCase()));
+          const subSnap = await getDocs(qSub);
+          
+          if (!subSnap.empty) {
+            foundTenant = subSnap.docs[0].data();
+          } else {
+            const tenantSnap = await getDoc(doc(db, 'tenants', tenantSlug));
+            if (tenantSnap.exists()) {
+              foundTenant = tenantSnap.data();
+            }
+          }
+
+          if (foundTenant) {
+            if (foundTenant.tenantId) possibleTenantIds.push(foundTenant.tenantId);
+            if (foundTenant.readableId) possibleTenantIds.push(foundTenant.readableId);
+            if (foundTenant.subdomain) possibleTenantIds.push(foundTenant.subdomain);
+            if (foundTenant.email) {
+              possibleTenantIds.push(foundTenant.email.toLowerCase().replace(/[^a-z0-9]/g, '_'));
+            }
+
+            if (foundTenant.dbServerId && foundTenant.dbServerId !== 'default') {
+              if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem('database_servers');
+                if (stored) {
+                  const servers = JSON.parse(stored);
+                  const cfg = servers.find((s: any) => s.serverId === foundTenant.dbServerId);
+                  if (cfg) activeDb = getDynamicFirebaseInstance(cfg).db;
+                }
+              }
+              if (activeDb === db) {
+                const sSnap = await getDocs(collection(db, 'databaseServers'));
+                const cfg = sSnap.docs.map(d => d.data()).find((s: any) => s.serverId === foundTenant.dbServerId);
+                if (cfg) activeDb = getDynamicFirebaseInstance(cfg).db;
+              }
             }
           }
         } catch (e) {}
@@ -221,13 +251,15 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
         const contentsRef = collection(activeDb, 'contents');
         let matchedContent: Record<string, any> = {};
 
-        for (const tid of possibleTenantIds) {
+        const uniqueTenantIds = Array.from(new Set(possibleTenantIds.filter(Boolean)));
+
+        for (const tid of uniqueTenantIds) {
           const qContent = query(contentsRef, where('tenantId', '==', tid));
           const cSnap = await getDocs(qContent);
           if (!cSnap.empty) {
             cSnap.docs.forEach(docSnap => {
               const c = docSnap.data();
-              if (c.sectionId?.includes('pricing') || c.sectionId?.includes('service')) {
+              if (c.key) {
                 matchedContent[c.key] = c.value;
               }
             });
