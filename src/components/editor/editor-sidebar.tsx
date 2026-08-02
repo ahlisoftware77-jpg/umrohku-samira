@@ -1803,26 +1803,7 @@ export default function EditorSidebar() {
             <ImageIcon className="h-3.5 w-3.5" />
           </Button>
 
-          <Button 
-            size="sm" 
-            variant="default"
-            onClick={() => {
-              // Trigger view refresh for right canvas panel by re-evaluating store state
-              const { sections, contents } = useCmsStore.getState();
-              useCmsStore.setState({ 
-                sections: [...sections], 
-                contents: { ...contents } 
-              });
-              toast({ 
-                title: '🔄 Pratinjau Diperbarui', 
-                description: 'Tampilan pratinjau halaman di sebelah kanan telah diperbarui.' 
-              });
-            }}
-            className="rounded-full text-xs font-bold bg-green-600 hover:bg-green-700 h-8 flex gap-1.5 px-3 shadow-md active:scale-95 transition-transform"
-            title="Segarkan tampilan pratinjau web di sebelah kanan"
-          >
-            <RefreshCw className="h-3.5 w-3.5" /> Segarkan Tampilan
-          </Button>
+
           
           {isSaving ? (
             <span className="text-[10px] text-muted-foreground animate-pulse flex items-center gap-1">
