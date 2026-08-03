@@ -1565,7 +1565,7 @@ export default function TenantDashboardPage() {
                     {tenantProfile.status === 'suspended' 
                       ? 'Tidak Aktif' 
                       : (tenantProfile.plan && tenantProfile.plan !== 'free' 
-                          ? `Aktif (${tenantProfile.plan.toUpperCase()})` 
+                          ? 'Aktif (Berlangganan)' 
                           : 'Aktif (Masa Trial)')}
                   </span>
                 </div>

@@ -198,9 +198,14 @@ export default function SuperAdminPage() {
       }
 
       const newExpiresAt = targetDate.toISOString();
+      const isSubscribedPlan = daysToAdd >= 30 || (customExpiryDate && (new Date(customExpiryDate).getTime() - Date.now() > 14 * 86400 * 1000));
+      const targetPlan: TenantPlan = isSubscribedPlan ? 'pro' : (tenantToUpdate.plan || 'free');
+
       const updatedData = {
         expiresAt: newExpiresAt,
         status: 'active' as TenantStatus,
+        plan: targetPlan,
+        limits: SYSTEM_PLANS[targetPlan]?.limits || SYSTEM_PLANS.pro.limits,
       };
 
       const activeServerConfig = dbServers.find(s => s.serverId === tenantToUpdate.dbServerId);
