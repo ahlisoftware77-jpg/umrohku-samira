@@ -804,10 +804,18 @@ service cloud.firestore {
           const hasName = Boolean(t.name && t.name.trim());
           const hasEmail = Boolean(t.email && t.email.trim());
           const hasSubdomain = Boolean(t.subdomain && t.subdomain.trim());
+          const tid = (t.tenantId || t.firestoreDocId || '').trim();
 
-          // Strict Requirement: A complete tenant MUST have Name AND Email AND Subdomain
-          // Any incomplete document (missing name, email, or subdomain) is automatically hidden from the main table
-          if (hasName && hasEmail && hasSubdomain) {
+          // A real active tenant MUST have a valid Firebase Auth UID (len >= 20, no email/subdomain alias markers)
+          const isRealUserUid = Boolean(
+            tid.length >= 20 && 
+            !tid.includes('_gmail_com') && 
+            !tid.includes('_yahoo_com') && 
+            !tid.includes('@') && 
+            tid.toLowerCase() !== (t.subdomain || '').toLowerCase()
+          );
+
+          if (hasName && hasEmail && hasSubdomain && isRealUserUid) {
             validTenants.push(t);
           } else {
             stubTenants.push(t);
