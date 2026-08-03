@@ -47,8 +47,23 @@ export default function DynamicTenantPage({ params }: PageProps) {
           const subSnap = await getDocs(qSubdomain);
           
           if (!subSnap.empty) {
-            const data = subSnap.docs[0].data() as Tenant;
-            foundTenant = { ...data, firestoreDocId: subSnap.docs[0].id };
+            // Find the best match if there are duplicates:
+            // 1. Prioritize document where document ID matches the subdomain exactly.
+            // 2. Prioritize document where expiresAt is defined.
+            let bestDoc = subSnap.docs[0];
+            for (const docSnap of subSnap.docs) {
+              const data = docSnap.data() as Tenant;
+              const isIdMatch = docSnap.id.toLowerCase() === tenantSlug.toLowerCase();
+              const hasExpiresAt = !!data.expiresAt;
+              const bestData = bestDoc.data() as Tenant;
+              
+              if (isIdMatch || (hasExpiresAt && !bestData.expiresAt)) {
+                bestDoc = docSnap;
+              }
+            }
+            
+            const data = bestDoc.data() as Tenant;
+            foundTenant = { ...data, firestoreDocId: bestDoc.id };
             if (data.tenantId) possibleTenantIds.push(data.tenantId);
             if (data.readableId) possibleTenantIds.push(data.readableId);
             if (data.email) {
@@ -73,7 +88,12 @@ export default function DynamicTenantPage({ params }: PageProps) {
           }
         } catch (tErr) {}
 
-        if (foundTenant && foundTenant.status === 'suspended') {
+        // Enforce active period (expiry) check for dynamic tenants
+        const isExpired = foundTenant?.expiresAt 
+          ? (new Date(foundTenant.expiresAt).getTime() < Date.now() && foundTenant.email !== 'triyadi72@gmail.com')
+          : false;
+
+        if (foundTenant && (foundTenant.status === 'suspended' || isExpired)) {
           setLoading(false);
           return;
         }
