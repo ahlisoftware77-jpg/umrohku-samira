@@ -379,6 +379,91 @@ export default function SuperAdminPage() {
     }
   };
 
+  // Export / Backup Landing Pages JSON
+  const handleBackupLandingPages = () => {
+    if (allLandingPages.length === 0) {
+      alert('Tidak ada dokumen landing page yang tersedia untuk dibackup.');
+      return;
+    }
+
+    const exportData = {
+      type: 'landing_pages_backup',
+      exportedAt: new Date().toISOString(),
+      count: allLandingPages.length,
+      landingPages: allLandingPages.map(({ connectedTenant, isConnected, firestoreDocId, ...rest }) => ({
+        ...rest,
+        firestoreDocId: firestoreDocId || rest.id || rest.subdomain
+      }))
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchor = document.createElement('a');
+    const fileName = `backup-landing-pages-${new Date().toISOString().slice(0, 10)}.json`;
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", fileName);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  // Restore Landing Pages JSON file
+  const [isRestoringLandingPages, setIsRestoringLandingPages] = useState(false);
+
+  const handleRestoreLandingPages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsRestoringLandingPages(true);
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+
+      let itemsToRestore: any[] = [];
+      if (Array.isArray(json)) {
+        itemsToRestore = json;
+      } else if (Array.isArray(json.landingPages)) {
+        itemsToRestore = json.landingPages;
+      } else if (Array.isArray(json.data)) {
+        itemsToRestore = json.data;
+      } else {
+        throw new Error('Format file JSON backup landing page tidak dikenali.');
+      }
+
+      if (itemsToRestore.length === 0) {
+        alert('File backup JSON tidak berisi rekaman landing page.');
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const item of itemsToRestore) {
+        try {
+          const docId = item.firestoreDocId || item.id || item.subdomain || item.tenantId;
+          if (!docId) {
+            failCount++;
+            continue;
+          }
+
+          const { firestoreDocId, connectedTenant, isConnected, ...cleanData } = item;
+          await setDoc(doc(db, 'landingPages', docId), cleanData, { merge: true });
+          successCount++;
+        } catch (err) {
+          console.error('Failed to restore landing page:', item, err);
+          failCount++;
+        }
+      }
+
+      await loadLandingPagesData();
+      alert(`✅ Pemulihan Landing Page Selesai! Berhasil memulihkan ${successCount} dokumen. Gagal: ${failCount}.`);
+    } catch (err: any) {
+      alert('Gagal memulihkan Landing Page: ' + (err.message || 'Format file JSON tidak valid'));
+    } finally {
+      setIsRestoringLandingPages(false);
+      e.target.value = '';
+    }
+  };
+
   // Delete individual stub document from Firestore
   const handleDeleteStubDoc = async (firestoreDocId: string) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus dokumen stub/duplikat "${firestoreDocId}" secara permanen dari Firestore?`)) return;
@@ -4303,6 +4388,36 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     {isLoadingLandingPages ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                     Segarkan Data
                   </Button>
+
+                  <Button 
+                    type="button"
+                    onClick={handleBackupLandingPages} 
+                    disabled={allLandingPages.length === 0}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-full text-xs px-4 h-9 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Export Backup (.json)
+                  </Button>
+
+                  <label className="cursor-pointer">
+                    <input 
+                      type="file" 
+                      accept=".json" 
+                      onChange={handleRestoreLandingPages}
+                      className="hidden" 
+                      disabled={isRestoringLandingPages}
+                    />
+                    <div className="rounded-full text-xs font-bold border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1.5 h-9 px-4 shadow-xs">
+                      {isRestoringLandingPages ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Memulihkan...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-3.5 w-3.5" /> Restore Landing Pages (.json)
+                        </>
+                      )}
+                    </div>
+                  </label>
                 </div>
               </CardHeader>
 
