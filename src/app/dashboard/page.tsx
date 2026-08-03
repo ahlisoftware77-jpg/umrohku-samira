@@ -123,6 +123,7 @@ export default function TenantDashboardPage() {
 
   // Subscription Renewal Modal State
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [showExpiryWarningModal, setShowExpiryWarningModal] = useState(false);
 
   // Tenant Profile state for displaying dashboard info
   const [tenantProfile, setTenantProfile] = useState<Tenant | null>(null);
@@ -145,6 +146,26 @@ export default function TenantDashboardPage() {
 
     return false;
   }, [tenantProfile, profile, user]);
+
+  // Auto-trigger reminder popup modal if subscription active period has <= 10 days remaining
+  useEffect(() => {
+    if (tenantProfile && !isTenantExpired && tenantProfile.status !== 'suspended') {
+      if (profile?.role === 'super_admin' || user?.email === 'triyadi72@gmail.com') return;
+
+      if (tenantProfile.expiresAt) {
+        const expTime = new Date(tenantProfile.expiresAt).getTime();
+        if (!isNaN(expTime)) {
+          const daysLeft = Math.ceil((expTime - Date.now()) / (1000 * 60 * 60 * 24));
+          if (daysLeft <= 10 && daysLeft > 0) {
+            const sessionKey = `has_shown_expiry_warning_${tenantProfile.subdomain}_${Math.floor(expTime / 86400000)}`;
+            if (typeof window !== 'undefined' && !sessionStorage.getItem(sessionKey)) {
+              setShowExpiryWarningModal(true);
+            }
+          }
+        }
+      }
+    }
+  }, [tenantProfile, isTenantExpired, profile, user]);
 
   // Auto-switch to preview when a section is selected (mobile UX)
   // On desktop both panels are always visible, so this has no visual side-effect.
@@ -1679,6 +1700,76 @@ export default function TenantDashboardPage() {
           </Card>
         </div>
       )}
+      {/* 10 Days Expiry Warning Modal */}
+      {showExpiryWarningModal && tenantProfile && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md shadow-2xl rounded-3xl bg-white border-none overflow-hidden text-center animate-in fade-in zoom-in duration-200">
+            <CardHeader className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 relative">
+              <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2 border border-white/30 shadow-inner">
+                <Clock className="h-7 w-7 text-white animate-pulse" />
+              </div>
+              <CardTitle className="text-xl font-headline font-bold">
+                ⚠️ Peringatan Masa Aktif
+              </CardTitle>
+              <CardDescription className="text-amber-100 text-xs mt-1">
+                Sisa masa aktif langganan Anda tinggal <strong className="underline text-white font-extrabold">{tenantProfile.expiresAt ? Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 10} Hari lagi</strong>.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-4">
+              <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl text-left space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-900 border-b border-amber-200 pb-2">
+                  <span>Masa Aktif Berakhir:</span>
+                  <span className="font-mono text-amber-800">
+                    {tenantProfile.expiresAt ? new Date(tenantProfile.expiresAt).toLocaleDateString('id-ID', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    }) : '-'}
+                  </span>
+                </div>
+                <p className="text-xs text-amber-800 leading-relaxed pt-1">
+                  Harap segera perpanjang masa aktif langganan Anda agar publikasi website dan subdomain <strong className="font-bold underline">{tenantProfile.subdomain}</strong> tetap berjalan lancar 24/7 tanpa terputus.
+                </p>
+              </div>
+
+              <div className="pt-2 space-y-2">
+                <a
+                  href={`https://api.whatsapp.com/send?phone=6283815862300&text=${encodeURIComponent(
+                    `Halo Admin Samira, saya ingin memperpanjang masa aktif akun website:\nNama: ${tenantProfile.name || '-'}\nSubdomain: ${tenantProfile.subdomain || '-'}\nEmail: ${tenantProfile.email || '-'}\nSisa Masa Aktif: ${tenantProfile.expiresAt ? Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 10} Hari.\nMohon informasi perpanjangan langganan.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    const expTime = tenantProfile.expiresAt ? new Date(tenantProfile.expiresAt).getTime() : 0;
+                    const sessionKey = `has_shown_expiry_warning_${tenantProfile.subdomain}_${Math.floor(expTime / 86400000)}`;
+                    if (typeof window !== 'undefined') sessionStorage.setItem(sessionKey, 'true');
+                    setShowExpiryWarningModal(false);
+                  }}
+                  className="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-all transform active:scale-95"
+                >
+                  <Clock className="w-4 h-4" /> Perpanjang Sekarang via WhatsApp
+                </a>
+
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const expTime = tenantProfile.expiresAt ? new Date(tenantProfile.expiresAt).getTime() : 0;
+                    const sessionKey = `has_shown_expiry_warning_${tenantProfile.subdomain}_${Math.floor(expTime / 86400000)}`;
+                    if (typeof window !== 'undefined') sessionStorage.setItem(sessionKey, 'true');
+                    setShowExpiryWarningModal(false);
+                  }}
+                  className="w-full rounded-2xl py-3 font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200"
+                >
+                  Saya Mengerti / Ingatkan Nanti
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Floating Developer Support WhatsApp Widget */}
       {user && (
         <a
