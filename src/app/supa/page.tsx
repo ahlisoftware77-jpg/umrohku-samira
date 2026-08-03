@@ -260,6 +260,46 @@ export default function SuperAdminPage() {
     }
   };
 
+  // Direct Plan Change Handler from Table Dropdown
+  const handleDirectChangePlan = async (tenantToUpdate: Tenant, newPlan: TenantPlan) => {
+    try {
+      const activeServerConfig = dbServers.find(s => s.serverId === tenantToUpdate.dbServerId);
+      const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
+
+      const updatedData = {
+        plan: newPlan,
+        limits: SYSTEM_PLANS[newPlan]?.limits || SYSTEM_PLANS.pro.limits,
+      };
+
+      const candidateTenantIds = new Set<string>([
+        tenantToUpdate.tenantId,
+        tenantToUpdate.subdomain,
+        tenantToUpdate.readableId,
+        tenantToUpdate.email
+      ].filter(Boolean) as string[]);
+
+      const dbsToUpdate = [db];
+      if (targetDb !== db) dbsToUpdate.push(targetDb);
+
+      for (const instDb of dbsToUpdate) {
+        for (const tid of Array.from(candidateTenantIds)) {
+          try {
+            await updateDoc(doc(instDb, 'tenants', tid), updatedData);
+          } catch (e) {
+            try {
+              await setDoc(doc(instDb, 'tenants', tid), updatedData, { merge: true });
+            } catch (e2) {}
+          }
+        }
+      }
+
+      setTenants(prev => prev.map(t => (t.tenantId === tenantToUpdate.tenantId || t.subdomain === tenantToUpdate.subdomain) ? { ...t, ...updatedData } : t));
+      alert(`✅ Paket tenant "${tenantToUpdate.name}" (${tenantToUpdate.subdomain}) berhasil diubah menjadi "${newPlan.toUpperCase()}"!`);
+    } catch (err: any) {
+      alert('Gagal mengubah paket: ' + (err.message || 'Terjadi kesalahan'));
+    }
+  };
+
   // Delete individual stub document from Firestore
   const handleDeleteStubDoc = async (firestoreDocId: string) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus dokumen stub/duplikat "${firestoreDocId}" secara permanen dari Firestore?`)) return;
@@ -3542,7 +3582,24 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                             </select>
                           </TableCell>
                         )}
-                        {visibleColumns.paket && <TableCell className="capitalize text-sm font-semibold">{t.plan}</TableCell>}
+                        {visibleColumns.paket && (
+                          <TableCell className="text-xs">
+                            <select
+                              value={t.plan || 'free'}
+                              onChange={(e) => handleDirectChangePlan(t, e.target.value as TenantPlan)}
+                              className={`border rounded-lg px-2 py-1 text-xs font-bold focus:outline-none transition-all ${
+                                t.plan && t.plan !== 'free' 
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold' 
+                                  : 'bg-slate-100 text-slate-700 border-slate-300'
+                              }`}
+                            >
+                              <option value="free">Free (Trial)</option>
+                              <option value="pro">Pro (Berlangganan)</option>
+                              <option value="basic">Basic (Standar)</option>
+                              <option value="enterprise">Enterprise (Custom)</option>
+                            </select>
+                          </TableCell>
+                        )}
                         {visibleColumns.views && (
                           <TableCell className="text-sm font-extrabold text-primary">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
