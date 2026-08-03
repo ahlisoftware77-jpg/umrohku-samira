@@ -404,24 +404,28 @@ export default function TenantDashboardPage() {
       try {
         setInitLoading(true);
         
-        // 1. Fetch Tenant details with Fail-Safe Fallback
+        // 1. Fetch Tenant details with Fail-Safe Fallback (Email search prioritized to find active record)
         let tenantData: Tenant | null = null;
         let resolvedDocId = tenantIdString;
         try {
-          const tenantSnap = await getDoc(doc(db, 'tenants', tenantIdString));
-          if (tenantSnap.exists()) {
-            tenantData = tenantSnap.data() as Tenant;
-            setTenantProfile(tenantData);
-          } else {
-            // Try fallback query by email if primary doc fetch fails
-            if (user?.email) {
-              const qTenantEmail = query(collection(db, 'tenants'), where('email', '==', user.email));
-              const snapTenantEmail = await getDocs(qTenantEmail);
-              if (!snapTenantEmail.empty) {
-                tenantData = snapTenantEmail.docs[0].data() as Tenant;
-                resolvedDocId = snapTenantEmail.docs[0].id;
-                setTenantProfile(tenantData);
-              }
+          // Try search by email first since active admin updates target the email/subdomain record
+          if (user?.email) {
+            const qTenantEmail = query(collection(db, 'tenants'), where('email', '==', user.email));
+            const snapTenantEmail = await getDocs(qTenantEmail);
+            if (!snapTenantEmail.empty) {
+              tenantData = snapTenantEmail.docs[0].data() as Tenant;
+              resolvedDocId = snapTenantEmail.docs[0].id;
+              setTenantProfile(tenantData);
+            }
+          }
+          
+          // Fallback to fetch by UID (tenantIdString) if email search yields nothing
+          if (!tenantData) {
+            const tenantSnap = await getDoc(doc(db, 'tenants', tenantIdString));
+            if (tenantSnap.exists()) {
+              tenantData = tenantSnap.data() as Tenant;
+              resolvedDocId = tenantSnap.id;
+              setTenantProfile(tenantData);
             }
           }
         } catch (fErr) {}
