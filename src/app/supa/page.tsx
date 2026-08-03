@@ -3297,7 +3297,12 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
             <Card className="rounded-3xl border shadow-none bg-white p-6">
               <CardHeader className="px-0 pt-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <CardTitle className="text-xl font-headline font-bold text-primary">Manajemen Tenant Terdaftar</CardTitle>
+                  <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+                    Manajemen Tenant Terdaftar
+                    <span className="text-xs font-bold bg-primary/10 text-primary px-2.5 py-0.5 rounded-full border border-primary/20">
+                      {tenants.length} Tenant Resmi
+                    </span>
+                  </CardTitle>
                   <CardDescription className="text-xs">Ubah paket, status aktif, backup/restore data, atau edit batas operasional dari setiap akun tenant.</CardDescription>
                 </div>
 
