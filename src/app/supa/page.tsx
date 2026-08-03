@@ -819,6 +819,10 @@ service cloud.firestore {
             validTenants.push(t);
           } else {
             stubTenants.push(t);
+            // Auto-purge completely empty stub documents from Firestore
+            if (!hasName && !hasEmail && !hasSubdomain) {
+              try { deleteDoc(doc(db, 'tenants', t.firestoreDocId)); } catch (e) {}
+            }
           }
         });
 
