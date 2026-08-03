@@ -988,10 +988,10 @@ export default function TenantDashboardPage() {
                 <span className="text-xs font-bold whitespace-nowrap">
                   {tenantProfile.expiresAt ? (
                     <>
-                      Sisa {Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Hari
+                      Sisa Masa Aktif: {Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Hari
                     </>
                   ) : (
-                    'Gratis 14 Hari'
+                    'Sisa Masa Aktif: Gratis 14 Hari'
                   )}
                 </span>
                 <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-full ml-1">
@@ -1110,9 +1110,9 @@ export default function TenantDashboardPage() {
                 <Clock className="h-2.5 w-2.5 shrink-0 text-emerald-400" />
                 <span>
                   {tenantProfile.expiresAt ? (
-                    `Sisa ${Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Hari`
+                    `Sisa Masa Aktif: ${Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Hari`
                   ) : (
-                    'Gratis 14 Hari'
+                    'Sisa Masa Aktif: Gratis 14 Hari'
                   )}
                 </span>
               </button>
@@ -1535,12 +1535,12 @@ export default function TenantDashboardPage() {
                 </div>
 
                 <div className="p-3.5 bg-slate-50 border rounded-2xl">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Sisa Hari</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Sisa Masa Aktif</span>
                   <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">
                     {tenantProfile.expiresAt ? (
-                      `${Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Hari Tersisa`
+                      `${Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Hari`
                     ) : (
-                      '14 Hari (Uji Coba)'
+                      'Gratis 14 Hari'
                     )}
                   </span>
                 </div>
