@@ -206,23 +206,37 @@ export default function SuperAdminPage() {
       const activeServerConfig = dbServers.find(s => s.serverId === tenantToUpdate.dbServerId);
       const targetDb = activeServerConfig ? getDynamicFirebaseInstance(activeServerConfig).db : db;
 
-      const candidateTenantIds = Array.from(new Set([
+      const candidateTenantIds = new Set<string>([
         tenantToUpdate.tenantId,
         tenantToUpdate.subdomain,
         tenantToUpdate.readableId,
         tenantToUpdate.email
-      ].filter(Boolean)));
+      ].filter(Boolean) as string[]);
 
       const dbsToUpdate = [db];
       if (targetDb !== db) dbsToUpdate.push(targetDb);
 
       for (const instDb of dbsToUpdate) {
-        for (const tid of candidateTenantIds) {
+        // Collect any additional document IDs matching subdomain or email in instDb
+        try {
+          if (tenantToUpdate.subdomain) {
+            const qSub = query(collection(instDb, 'tenants'), where('subdomain', '==', tenantToUpdate.subdomain.toLowerCase()));
+            const snapSub = await getDocs(qSub);
+            snapSub.docs.forEach(d => candidateTenantIds.add(d.id));
+          }
+          if (tenantToUpdate.email) {
+            const qEmail = query(collection(instDb, 'tenants'), where('email', '==', tenantToUpdate.email));
+            const snapEmail = await getDocs(qEmail);
+            snapEmail.docs.forEach(d => candidateTenantIds.add(d.id));
+          }
+        } catch (qErr) {}
+
+        for (const tid of Array.from(candidateTenantIds)) {
           try {
-            await updateDoc(doc(instDb, 'tenants', tid!), updatedData);
+            await updateDoc(doc(instDb, 'tenants', tid), updatedData);
           } catch (e) {
             try {
-              await setDoc(doc(instDb, 'tenants', tid!), updatedData, { merge: true });
+              await setDoc(doc(instDb, 'tenants', tid), updatedData, { merge: true });
             } catch (e2) {}
           }
         }

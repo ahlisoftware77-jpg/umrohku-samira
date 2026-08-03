@@ -404,29 +404,65 @@ export default function TenantDashboardPage() {
       try {
         setInitLoading(true);
         
-        // 1. Fetch Tenant details with Fail-Safe Fallback (Email search prioritized to find active record)
+        // 1. Fetch Tenant details with Smart Candidate Selection & Deduplication
         let tenantData: Tenant | null = null;
         let resolvedDocId = tenantIdString;
         try {
-          // Try search by email first since active admin updates target the email/subdomain record
-          if (user?.email) {
-            const qTenantEmail = query(collection(db, 'tenants'), where('email', '==', user.email));
-            const snapTenantEmail = await getDocs(qTenantEmail);
-            if (!snapTenantEmail.empty) {
-              tenantData = snapTenantEmail.docs[0].data() as Tenant;
-              resolvedDocId = snapTenantEmail.docs[0].id;
-              setTenantProfile(tenantData);
-            }
-          }
-          
-          // Fallback to fetch by UID (tenantIdString) if email search yields nothing
-          if (!tenantData) {
+          const candidateDocs: { id: string; data: Tenant }[] = [];
+
+          // A. Check by UID
+          try {
             const tenantSnap = await getDoc(doc(db, 'tenants', tenantIdString));
             if (tenantSnap.exists()) {
-              tenantData = tenantSnap.data() as Tenant;
-              resolvedDocId = tenantSnap.id;
-              setTenantProfile(tenantData);
+              candidateDocs.push({ id: tenantSnap.id, data: tenantSnap.data() as Tenant });
             }
+          } catch (e) {}
+
+          // B. Check by email
+          if (user?.email) {
+            try {
+              const qTenantEmail = query(collection(db, 'tenants'), where('email', '==', user.email));
+              const snapTenantEmail = await getDocs(qTenantEmail);
+              snapTenantEmail.docs.forEach(d => {
+                candidateDocs.push({ id: d.id, data: d.data() as Tenant });
+              });
+            } catch (e) {}
+          }
+
+          // C. Check by subdomain from profile
+          if (profile?.subdomain) {
+            try {
+              const qSub = query(collection(db, 'tenants'), where('subdomain', '==', profile.subdomain.toLowerCase()));
+              const snapSub = await getDocs(qSub);
+              snapSub.docs.forEach(d => {
+                candidateDocs.push({ id: d.id, data: d.data() as Tenant });
+              });
+            } catch (e) {}
+          }
+
+          if (candidateDocs.length > 0) {
+            // Deduplicate candidates by document ID
+            const uniqueCandidatesMap = new Map<string, { id: string; data: Tenant }>();
+            candidateDocs.forEach(c => uniqueCandidatesMap.set(c.id, c));
+            const uniqueCandidates = Array.from(uniqueCandidatesMap.values());
+
+            // Rank candidates to pick the one with active/valid expiresAt (or latest expiry)
+            uniqueCandidates.sort((a, b) => {
+              const expA = a.data.expiresAt ? new Date(a.data.expiresAt).getTime() : 0;
+              const expB = b.data.expiresAt ? new Date(b.data.expiresAt).getTime() : 0;
+              
+              if (expA !== expB) return expB - expA; // Highest/latest expiry date wins!
+              
+              // If equal expiry, prefer document where ID matches subdomain
+              if (a.data.subdomain && a.id.toLowerCase() === a.data.subdomain.toLowerCase()) return -1;
+              if (b.data.subdomain && b.id.toLowerCase() === b.data.subdomain.toLowerCase()) return 1;
+              
+              return 0;
+            });
+
+            tenantData = uniqueCandidates[0].data;
+            resolvedDocId = uniqueCandidates[0].id;
+            setTenantProfile(tenantData);
           }
         } catch (fErr) {}
 
