@@ -62,7 +62,8 @@ import {
   SlidersHorizontal,
   CheckSquare,
   Square,
-  Calendar
+  Calendar,
+  Link2
 } from 'lucide-react';
 import { cloudinaryService } from '@/lib/services/cloudinaryService';
 import { Tenant, TenantPlan, TenantStatus, LandingPage, Section, Content, SectionType, SYSTEM_PLANS, BuilderPlan, DatabaseServerConfig, MediaImage } from '@/types/cms';
@@ -178,6 +179,13 @@ export default function SuperAdminPage() {
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
   const [stubTenantsList, setStubTenantsList] = useState<(Tenant & { firestoreDocId: string })[]>([]);
   const [isDeletingStub, setIsDeletingStub] = useState(false);
+
+  // Landing Pages Management & Connected/Unconnected Status State
+  const [allLandingPages, setAllLandingPages] = useState<(LandingPage & { firestoreDocId: string; connectedTenant?: Tenant; isConnected?: boolean })[]>([]);
+  const [landingPageFilter, setLandingPageFilter] = useState<'all' | 'connected' | 'unconnected'>('all');
+  const [landingPageSearchQuery, setLandingPageSearchQuery] = useState('');
+  const [isLoadingLandingPages, setIsLoadingLandingPages] = useState(false);
+  const [assigningLandingPage, setAssigningLandingPage] = useState<(LandingPage & { firestoreDocId: string; connectedTenant?: Tenant; isConnected?: boolean }) | null>(null);
 
   // Expiry Extension State
   const [editingExpiryTenant, setEditingExpiryTenant] = useState<Tenant | null>(null);
@@ -297,6 +305,77 @@ export default function SuperAdminPage() {
       alert(`✅ Paket tenant "${tenantToUpdate.name}" (${tenantToUpdate.subdomain}) berhasil diubah menjadi "${newPlan.toUpperCase()}"!`);
     } catch (err: any) {
       alert('Gagal mengubah paket: ' + (err.message || 'Terjadi kesalahan'));
+    }
+  };
+
+  // Fetch Landing Pages and determine connection status to active tenants
+  const loadLandingPagesData = async () => {
+    setIsLoadingLandingPages(true);
+    try {
+      const snap = await getDocs(collection(db, 'landingPages'));
+      const list = snap.docs.map(d => {
+        const data = d.data() as LandingPage;
+        const matchingTenant = tenants.find(t => 
+          (t.tenantId && data.tenantId && t.tenantId === data.tenantId) ||
+          (t.subdomain && data.subdomain && t.subdomain.toLowerCase() === data.subdomain.toLowerCase()) ||
+          (t.email && data.tenantId && t.email.toLowerCase().replace(/[^a-z0-9]/g, '_') === data.tenantId.toLowerCase())
+        );
+
+        return {
+          ...data,
+          firestoreDocId: d.id,
+          connectedTenant: matchingTenant,
+          isConnected: Boolean(matchingTenant)
+        };
+      });
+
+      setAllLandingPages(list);
+      setTotalLandingPages(list.length);
+    } catch (err: any) {
+      console.error('Failed to fetch landing pages:', err);
+    } finally {
+      setIsLoadingLandingPages(false);
+    }
+  };
+
+  // Delete a landing page document permanently from Firestore
+  const handleDeleteLandingPageDoc = async (firestoreDocId: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus dokumen landing page "${firestoreDocId}" dari Firestore?`)) return;
+    try {
+      await deleteDoc(doc(db, 'landingPages', firestoreDocId));
+      setAllLandingPages(prev => prev.filter(p => p.firestoreDocId !== firestoreDocId));
+      setTotalLandingPages(prev => Math.max(0, prev - 1));
+      alert(`✅ Dokumen landing page "${firestoreDocId}" berhasil dihapus dari Firestore!`);
+    } catch (err: any) {
+      alert('Gagal menghapus landing page: ' + (err.message || 'Terjadi kesalahan'));
+    }
+  };
+
+  // Re-assign a landing page to a target tenant
+  const handleAssignLandingPageToTenant = async (landingPageDocId: string, targetTenant: Tenant) => {
+    try {
+      const updateData = {
+        tenantId: targetTenant.tenantId,
+        subdomain: targetTenant.subdomain
+      };
+      await updateDoc(doc(db, 'landingPages', landingPageDocId), updateData);
+      
+      setAllLandingPages(prev => prev.map(p => {
+        if (p.firestoreDocId === landingPageDocId) {
+          return {
+            ...p,
+            ...updateData,
+            connectedTenant: targetTenant,
+            isConnected: true
+          };
+        }
+        return p;
+      }));
+
+      setAssigningLandingPage(null);
+      alert(`✅ Landing page berhasil dihubungkan ke tenant "${targetTenant.name}" (${targetTenant.subdomain})!`);
+    } catch (err: any) {
+      alert('Gagal menghubungkan landing page: ' + (err.message || 'Terjadi kesalahan'));
     }
   };
 
@@ -952,16 +1031,9 @@ service cloud.firestore {
         setStubTenantsList(stubTenants);
       } catch (tErr) {}
 
-      // 2. Fetch pages per tenant
+      // 2. Fetch landing pages & evaluate connection status
       try {
-        const pagesSnap = await getDocs(collection(db, 'landingPages'));
-        setTotalLandingPages(pagesSnap.size);
-        const counts: Record<string, number> = {};
-        pagesSnap.docs.forEach(d => {
-          const p = d.data();
-          counts[p.tenantId] = (counts[p.tenantId] || 0) + 1;
-        });
-        setTenantPagesCount(counts);
+        await loadLandingPagesData();
       } catch (pErr) {}
 
       // 2.5 Fetch Cloudinary Images Storage across primary DB and all cluster servers
@@ -3103,6 +3175,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
           <div className="overflow-x-auto pb-1 max-w-full">
             <TabsList className="bg-white border p-1 rounded-2xl md:rounded-full w-max flex items-center gap-1 shadow-xs">
               <TabsTrigger value="tenants" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap font-bold shrink-0">Kelola Tenant</TabsTrigger>
+              <TabsTrigger value="landingPagesTab" onClick={loadLandingPagesData} className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0 text-purple-700 bg-purple-50/50 hover:bg-purple-100"><Layout className="h-3.5 w-3.5 text-purple-600" /> Status Landing Page ({totalLandingPages})</TabsTrigger>
               <TabsTrigger value="media" onClick={loadAllAdminImages} className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0"><ImageIcon className="h-3.5 w-3.5 text-blue-600" /> Pustaka Media ({totalImagesCount})</TabsTrigger>
               <TabsTrigger value="orphans" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0"><Trash2 className="h-3.5 w-3.5 text-amber-600" /> Pembersihan Data</TabsTrigger>
               <TabsTrigger value="packages" className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 text-xs whitespace-nowrap shrink-0">Paket Limits Tenant</TabsTrigger>
@@ -4198,6 +4271,284 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       </Button>
                     </div>
                   </form>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ==========================================
+              TAB LANDING PAGES STATUS & MANAGEMENT
+              ========================================== */}
+          <TabsContent value="landingPagesTab" className="space-y-6">
+            <Card className="rounded-3xl border shadow-none bg-white p-6 space-y-4">
+              <CardHeader className="px-0 pt-0 border-b pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+                    <Layout className="h-5 w-5 text-purple-600" /> 
+                    Manajemen Halaman Landing Page Firestore
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Pantau dokumen <code className="bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">landingPages</code> di database Firestore. Filter mana saja yang terhubung ke tenant aktif dan mana yang tidak terhubung (bebas/orphaned).
+                  </CardDescription>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button 
+                    type="button"
+                    onClick={loadLandingPagesData} 
+                    disabled={isLoadingLandingPages}
+                    variant="outline"
+                    className="rounded-full text-xs font-bold border-slate-300 hover:bg-slate-50 h-9 px-4 flex items-center gap-1.5 text-slate-700"
+                  >
+                    {isLoadingLandingPages ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                    Segarkan Data
+                  </Button>
+                </div>
+              </CardHeader>
+
+              {/* Sub-Tabs Filter & Search Bar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50 p-2.5 rounded-2xl border">
+                {/* Filter Tabs */}
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                  <Button
+                    type="button"
+                    variant={landingPageFilter === 'all' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLandingPageFilter('all')}
+                    className="rounded-full text-xs font-bold h-8 px-3.5"
+                  >
+                    Semua ({allLandingPages.length})
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={landingPageFilter === 'connected' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLandingPageFilter('connected')}
+                    className={`rounded-full text-xs font-bold h-8 px-3.5 ${
+                      landingPageFilter === 'connected' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'text-emerald-700 hover:bg-emerald-50'
+                    }`}
+                  >
+                    🟢 Terhubung ({allLandingPages.filter(p => p.isConnected).length})
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={landingPageFilter === 'unconnected' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLandingPageFilter('unconnected')}
+                    className={`rounded-full text-xs font-bold h-8 px-3.5 ${
+                      landingPageFilter === 'unconnected' ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'text-amber-700 hover:bg-amber-50'
+                    }`}
+                  >
+                    ⚠️ Tidak Terhubung ({allLandingPages.filter(p => !p.isConnected).length})
+                  </Button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative min-w-[220px]">
+                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <Input
+                    type="text"
+                    placeholder="Cari subdomain, judul, tenant ID..."
+                    value={landingPageSearchQuery}
+                    onChange={(e) => setLandingPageSearchQuery(e.target.value)}
+                    className="pl-8 pr-7 h-8 text-xs rounded-full border-slate-300 bg-white"
+                  />
+                  {landingPageSearchQuery && (
+                    <button 
+                      onClick={() => setLandingPageSearchQuery('')}
+                      className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-600 font-bold"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Table Render */}
+              {isLoadingLandingPages ? (
+                <div className="py-12 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
+                  <Table className="min-w-[800px]">
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead className="text-xs font-bold">Subdomain / Link URL</TableHead>
+                        <TableHead className="text-xs font-bold">Dokumen ID & Tenant ID</TableHead>
+                        <TableHead className="text-xs font-bold">Status Koneksi Tenant</TableHead>
+                        <TableHead className="text-xs font-bold">Pemilik Akun (Tenant)</TableHead>
+                        <TableHead className="text-xs font-bold text-right">Aksi Kontrol</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        const q = landingPageSearchQuery.trim().toLowerCase();
+                        const filtered = allLandingPages.filter(p => {
+                          if (landingPageFilter === 'connected' && !p.isConnected) return false;
+                          if (landingPageFilter === 'unconnected' && p.isConnected) return false;
+
+                          if (!q) return true;
+                          const subMatch = p.subdomain && p.subdomain.toLowerCase().includes(q);
+                          const titleMatch = p.title && p.title.toLowerCase().includes(q);
+                          const tidMatch = p.tenantId && p.tenantId.toLowerCase().includes(q);
+                          const docIdMatch = p.firestoreDocId && p.firestoreDocId.toLowerCase().includes(q);
+                          const tenantNameMatch = p.connectedTenant?.name && p.connectedTenant.name.toLowerCase().includes(q);
+                          return subMatch || titleMatch || tidMatch || docIdMatch || tenantNameMatch;
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <TableRow>
+                              <TableCell colSpan={5} className="py-12 text-center text-slate-400 text-xs">
+                                <div className="flex flex-col items-center justify-center gap-2">
+                                  <Layout className="h-8 w-8 text-slate-300" />
+                                  <p className="font-bold text-slate-600">Tidak ada dokumen landing page yang cocok</p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+
+                        return filtered.map((lp) => (
+                          <TableRow key={lp.firestoreDocId} className="hover:bg-slate-50/80">
+                            {/* Subdomain & Link */}
+                            <TableCell>
+                              <div className="flex flex-col gap-0.5">
+                                <a 
+                                  href={`/${lp.subdomain || lp.firestoreDocId}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="font-bold text-sm text-primary hover:underline flex items-center gap-1"
+                                >
+                                  umrohku-samira.my.id/{lp.subdomain || lp.firestoreDocId}
+                                  <ExternalLink className="h-3 w-3 text-amber-500" />
+                                </a>
+                                {lp.title && <span className="text-[11px] text-slate-500 font-medium">{lp.title}</span>}
+                              </div>
+                            </TableCell>
+
+                            {/* Doc ID & Tenant ID */}
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                <code className="text-[11px] bg-slate-100 px-2 py-0.5 rounded font-mono font-bold text-slate-700 w-fit">
+                                  DocID: {lp.firestoreDocId}
+                                </code>
+                                <code className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-mono w-fit border border-purple-200">
+                                  TID: {lp.tenantId || '-'}
+                                </code>
+                              </div>
+                            </TableCell>
+
+                            {/* Status Koneksi */}
+                            <TableCell>
+                              {lp.isConnected ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
+                                  🟢 Terhubung Aktif
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800 border border-amber-300">
+                                  <AlertTriangle className="h-3 w-3 text-amber-600" />
+                                  ⚠️ Tidak Terhubung (Orphaned)
+                                </span>
+                              )}
+                            </TableCell>
+
+                            {/* Pemilik Akun / Tenant */}
+                            <TableCell>
+                              {lp.connectedTenant ? (
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-xs text-slate-900">{lp.connectedTenant.name}</span>
+                                  <span className="text-[10px] text-slate-500">{lp.connectedTenant.email}</span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400 italic">Tidak Ada Akun Terhubung</span>
+                              )}
+                            </TableCell>
+
+                            {/* Actions */}
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <a href={`/${lp.subdomain || lp.firestoreDocId}`} target="_blank" rel="noopener noreferrer">
+                                  <Button size="icon" variant="outline" className="h-8 w-8" title="Pratinjau Halaman">
+                                    <Eye className="h-3.5 w-3.5 text-blue-600" />
+                                  </Button>
+                                </a>
+
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="outline"
+                                  onClick={() => setAssigningLandingPage(lp)}
+                                  className="h-8 w-8 text-purple-600 hover:bg-purple-50"
+                                  title="Hubungkan Halaman Ini ke Tenant Lain"
+                                >
+                                  <Link2 className="h-3.5 w-3.5" />
+                                </Button>
+
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="outline"
+                                  onClick={() => handleDeleteLandingPageDoc(lp.firestoreDocId)}
+                                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                  title="Hapus Dokumen Landing Page dari Firestore"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ));
+                      })()}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </Card>
+
+            {/* Re-assign Landing Page to Tenant Modal */}
+            {assigningLandingPage && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <Card className="w-full max-w-md shadow-2xl rounded-3xl bg-white border-none p-6 space-y-4">
+                  <CardHeader className="px-0 pt-0 border-b pb-3">
+                    <CardTitle className="text-lg font-headline font-bold text-primary flex items-center gap-2">
+                      <Link2 className="h-5 w-5 text-purple-600" /> Hubungkan Landing Page ke Tenant
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Landing Page: <code className="bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded font-mono">{assigningLandingPage.subdomain || assigningLandingPage.firestoreDocId}</code>
+                    </CardDescription>
+                  </CardHeader>
+
+                  <div className="space-y-3 py-2 text-xs">
+                    <p className="text-slate-600 font-medium">Pilih akun tenant aktif yang akan dihubungkan ke landing page ini:</p>
+
+                    <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                      {tenants.map(t => (
+                        <button
+                          key={t.firestoreDocId}
+                          type="button"
+                          onClick={() => handleAssignLandingPageToTenant(assigningLandingPage.firestoreDocId, t)}
+                          className="w-full p-3 rounded-2xl border border-slate-200 text-left hover:bg-purple-50/70 hover:border-purple-300 transition-all flex items-center justify-between group"
+                        >
+                          <div>
+                            <p className="font-bold text-slate-900 group-hover:text-purple-900">{t.name}</p>
+                            <p className="text-[10px] text-slate-500">{t.email} • <span className="font-mono font-bold text-primary">/{t.subdomain}</span></p>
+                          </div>
+                          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                            Pilih Tenant
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end border-t pt-3">
+                    <Button type="button" variant="outline" className="rounded-full text-xs font-bold px-5" onClick={() => setAssigningLandingPage(null)}>
+                      Batal
+                    </Button>
+                  </div>
                 </Card>
               </div>
             )}
