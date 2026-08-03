@@ -176,6 +176,8 @@ export default function SuperAdminPage() {
 
   // Search Query state for Tenant Table
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
+  const [stubTenantsList, setStubTenantsList] = useState<(Tenant & { firestoreDocId: string })[]>([]);
+  const [isDeletingStub, setIsDeletingStub] = useState(false);
 
   // Expiry Extension State
   const [editingExpiryTenant, setEditingExpiryTenant] = useState<Tenant | null>(null);
@@ -255,6 +257,43 @@ export default function SuperAdminPage() {
       alert('Gagal memperpanjang masa aktif: ' + (err.message || 'Terjadi kesalahan'));
     } finally {
       setIsUpdatingExpiry(false);
+    }
+  };
+
+  // Delete individual stub document from Firestore
+  const handleDeleteStubDoc = async (firestoreDocId: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus dokumen stub/duplikat "${firestoreDocId}" secara permanen dari Firestore?`)) return;
+    setIsDeletingStub(true);
+    try {
+      await deleteDoc(doc(db, 'tenants', firestoreDocId));
+      setStubTenantsList(prev => prev.filter(s => s.firestoreDocId !== firestoreDocId));
+      alert(`✅ Dokumen stub "${firestoreDocId}" berhasil dihapus dari Firestore!`);
+    } catch (err: any) {
+      alert('Gagal menghapus dokumen stub: ' + (err.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsDeletingStub(false);
+    }
+  };
+
+  // Purge all stub documents from Firestore
+  const handlePurgeAllStubs = async () => {
+    if (stubTenantsList.length === 0) return;
+    if (!confirm(`Apakah Anda yakin ingin menghapus SELURUH ${stubTenantsList.length} dokumen stub/duplikat secara permanen dari Firestore?`)) return;
+    setIsDeletingStub(true);
+    try {
+      let count = 0;
+      for (const s of stubTenantsList) {
+        try {
+          await deleteDoc(doc(db, 'tenants', s.firestoreDocId));
+          count++;
+        } catch (e) {}
+      }
+      setStubTenantsList([]);
+      alert(`✅ Berhasil membersihkan ${count} dokumen stub/duplikat dari Firestore!`);
+    } catch (err: any) {
+      alert('Gagal membersihkan dokumen stub: ' + (err.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsDeletingStub(false);
     }
   };
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
@@ -746,37 +785,53 @@ service cloud.firestore {
     try {
       setDbLoading(true);
       
-      // 1. Fetch Tenants (with deduplication of stub documents)
+      // 1. Fetch Tenants (separating valid profile tenants from empty stub documents)
       try {
         const snap = await getDocs(collection(db, 'tenants'));
-        const rawList = snap.docs.map(doc => ({
-          ...doc.data() as Tenant,
-          firestoreDocId: doc.id
-        }));
+        const rawList = snap.docs.map(doc => {
+          const data = doc.data() as Tenant;
+          return {
+            ...data,
+            firestoreDocId: doc.id,
+            tenantId: data.tenantId || doc.id
+          };
+        });
 
-        // Deduplicate stub/duplicate documents by subdomain or email
-        const tenantMap = new Map<string, Tenant>();
-        
+        const validTenants: (Tenant & { firestoreDocId: string })[] = [];
+        const stubTenants: (Tenant & { firestoreDocId: string })[] = [];
+
         rawList.forEach(t => {
-          const key = (t.subdomain ? t.subdomain.toLowerCase().trim() : (t.email ? t.email.toLowerCase().trim() : t.tenantId));
-          if (!key) return;
+          const hasName = Boolean(t.name && t.name.trim());
+          const hasEmail = Boolean(t.email && t.email.trim());
+          const isRealUid = Boolean(t.tenantId && t.tenantId.length >= 20 && !t.tenantId.includes('_') && !t.tenantId.includes('@'));
 
+          // A valid tenant MUST have a Name OR Email OR a valid Firebase Auth UID
+          if (hasName || hasEmail || isRealUid) {
+            validTenants.push(t);
+          } else {
+            // Stub document without name, email, or valid UID
+            stubTenants.push(t);
+          }
+        });
+
+        // Deduplicate valid tenants by subdomain or email or tenantId
+        const tenantMap = new Map<string, Tenant & { firestoreDocId: string }>();
+        validTenants.forEach(t => {
+          const key = (t.subdomain ? t.subdomain.toLowerCase().trim() : (t.email ? t.email.toLowerCase().trim() : t.tenantId));
           if (!tenantMap.has(key)) {
             tenantMap.set(key, t);
           } else {
             const existing = tenantMap.get(key)!;
-            // Rank completeness: Full profile with Name + Email + UID > Stub doc
-            const existingScore = (existing.name ? 5 : 0) + (existing.email ? 3 : 0) + (existing.company ? 2 : 0) + (existing.expiresAt ? 2 : 0) + (existing.tenantId?.length > 15 ? 4 : 0);
-            const currentScore = (t.name ? 5 : 0) + (t.email ? 3 : 0) + (t.company ? 2 : 0) + (t.expiresAt ? 2 : 0) + (t.tenantId?.length > 15 ? 4 : 0);
-            
+            const existingScore = (existing.name ? 5 : 0) + (existing.email ? 3 : 0) + (existing.tenantId?.length >= 20 ? 4 : 0);
+            const currentScore = (t.name ? 5 : 0) + (t.email ? 3 : 0) + (t.tenantId?.length >= 20 ? 4 : 0);
             if (currentScore > existingScore) {
               tenantMap.set(key, t);
             }
           }
         });
 
-        const tenantsList = Array.from(tenantMap.values());
-        setTenants(tenantsList);
+        setTenants(Array.from(tenantMap.values()));
+        setStubTenantsList(stubTenants);
       } catch (tErr) {}
 
       // 2. Fetch pages per tenant
@@ -3530,6 +3585,77 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
               </div>
               )}
             </Card>
+
+            {/* Stub & Duplicate Documents Cleanup Card */}
+            {stubTenantsList.length > 0 && (
+              <Card className="rounded-3xl border border-amber-200 bg-amber-50/40 p-6 space-y-4 shadow-none">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-amber-200/80 pb-4">
+                  <div>
+                    <h3 className="text-base font-headline font-bold text-amber-950 flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                      Dokumen Stub & Duplikat Firestore ({stubTenantsList.length} Ditemukan)
+                    </h3>
+                    <p className="text-xs text-amber-800 mt-0.5">
+                      Dokumen berikut adalah alias/stub lama di Firestore yang tidak memiliki nama profil atau email. Dokumen ini dapat Anda hapus secara permanen untuk membersihkan database.
+                    </p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    disabled={isDeletingStub}
+                    onClick={handlePurgeAllStubs}
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-full h-9 px-4 shadow-sm shrink-0"
+                  >
+                    {isDeletingStub ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
+                    Hapus Seluruh {stubTenantsList.length} Dokumen Stub
+                  </Button>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-amber-200 bg-white">
+                  <Table className="min-w-[600px]">
+                    <TableHeader className="bg-amber-100/50">
+                      <TableRow>
+                        <TableHead className="text-xs font-bold text-amber-900">Firestore Document ID</TableHead>
+                        <TableHead className="text-xs font-bold text-amber-900">Readable ID / Subdomain Alias</TableHead>
+                        <TableHead className="text-xs font-bold text-amber-900">Status Data</TableHead>
+                        <TableHead className="text-xs font-bold text-amber-900 text-right">Aksi Hapus</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {stubTenantsList.map((stub) => (
+                        <TableRow key={stub.firestoreDocId}>
+                          <TableCell>
+                            <code className="text-xs bg-amber-100/80 text-amber-900 px-2.5 py-1 rounded-md font-mono font-bold border border-amber-300">
+                              {stub.firestoreDocId}
+                            </code>
+                          </TableCell>
+                          <TableCell className="text-xs font-mono text-slate-600">
+                            {stub.readableId || stub.subdomain || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full uppercase border border-amber-300">
+                              Dokumen Stub Tanpa Profile
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={isDeletingStub}
+                              onClick={() => handleDeleteStubDoc(stub.firestoreDocId)}
+                              className="border-red-300 bg-red-50 text-red-700 hover:bg-red-600 hover:text-white text-xs font-bold rounded-xl h-8 px-3"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            )}
 
             {/* Expiry Extension Modal Dialog */}
             {editingExpiryTenant && (
