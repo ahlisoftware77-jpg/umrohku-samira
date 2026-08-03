@@ -41,7 +41,15 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
   const [uploadProgressText, setUploadProgressText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
+  const [justUploadedCount, setJustUploadedCount] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset tip banner when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setJustUploadedCount(0);
+    }
+  }, [isOpen]);
 
   // Mobile Back Button Interceptor for Media Manager Modal
   useEffect(() => {
@@ -156,9 +164,10 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
 
       if (uploadedList.length > 0) {
         setImages(prev => [...uploadedList, ...prev]);
+        setJustUploadedCount(uploadedList.length);
         toast({
           title: "✅ Berhasil Mengunggah Foto",
-          description: `${uploadedList.length} berkas foto telah berhasil diunggah ke pustaka media. Silakan pilih foto untuk digunakan.`,
+          description: `${uploadedList.length} berkas foto telah berhasil diunggah ke pustaka media. Klik foto di bawah untuk memilih.`,
         });
       }
     } catch (err: any) {
@@ -363,6 +372,34 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
 
           <p className="text-[10px] sm:text-xs text-muted-foreground text-center sm:text-right">Maksimal ukuran unggahan: 2MB (Batas Paket Free)</p>
         </div>
+
+        {/* Post-Upload Helpful Selection Tip Alert */}
+        {justUploadedCount > 0 && (
+          <div className="mx-1 my-2 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 rounded-2xl flex items-center justify-between gap-3 shadow-xs animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="p-1.5 rounded-full bg-emerald-500 text-white shrink-0 shadow-2xs">
+                <Check className="h-4 w-4" />
+              </span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-headline font-bold text-emerald-950">
+                  🎉 {justUploadedCount} Foto Berhasil Diunggah!
+                </span>
+                <span className="text-[11px] text-emerald-800 font-medium truncate sm:whitespace-normal">
+                  👉 <strong>Petunjuk:</strong> Klik pada salah satu kartu foto di bawah ini untuk memilih dan menampilkannya di editor.
+                </span>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setJustUploadedCount(0)}
+              className="text-emerald-700 hover:bg-emerald-100 rounded-full text-xs font-bold shrink-0 h-7 px-2.5"
+            >
+              Tutup Tips ✕
+            </Button>
+          </div>
+        )}
 
         {/* Batch Selection Controls Bar */}
         {filteredImages.length > 0 && (
