@@ -803,13 +803,13 @@ service cloud.firestore {
         rawList.forEach(t => {
           const hasName = Boolean(t.name && t.name.trim());
           const hasEmail = Boolean(t.email && t.email.trim());
-          const isRealUid = Boolean(t.tenantId && t.tenantId.length >= 20 && !t.tenantId.includes('_') && !t.tenantId.includes('@'));
+          const hasSubdomain = Boolean(t.subdomain && t.subdomain.trim());
 
-          // A valid tenant MUST have a Name OR Email OR a valid Firebase Auth UID
-          if (hasName || hasEmail || isRealUid) {
+          // Strict Requirement: A complete tenant MUST have Name AND Email AND Subdomain
+          // Any incomplete document (missing name, email, or subdomain) is automatically hidden from the main table
+          if (hasName && hasEmail && hasSubdomain) {
             validTenants.push(t);
           } else {
-            // Stub document without name, email, or valid UID
             stubTenants.push(t);
           }
         });
