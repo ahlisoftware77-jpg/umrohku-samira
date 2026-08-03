@@ -1495,9 +1495,25 @@ service cloud.firestore {
       const metricsRef = doc(targetDb, 'system_metrics', 'firestore_usage');
       const snap = await getDoc(metricsRef);
       if (snap.exists()) {
-        setFirestoreUsage(snap.data() as any);
+        const data = snap.data() as any;
+        const todayDateStr = new Date().toISOString().slice(0, 10);
+
+        // Auto-Reset Daily: If date has changed since last reset, automatically reset counter to 0 to align with Firebase Google Server daily reset
+        if (data.lastResetDate && data.lastResetDate !== todayDateStr) {
+          const resetPayload = {
+            reads: 0,
+            writes: 0,
+            deletes: 0,
+            lastResetDate: todayDateStr,
+            lastUpdated: serverTimestamp()
+          };
+          try { await setDoc(metricsRef, resetPayload, { merge: true }); } catch (e) {}
+          setFirestoreUsage({ reads: 0, writes: 0, deletes: 0, lastResetDate: todayDateStr });
+        } else {
+          setFirestoreUsage(data);
+        }
       } else {
-        setFirestoreUsage({ reads: 0, writes: 0, deletes: 0 });
+        setFirestoreUsage({ reads: 0, writes: 0, deletes: 0, lastResetDate: new Date().toISOString().slice(0, 10) });
       }
     } catch (err) {
       console.error('Failed to load firestore usage metrics:', err);
