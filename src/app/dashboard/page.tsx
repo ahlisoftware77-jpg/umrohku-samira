@@ -398,12 +398,15 @@ export default function TenantDashboardPage() {
     if (!activeTenantId || page) return;
     const tenantIdString = activeTenantId as string;
 
+    let unsubTenant: (() => void) | null = null;
+
     async function loadCms() {
       try {
         setInitLoading(true);
         
         // 1. Fetch Tenant details with Fail-Safe Fallback
         let tenantData: Tenant | null = null;
+        let resolvedDocId = tenantIdString;
         try {
           const tenantSnap = await getDoc(doc(db, 'tenants', tenantIdString));
           if (tenantSnap.exists()) {
@@ -416,6 +419,7 @@ export default function TenantDashboardPage() {
               const snapTenantEmail = await getDocs(qTenantEmail);
               if (!snapTenantEmail.empty) {
                 tenantData = snapTenantEmail.docs[0].data() as Tenant;
+                resolvedDocId = snapTenantEmail.docs[0].id;
                 setTenantProfile(tenantData);
               }
             }
@@ -458,6 +462,17 @@ export default function TenantDashboardPage() {
         // --- KEY FIX: push resolved DB into useCmsStore so saveToFirestore always uses correct target ---
         setTargetDb(resolvedDb);
         const targetDb = resolvedDb;
+
+        // Set up the realtime listener on the resolved database and resolved document ID!
+        try {
+          unsubTenant = onSnapshot(doc(targetDb, 'tenants', resolvedDocId), (snap) => {
+            if (snap.exists()) {
+              setTenantProfile(snap.data() as Tenant);
+            }
+          }, () => {});
+        } catch (snapErr) {
+          console.error('[loadCms] Failed setting up onSnapshot:', snapErr);
+        }
 
         // 2. Query for landing page in targetDb
         let pageSnap: any = { empty: true };
@@ -520,21 +535,23 @@ export default function TenantDashboardPage() {
             const contentsRef = collection(targetDb, 'contents');
             const qContent = query(contentsRef, where('tenantId', '==', tenantIdString));
             const contentSnap = await getDocs(qContent);
-            contentSnap.docs.forEach(docSnap => {
-              const c = docSnap.data() as Content;
-              if (!contentsMap[c.sectionId]) contentsMap[c.sectionId] = {};
-              contentsMap[c.sectionId][c.key] = c.value;
+            
+            contentSnap.docs.forEach((doc) => {
+              const c = doc.data() as Content;
+              if (c.sectionId) {
+                if (!contentsMap[c.sectionId]) contentsMap[c.sectionId] = {};
+                contentsMap[c.sectionId][c.key] = c.value;
+              }
             });
           } catch (cErr) {}
           
           setInitialData(foundPage, sectionsList, contentsMap);
         } else {
-          // Dynamic Auto-Onboarding: Setup default home page template in targetDb
-          const pageId = `page_${tenantIdString}`;
+          // Fallback: Create and save default home landing page
+          const pageId = `lp_${tenantIdString}_home`;
           const defaultPage: LandingPage = {
             pageId,
             tenantId: tenantIdString,
-            title: 'Beranda Samira Travel',
             slug: 'home',
             status: 'draft',
             seo: {
@@ -672,16 +689,6 @@ export default function TenantDashboardPage() {
     }
 
     loadCms();
-
-    // Realtime subscription for tenantProfile visitorCount
-    let unsubTenant: (() => void) | null = null;
-    if (tenantIdString) {
-      unsubTenant = onSnapshot(doc(db, 'tenants', tenantIdString), (snap) => {
-        if (snap.exists()) {
-          setTenantProfile(snap.data() as Tenant);
-        }
-      }, () => {});
-    }
 
     return () => {
       if (unsubTenant) unsubTenant();
@@ -1090,6 +1097,22 @@ export default function TenantDashboardPage() {
             >
               <ExternalLink className="h-3 w-3 shrink-0 text-amber-400" /> umrohku-samira.my.id/{tenantProfile.subdomain}
             </a>
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => setIsSubscriptionModalOpen(true)}
+                className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5 flex items-center gap-1 leading-none cursor-pointer"
+              >
+                <Clock className="h-2.5 w-2.5 shrink-0 text-emerald-400" />
+                <span>
+                  {tenantProfile.expiresAt ? (
+                    `Sisa ${Math.max(0, Math.ceil((new Date(tenantProfile.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Hari`
+                  ) : (
+                    'Gratis 14 Hari'
+                  )}
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -1499,7 +1522,11 @@ export default function TenantDashboardPage() {
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Status Masa Aktif</span>
                   <span className="text-sm font-extrabold text-emerald-700 flex items-center gap-1.5 mt-0.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                    {tenantProfile.status === 'suspended' ? 'Tidak Aktif' : 'Aktif (14 Hari Trial)'}
+                    {tenantProfile.status === 'suspended' 
+                      ? 'Tidak Aktif' 
+                      : (tenantProfile.plan && tenantProfile.plan !== 'free' 
+                          ? `Aktif (${tenantProfile.plan.toUpperCase()})` 
+                          : 'Aktif (Masa Trial)')}
                   </span>
                 </div>
 
