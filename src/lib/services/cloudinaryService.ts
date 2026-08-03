@@ -69,6 +69,11 @@ export const cloudinaryService = {
         const existing = dupSnap.docs[0].data() as MediaImage;
         if (existing && existing.secureUrl) {
           console.log('⚡ [DUPLICATE DETECTED] Gambar duplikat terdeteksi! Menggunakan kembali URL terunggah:', existing.secureUrl);
+          if (category && existing.category !== category) {
+            const docId = existing.imageId || dupSnap.docs[0].id;
+            await setDoc(doc(db, 'images', docId), { category }, { merge: true }).catch(() => {});
+            existing.category = category;
+          }
           return existing;
         }
       }

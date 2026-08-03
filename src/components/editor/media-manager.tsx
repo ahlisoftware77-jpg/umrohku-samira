@@ -70,7 +70,8 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
   useEffect(() => {
     if (isOpen) {
       if (activeSectionType && activeSectionType !== 'general') {
-        setSelectedCategory(activeSectionType);
+        const normalizedCategory = activeSectionType === 'service' ? 'pricing' : activeSectionType;
+        setSelectedCategory(normalizedCategory);
       } else {
         setSelectedCategory('all');
       }
@@ -119,7 +120,8 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
       setUploading(true);
       const fileList = Array.from(files);
       const uploadedList: MediaImage[] = [];
-      const uploadCategory = selectedCategory !== 'all' ? selectedCategory : (activeSectionType || 'general');
+      const rawCategory = selectedCategory !== 'all' ? selectedCategory : (activeSectionType || 'general');
+      const uploadCategory = rawCategory === 'service' ? 'pricing' : rawCategory;
 
       // Batasan unggahan khusus galeri (Maksimal 20 foto)
       if (uploadCategory === 'gallery') {

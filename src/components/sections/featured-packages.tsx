@@ -1,7 +1,6 @@
 
 "use client";
 
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -122,15 +121,13 @@ export default function FeaturedPackages({ agent, data }: FeaturedPackagesProps)
               >
                 <Card className="flex flex-col h-full overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 rounded-2xl border-none bg-white">
                   {pkg.imageUrl && (
-                    <div className="relative h-48 sm:h-56 w-full bg-slate-100">
-                      <Image
+                    <div className="relative w-full bg-slate-50 border-b border-gray-100">
+                      <img
                         src={pkg.imageUrl}
                         alt={pkg.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="w-full h-auto object-contain block rounded-t-2xl"
                       />
-                      <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 shadow-lg">
+                      <div className="absolute top-3 right-3 bg-primary/95 text-primary-foreground px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 shadow-lg z-10">
                         <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> 5.0
                       </div>
                     </div>

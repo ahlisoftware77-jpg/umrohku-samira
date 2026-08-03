@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { 
   ChevronLeft, 
@@ -12,6 +11,7 @@ import {
   Hotel, 
   Clock,
   FileText,
+  Download,
   ArrowRight,
   BookOpen,
   Star,
@@ -196,6 +196,8 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
     imageUrl?: string;
     title?: string;
     price?: string;
+    brochureUrl?: string;
+    brochureUrls?: string[];
   } | null>(null);
 
   useEffect(() => {
@@ -276,12 +278,16 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
         const customImg = matchedContent[`package${pkgNum}_imageUrl`];
         const customName = matchedContent[`package${pkgNum}_name`];
         const customPrice = matchedContent[`package${pkgNum}_price`];
+        const customBrochure = matchedContent[`package${pkgNum}_brochureUrl`];
+        const customBrochures = matchedContent[`package${pkgNum}_brochureUrls`];
 
-        if (customImg || customName || customPrice) {
+        if (customImg || customName || customPrice || customBrochure || customBrochures) {
           setCustomPackageData({
             imageUrl: customImg || undefined,
             title: customName || undefined,
             price: customPrice || undefined,
+            brochureUrl: customBrochure || undefined,
+            brochureUrls: Array.isArray(customBrochures) ? customBrochures : undefined,
           });
         }
       } catch (err) {
@@ -312,13 +318,17 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
       <main className="flex-1 pt-16 sm:pt-20 w-full max-w-full overflow-x-hidden">
 
         {/* ── HERO BANNER ── */}
-        <div className="relative h-[380px] sm:h-[48vh] md:h-[65vh] w-full overflow-hidden">
+        <div className="relative w-full overflow-hidden bg-slate-900 flex items-center justify-center">
           {displayImageUrl && (
-            <Image src={displayImageUrl} alt={displayTitle} fill className="object-cover scale-105" priority />
+            <img 
+              src={displayImageUrl} 
+              alt={displayTitle} 
+              className="w-full h-auto max-h-[80vh] object-contain block mx-auto" 
+            />
           )}
           {/* Deep gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/70 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-transparent to-transparent pointer-events-none" />
 
           {/* Breadcrumb - Positioned safely below mobile top header */}
           <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full text-white/90 text-xs shadow-sm border border-white/10">
@@ -810,9 +820,42 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
             <DialogTitle className="text-lg sm:text-xl font-headline font-bold text-primary">Brosur Paket {pkg.title}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 sm:gap-4 mt-2">
-            {brochureImagesList.map((img, i) => (
-              <img key={i} src={img} alt={`Brosur ${i + 1}`} className="w-full h-auto rounded-xl sm:rounded-2xl shadow-sm" />
-            ))}
+            {(() => {
+              const urls = customPackageData?.brochureUrls || 
+                           (customPackageData?.brochureUrl ? [customPackageData.brochureUrl] : []);
+              
+              if (urls.length > 0) {
+                if (urls[0].toLowerCase().endsWith('.pdf')) {
+                  return (
+                    <div className="flex flex-col items-center justify-center p-8 gap-4 text-center">
+                      <FileText className="w-16 h-16 text-primary animate-pulse" />
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">Dokumen Brosur Lengkap</p>
+                        <p className="text-xs text-gray-500 mt-1">Silakan klik tombol di bawah untuk melihat atau mengunduh PDF.</p>
+                      </div>
+                      <Button asChild className="rounded-full px-6 font-bold bg-primary hover:bg-accent text-white gap-2">
+                        <a href={urls[0]} target="_blank" rel="noopener noreferrer">
+                          <Download className="w-4 h-4" /> Buka PDF Brosur
+                        </a>
+                      </Button>
+                    </div>
+                  );
+                }
+
+                return urls.map((img, i) => (
+                  <img 
+                    key={i} 
+                    src={img} 
+                    alt={`Brosur ${pkg.title} halaman ${i + 1}`} 
+                    className="w-full h-auto rounded-xl sm:rounded-2xl shadow-sm object-contain" 
+                  />
+                ));
+              }
+
+              return brochureImagesList.map((img, i) => (
+                <img key={i} src={img} alt={`Brosur ${i + 1}`} className="w-full h-auto rounded-xl sm:rounded-2xl shadow-sm object-contain" />
+              ));
+            })()}
           </div>
         </DialogContent>
       </Dialog>

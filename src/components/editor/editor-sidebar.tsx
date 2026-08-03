@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { 
   Eye, 
   EyeOff, 
+  FileText,
   Trash2, 
   Copy, 
   Menu, 
@@ -460,6 +461,63 @@ export default function EditorSidebar() {
                   <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar Paket 1
                 </Button>
               </div>
+              {(() => {
+                const currentUrls = Array.isArray(activeSectionContent.package1_brochureUrls) 
+                  ? activeSectionContent.package1_brochureUrls 
+                  : (activeSectionContent.package1_brochureUrl ? [activeSectionContent.package1_brochureUrl] : []);
+                return (
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                      <span>Brosur Lengkap Paket 1 (Maks 3 Gambar / PDF)</span>
+                      <FileText className="h-3.5 w-3.5 text-accent" />
+                    </Label>
+                    
+                    {currentUrls.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {currentUrls.map((url: string, i: number) => (
+                          <div key={i} className="relative aspect-[3/4] rounded-lg overflow-hidden border bg-muted group">
+                            {url.toLowerCase().endsWith('.pdf') ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-slate-100 text-center">
+                                <FileText className="h-6 w-6 text-primary" />
+                                <span className="text-[8px] font-mono text-muted-foreground truncate w-full px-1 mt-1">PDF Brosur</span>
+                              </div>
+                            ) : (
+                              <img src={url} alt={`Brosur 1 Halaman ${i + 1}`} className="w-full h-full object-cover" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = currentUrls.filter((_, idx) => idx !== i);
+                                handleFieldChange('package1_brochureUrls', updated);
+                                handleFieldChange('package1_brochureUrl', updated[0] || '');
+                              }}
+                              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200 text-[10px] font-bold"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {currentUrls.length < 3 && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => openMediaPicker((urlResult) => {
+                          const newUrls = Array.isArray(urlResult) ? urlResult : [urlResult];
+                          const updated = [...currentUrls, ...newUrls].slice(0, 3);
+                          handleFieldChange('package1_brochureUrls', updated);
+                          handleFieldChange('package1_brochureUrl', updated[0] || '');
+                        })}
+                        className="w-full rounded-xl text-xs font-bold gap-2 border-accent text-accent hover:bg-accent hover:text-white h-9"
+                      >
+                        <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Brosur 1 (Maks 3)
+                      </Button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Paket 2 */}
@@ -519,6 +577,63 @@ export default function EditorSidebar() {
                   <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar Paket 2
                 </Button>
               </div>
+              {(() => {
+                const currentUrls = Array.isArray(activeSectionContent.package2_brochureUrls) 
+                  ? activeSectionContent.package2_brochureUrls 
+                  : (activeSectionContent.package2_brochureUrl ? [activeSectionContent.package2_brochureUrl] : []);
+                return (
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                      <span>Brosur Lengkap Paket 2 (Maks 3 Gambar / PDF)</span>
+                      <FileText className="h-3.5 w-3.5 text-accent" />
+                    </Label>
+                    
+                    {currentUrls.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {currentUrls.map((url: string, i: number) => (
+                          <div key={i} className="relative aspect-[3/4] rounded-lg overflow-hidden border bg-muted group">
+                            {url.toLowerCase().endsWith('.pdf') ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-slate-100 text-center">
+                                <FileText className="h-6 w-6 text-primary" />
+                                <span className="text-[8px] font-mono text-muted-foreground truncate w-full px-1 mt-1">PDF Brosur</span>
+                              </div>
+                            ) : (
+                              <img src={url} alt={`Brosur 2 Halaman ${i + 1}`} className="w-full h-full object-cover" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = currentUrls.filter((_, idx) => idx !== i);
+                                handleFieldChange('package2_brochureUrls', updated);
+                                handleFieldChange('package2_brochureUrl', updated[0] || '');
+                              }}
+                              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200 text-[10px] font-bold"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {currentUrls.length < 3 && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => openMediaPicker((urlResult) => {
+                          const newUrls = Array.isArray(urlResult) ? urlResult : [urlResult];
+                          const updated = [...currentUrls, ...newUrls].slice(0, 3);
+                          handleFieldChange('package2_brochureUrls', updated);
+                          handleFieldChange('package2_brochureUrl', updated[0] || '');
+                        })}
+                        className="w-full rounded-xl text-xs font-bold gap-2 border-accent text-accent hover:bg-accent hover:text-white h-9"
+                      >
+                        <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Brosur 2 (Maks 3)
+                      </Button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Paket 3 */}
@@ -578,6 +693,63 @@ export default function EditorSidebar() {
                   <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar Paket 3
                 </Button>
               </div>
+              {(() => {
+                const currentUrls = Array.isArray(activeSectionContent.package3_brochureUrls) 
+                  ? activeSectionContent.package3_brochureUrls 
+                  : (activeSectionContent.package3_brochureUrl ? [activeSectionContent.package3_brochureUrl] : []);
+                return (
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                      <span>Brosur Lengkap Paket 3 (Maks 3 Gambar / PDF)</span>
+                      <FileText className="h-3.5 w-3.5 text-accent" />
+                    </Label>
+                    
+                    {currentUrls.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {currentUrls.map((url: string, i: number) => (
+                          <div key={i} className="relative aspect-[3/4] rounded-lg overflow-hidden border bg-muted group">
+                            {url.toLowerCase().endsWith('.pdf') ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-slate-100 text-center">
+                                <FileText className="h-6 w-6 text-primary" />
+                                <span className="text-[8px] font-mono text-muted-foreground truncate w-full px-1 mt-1">PDF Brosur</span>
+                              </div>
+                            ) : (
+                              <img src={url} alt={`Brosur 3 Halaman ${i + 1}`} className="w-full h-full object-cover" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = currentUrls.filter((_, idx) => idx !== i);
+                                handleFieldChange('package3_brochureUrls', updated);
+                                handleFieldChange('package3_brochureUrl', updated[0] || '');
+                              }}
+                              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200 text-[10px] font-bold"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {currentUrls.length < 3 && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => openMediaPicker((urlResult) => {
+                          const newUrls = Array.isArray(urlResult) ? urlResult : [urlResult];
+                          const updated = [...currentUrls, ...newUrls].slice(0, 3);
+                          handleFieldChange('package3_brochureUrls', updated);
+                          handleFieldChange('package3_brochureUrl', updated[0] || '');
+                        })}
+                        className="w-full rounded-xl text-xs font-bold gap-2 border-accent text-accent hover:bg-accent hover:text-white h-9"
+                      >
+                        <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Brosur 3 (Maks 3)
+                      </Button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Paket 4 */}
@@ -637,6 +809,63 @@ export default function EditorSidebar() {
                   <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Gambar Paket 4
                 </Button>
               </div>
+              {(() => {
+                const currentUrls = Array.isArray(activeSectionContent.package4_brochureUrls) 
+                  ? activeSectionContent.package4_brochureUrls 
+                  : (activeSectionContent.package4_brochureUrl ? [activeSectionContent.package4_brochureUrl] : []);
+                return (
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                      <span>Brosur Lengkap Paket 4 (Maks 3 Gambar / PDF)</span>
+                      <FileText className="h-3.5 w-3.5 text-accent" />
+                    </Label>
+                    
+                    {currentUrls.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {currentUrls.map((url: string, i: number) => (
+                          <div key={i} className="relative aspect-[3/4] rounded-lg overflow-hidden border bg-muted group">
+                            {url.toLowerCase().endsWith('.pdf') ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-slate-100 text-center">
+                                <FileText className="h-6 w-6 text-primary" />
+                                <span className="text-[8px] font-mono text-muted-foreground truncate w-full px-1 mt-1">PDF Brosur</span>
+                              </div>
+                            ) : (
+                              <img src={url} alt={`Brosur 4 Halaman ${i + 1}`} className="w-full h-full object-cover" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = currentUrls.filter((_, idx) => idx !== i);
+                                handleFieldChange('package4_brochureUrls', updated);
+                                handleFieldChange('package4_brochureUrl', updated[0] || '');
+                              }}
+                              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200 text-[10px] font-bold"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {currentUrls.length < 3 && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => openMediaPicker((urlResult) => {
+                          const newUrls = Array.isArray(urlResult) ? urlResult : [urlResult];
+                          const updated = [...currentUrls, ...newUrls].slice(0, 3);
+                          handleFieldChange('package4_brochureUrls', updated);
+                          handleFieldChange('package4_brochureUrl', updated[0] || '');
+                        })}
+                        className="w-full rounded-xl text-xs font-bold gap-2 border-accent text-accent hover:bg-accent hover:text-white h-9"
+                      >
+                        <Upload className="h-3.5 w-3.5" /> Pilih / Unggah Brosur 4 (Maks 3)
+                      </Button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );
