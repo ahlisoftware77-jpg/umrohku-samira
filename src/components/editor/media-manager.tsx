@@ -156,15 +156,10 @@ export default function MediaManager({ isOpen, onClose, onSelect, activeSectionT
 
       if (uploadedList.length > 0) {
         setImages(prev => [...uploadedList, ...prev]);
-        // Auto select all newly uploaded media files to instantly show on live preview
-        uploadedList.forEach(img => {
-          onSelect(img.secureUrl);
-        });
         toast({
-          title: " Berhasil Mengunggah Foto",
-          description: `${uploadedList.length} berkas foto telah berhasil diunggah dan ditambahkan ke editor.`,
+          title: "✅ Berhasil Mengunggah Foto",
+          description: `${uploadedList.length} berkas foto telah berhasil diunggah ke pustaka media. Silakan pilih foto untuk digunakan.`,
         });
-        onClose();
       }
     } catch (err: any) {
       console.error(err);
