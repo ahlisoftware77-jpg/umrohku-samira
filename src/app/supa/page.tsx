@@ -814,23 +814,79 @@ service cloud.firestore {
           }
         });
 
-        // Deduplicate valid tenants by subdomain or email or tenantId
-        const tenantMap = new Map<string, Tenant & { firestoreDocId: string }>();
-        validTenants.forEach(t => {
-          const key = (t.subdomain ? t.subdomain.toLowerCase().trim() : (t.email ? t.email.toLowerCase().trim() : t.tenantId));
-          if (!tenantMap.has(key)) {
-            tenantMap.set(key, t);
+        // Cluster valid tenants by any overlapping identifier (email, subdomain, tenantId, readableId)
+        const groups: (Tenant & { firestoreDocId: string })[][] = [];
+
+        validTenants.forEach(doc => {
+          const dEmail = doc.email?.toLowerCase().trim() || '';
+          const dSub = doc.subdomain?.toLowerCase().trim() || '';
+          const dTid = doc.tenantId?.toLowerCase().trim() || '';
+          const dRid = doc.readableId?.toLowerCase().trim() || '';
+
+          const matchingGroupIndexes: number[] = [];
+
+          groups.forEach((group, idx) => {
+            const matches = group.some(item => {
+              const iEmail = item.email?.toLowerCase().trim() || '';
+              const iSub = item.subdomain?.toLowerCase().trim() || '';
+              const iTid = item.tenantId?.toLowerCase().trim() || '';
+              const iRid = item.readableId?.toLowerCase().trim() || '';
+
+              if (dEmail && iEmail && dEmail === iEmail) return true;
+              if (dSub && iSub && dSub === iSub) return true;
+              if (dTid && iTid && dTid === iTid) return true;
+              if (dRid && iRid && dRid === iRid) return true;
+              if (dTid && (dTid === iSub || dTid === iRid)) return true;
+              if (iTid && (iTid === dSub || iTid === dRid)) return true;
+
+              return false;
+            });
+
+            if (matches) {
+              matchingGroupIndexes.push(idx);
+            }
+          });
+
+          if (matchingGroupIndexes.length === 0) {
+            groups.push([doc]);
           } else {
-            const existing = tenantMap.get(key)!;
-            const existingScore = (existing.name ? 5 : 0) + (existing.email ? 3 : 0) + (existing.tenantId?.length >= 20 ? 4 : 0);
-            const currentScore = (t.name ? 5 : 0) + (t.email ? 3 : 0) + (t.tenantId?.length >= 20 ? 4 : 0);
-            if (currentScore > existingScore) {
-              tenantMap.set(key, t);
+            // Merge into first matching group
+            const primaryIdx = matchingGroupIndexes[0];
+            groups[primaryIdx].push(doc);
+
+            // If it matched multiple existing groups, merge them together into primaryIdx
+            for (let i = matchingGroupIndexes.length - 1; i > 0; i--) {
+              const mergeIdx = matchingGroupIndexes[i];
+              groups[primaryIdx].push(...groups[mergeIdx]);
+              groups.splice(mergeIdx, 1);
             }
           }
         });
 
-        setTenants(Array.from(tenantMap.values()));
+        // For each cluster group, pick the highest completeness tenant document
+        const finalTenantsList = groups.map(group => {
+          return group.reduce((best, current) => {
+            const bestScore = 
+              (best.name ? 10 : 0) + 
+              (best.email ? 5 : 0) + 
+              (best.subdomain ? 5 : 0) + 
+              (best.company ? 3 : 0) + 
+              (best.expiresAt ? 3 : 0) + 
+              (best.tenantId?.length >= 20 ? 5 : 0);
+
+            const currentScore = 
+              (current.name ? 10 : 0) + 
+              (current.email ? 5 : 0) + 
+              (current.subdomain ? 5 : 0) + 
+              (current.company ? 3 : 0) + 
+              (current.expiresAt ? 3 : 0) + 
+              (current.tenantId?.length >= 20 ? 5 : 0);
+
+            return currentScore > bestScore ? current : best;
+          });
+        });
+
+        setTenants(finalTenantsList);
         setStubTenantsList(stubTenants);
       } catch (tErr) {}
 
