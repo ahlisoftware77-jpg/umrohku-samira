@@ -818,6 +818,7 @@ service cloud.firestore {
         const groups: (Tenant & { firestoreDocId: string })[][] = [];
 
         validTenants.forEach(doc => {
+          const dName = doc.name?.toLowerCase().trim() || '';
           const dEmail = doc.email?.toLowerCase().trim() || '';
           const dSub = doc.subdomain?.toLowerCase().trim() || '';
           const dTid = doc.tenantId?.toLowerCase().trim() || '';
@@ -827,13 +828,22 @@ service cloud.firestore {
 
           groups.forEach((group, idx) => {
             const matches = group.some(item => {
+              const iName = item.name?.toLowerCase().trim() || '';
               const iEmail = item.email?.toLowerCase().trim() || '';
               const iSub = item.subdomain?.toLowerCase().trim() || '';
               const iTid = item.tenantId?.toLowerCase().trim() || '';
               const iRid = item.readableId?.toLowerCase().trim() || '';
 
+              // Match by Same Name
+              if (dName && iName && dName === iName) return true;
+
+              // Match by Same Email
               if (dEmail && iEmail && dEmail === iEmail) return true;
+
+              // Match by Same Subdomain
               if (dSub && iSub && dSub === iSub) return true;
+
+              // Match by Tenant ID or Readable ID Alias
               if (dTid && iTid && dTid === iTid) return true;
               if (dRid && iRid && dRid === iRid) return true;
               if (dTid && (dTid === iSub || dTid === iRid)) return true;
