@@ -3411,6 +3411,11 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                     {(() => {
                       const q = tenantSearchQuery.trim().toLowerCase();
                       const filteredTenants = tenants.filter(t => {
+                        // Strict Double Defense: Hide any document missing Name, Email, or Subdomain
+                        if (!t.name || !t.name.trim() || !t.email || !t.email.trim() || !t.subdomain || !t.subdomain.trim()) {
+                          return false;
+                        }
+
                         if (!q) return true;
                         const readableId = t.readableId || (t.email ? t.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : '');
                         
