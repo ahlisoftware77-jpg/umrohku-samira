@@ -1011,26 +1011,26 @@ export default function TenantDashboardPage() {
           </span>
           
           {tenantProfile && (
-            <div className="hidden lg:flex items-center gap-3 ml-4 border-l pl-4">
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-slate-800 leading-none">
+            <div className="hidden md:flex items-center gap-2 lg:gap-3 ml-2 lg:ml-4 border-l pl-2 lg:pl-4 min-w-0">
+              <div className="flex flex-col min-w-0 max-w-[120px] lg:max-w-[200px]">
+                <span className="text-xs font-bold text-slate-800 leading-none truncate">
                   {tenantProfile.name} {tenantProfile.company ? `(${tenantProfile.company})` : ''}
                 </span>
                 <a 
                   href={`/${tenantProfile.subdomain}`} 
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs text-primary hover:underline flex items-center gap-1 mt-1 font-medium"
+                  className="text-[11px] text-primary hover:underline flex items-center gap-1 mt-0.5 font-medium truncate"
                 >
                   Lihat: umrohku-samira.my.id/{tenantProfile.subdomain}
                 </a>
               </div>
 
               {/* Realtime Visitor Counter Badge */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs font-sans">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs font-sans shrink-0">
                 <Eye className="h-3.5 w-3.5 text-amber-500 animate-pulse shrink-0" />
                 <span className="text-xs font-bold whitespace-nowrap">
-                  {(tenantProfile.visitorCount || 0).toLocaleString()} <span className="font-medium text-amber-700/80 text-[11px]">Pengunjung</span>
+                  {(tenantProfile.visitorCount || 0).toLocaleString()} <span className="font-medium text-amber-700/80 text-[11px] hidden xl:inline">Pengunjung</span>
                 </span>
               </div>
 
@@ -1038,7 +1038,7 @@ export default function TenantDashboardPage() {
               <button
                 type="button"
                 onClick={() => setIsSubscriptionModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs hover:bg-emerald-100 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs hover:bg-emerald-100 transition-colors cursor-pointer shrink-0"
                 title="Klik untuk melihat rincian masa aktif & perpanjangan langganan"
               >
                 <Clock className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
@@ -1051,7 +1051,7 @@ export default function TenantDashboardPage() {
                     'Sisa Masa Aktif: Gratis 14 Hari'
                   )}
                 </span>
-                <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-full ml-1">
+                <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-full ml-1 hidden sm:inline">
                   Perpanjang
                 </span>
               </button>
