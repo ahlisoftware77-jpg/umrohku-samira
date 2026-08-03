@@ -746,10 +746,36 @@ service cloud.firestore {
     try {
       setDbLoading(true);
       
-      // 1. Fetch Tenants
+      // 1. Fetch Tenants (with deduplication of stub documents)
       try {
         const snap = await getDocs(collection(db, 'tenants'));
-        const tenantsList = snap.docs.map(doc => doc.data() as Tenant);
+        const rawList = snap.docs.map(doc => ({
+          ...doc.data() as Tenant,
+          firestoreDocId: doc.id
+        }));
+
+        // Deduplicate stub/duplicate documents by subdomain or email
+        const tenantMap = new Map<string, Tenant>();
+        
+        rawList.forEach(t => {
+          const key = (t.subdomain ? t.subdomain.toLowerCase().trim() : (t.email ? t.email.toLowerCase().trim() : t.tenantId));
+          if (!key) return;
+
+          if (!tenantMap.has(key)) {
+            tenantMap.set(key, t);
+          } else {
+            const existing = tenantMap.get(key)!;
+            // Rank completeness: Full profile with Name + Email + UID > Stub doc
+            const existingScore = (existing.name ? 5 : 0) + (existing.email ? 3 : 0) + (existing.company ? 2 : 0) + (existing.expiresAt ? 2 : 0) + (existing.tenantId?.length > 15 ? 4 : 0);
+            const currentScore = (t.name ? 5 : 0) + (t.email ? 3 : 0) + (t.company ? 2 : 0) + (t.expiresAt ? 2 : 0) + (t.tenantId?.length > 15 ? 4 : 0);
+            
+            if (currentScore > existingScore) {
+              tenantMap.set(key, t);
+            }
+          }
+        });
+
+        const tenantsList = Array.from(tenantMap.values());
         setTenants(tenantsList);
       } catch (tErr) {}
 
@@ -3276,14 +3302,27 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
                       const filteredTenants = tenants.filter(t => {
                         if (!q) return true;
                         const readableId = t.readableId || (t.email ? t.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : '');
-                        return (
-                          (t.name && t.name.toLowerCase().includes(q)) ||
-                          (t.company && t.company.toLowerCase().includes(q)) ||
-                          (t.email && t.email.toLowerCase().includes(q)) ||
-                          (t.subdomain && t.subdomain.toLowerCase().includes(q)) ||
-                          (t.tenantId && t.tenantId.toLowerCase().includes(q)) ||
-                          (readableId && readableId.toLowerCase().includes(q))
-                        );
+                        
+                        // Check direct match on key fields
+                        if (t.name && t.name.toLowerCase().includes(q)) return true;
+                        if (t.email && t.email.toLowerCase().includes(q)) return true;
+                        if (t.subdomain && t.subdomain.toLowerCase().includes(q)) return true;
+                        if (t.tenantId && t.tenantId.toLowerCase().includes(q)) return true;
+                        if (readableId && readableId.toLowerCase().includes(q)) return true;
+                        if (t.phone && t.phone.toLowerCase().includes(q)) return true;
+
+                        // Check company field, but prevent 'samira' substring in company from matching short queries like 'ira'
+                        if (t.company) {
+                          const compLower = t.company.toLowerCase();
+                          if (q === 'ira' || q === 'samira') {
+                            const withoutSamira = compLower.replace(/samira/g, '');
+                            if (withoutSamira.includes(q)) return true;
+                          } else if (compLower.includes(q)) {
+                            return true;
+                          }
+                        }
+
+                        return false;
                       });
 
                       if (filteredTenants.length === 0) {
