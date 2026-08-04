@@ -229,6 +229,17 @@ export default function SuperAdminPage() {
   const [providerHealthResults, setProviderHealthResults] = useState<Record<string, { status: string; message: string; latencyMs?: number; availableModels?: string[] }>>({});
   const [isTestingAllHealth, setIsTestingAllHealth] = useState(false);
 
+  // Helper: sanitize providers before Firestore write (Firestore rejects undefined values)
+  const sanitizeProviders = (providers: AiProviderConfig[]) => providers.map(p => ({
+    id: p.id || '', name: p.name || '', providerType: p.providerType || 'gemini',
+    apiKey: p.apiKey || '', model: p.model || '', baseUrl: p.baseUrl || '',
+    enabled: !!p.enabled, priority: p.priority || 1,
+  }));
+
+  const saveProvidersToFirestore = (providers: AiProviderConfig[]) => {
+    setDoc(doc(db, 'systemSettings', 'global'), { aiProviders: sanitizeProviders(providers) }, { merge: true }).catch(e => console.warn('Firestore sync failed:', e));
+  };
+
   const applyDetectedModelToProvider = (provId: string, detectedModel: string) => {
     setAiProviders(prev => {
       const updated = prev.map(p => p.id === provId ? { ...p, model: detectedModel } : p);
@@ -3103,49 +3114,51 @@ service cloud.firestore {
         localStorage.setItem('ai_generate_limit', String(aiGenerateLimit));
       }
 
-      // 2. Build Firestore payload — only include non-empty fields to prevent overwriting with blanks
+      // 2. Build Firestore payload — sanitize all values (Firestore rejects undefined)
+      const sanitizedProviders = aiProviders.map(p => ({
+        id: p.id || '',
+        name: p.name || '',
+        providerType: p.providerType || 'gemini',
+        apiKey: p.apiKey || '',
+        model: p.model || '',
+        baseUrl: p.baseUrl || '',
+        enabled: !!p.enabled,
+        priority: p.priority || 1,
+      }));
+
       const firestorePayload: Record<string, any> = {
         firebase: {
-          apiKey: fbApiKey,
-          authDomain: fbAuthDomain,
-          projectId: fbProjectId,
-          storageBucket: fbStorageBucket,
-          messagingSenderId: fbMessagingSenderId,
-          appId: fbAppId,
+          apiKey: fbApiKey || '',
+          authDomain: fbAuthDomain || '',
+          projectId: fbProjectId || '',
+          storageBucket: fbStorageBucket || '',
+          messagingSenderId: fbMessagingSenderId || '',
+          appId: fbAppId || '',
         },
         cloudinary: {
-          cloudName: cldCloudName,
-          uploadPreset: cldUploadPreset,
+          cloudName: cldCloudName || '',
+          uploadPreset: cldUploadPreset || '',
         },
         gemini: {
-          mode: geminiApiKeyMode,
-          enabled: isGeminiAiEnabled,
+          apiKey: geminiApiKey || '',
+          mode: geminiApiKeyMode || 'global',
+          enabled: !!isGeminiAiEnabled,
         },
-        aiGenerateLimit: aiGenerateLimit,
+        aiProviders: sanitizedProviders,
+        aiGenerateLimit: aiGenerateLimit || 10,
         updatedAt: new Date(),
       };
-
-      // Only write gemini apiKey if user actually entered one (prevent clearing saved key)
-      if (geminiApiKey) {
-        firestorePayload.gemini.apiKey = geminiApiKey;
-      }
-
-      // Only write aiProviders if at least one has a non-empty apiKey (prevent overwriting with empty defaults)
-      const hasRealProviderKeys = aiProviders.some(p => p.apiKey && p.apiKey.trim().length > 5);
-      if (hasRealProviderKeys) {
-        firestorePayload.aiProviders = aiProviders;
-      }
 
       // 3. Save to Firestore
       try {
         await setDoc(doc(db, 'systemSettings', 'global'), firestorePayload, { merge: true });
         console.log('✅ Firestore systemSettings/global saved successfully');
-      } catch (dbErr) {
+      } catch (dbErr: any) {
         console.error('❌ Firestore write failed:', dbErr);
-        alert('⚠️ Tersimpan di browser lokal, tapi gagal simpan ke database cloud. Periksa koneksi internet.');
+        alert(`⚠️ Gagal simpan ke database cloud: ${dbErr?.message || 'Unknown error'}. Data tetap tersimpan di browser lokal.`);
       }
 
-      alert('Pengaturan API Firebase, Cloudinary, & Gemini berhasil disimpan!');
+      alert('Pengaturan API berhasil disimpan!');
     } catch (err: any) {
       console.error(err);
       alert('Gagal menyimpan pengaturan API.');
@@ -5720,9 +5733,7 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                                   const updated = aiProviders.map(p => p.id === prov.id ? { ...p, enabled: !p.enabled } : p);
                                   setAiProviders(updated);
                                   if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
-                                  try {
-                                    await setDoc(doc(db, 'systemSettings', 'global'), { aiProviders: updated }, { merge: true });
-                                  } catch (e) {}
+                                  saveProvidersToFirestore(updated);
                                 }}
                                 className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold transition-all border ${
                                   prov.enabled ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-slate-200 text-slate-600 border-slate-300'
@@ -5838,9 +5849,7 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                                   const updated = aiProviders.filter(p => p.id !== prov.id);
                                   setAiProviders(updated);
                                   if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
-                                  try {
-                                    await setDoc(doc(db, 'systemSettings', 'global'), { aiProviders: updated }, { merge: true });
-                                  } catch (e) {}
+                                  saveProvidersToFirestore(updated);
                                 }}
                                 className="text-[10px] font-bold text-red-400 hover:text-red-200 underline"
                               >
@@ -7182,7 +7191,7 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                 if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
 
                 // Save to Firestore systemSettings in background
-                setDoc(doc(db, 'systemSettings', 'global'), { aiProviders: updated }, { merge: true }).catch(() => {});
+                saveProvidersToFirestore(updated);
 
                 setIsAddProviderModalOpen(false);
                 alert(`✅ Node Provider '${providerObj.name}' berhasil disimpan ke 9router Cluster!`);
