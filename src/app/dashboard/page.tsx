@@ -35,7 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye, PenLine, Monitor, History, Save, Loader2, MessageCircle, Clock } from 'lucide-react';
+import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye, PenLine, Monitor, History, Save, Loader2, MessageCircle, Clock, Sparkles, Wand2, Bot, Send, RefreshCw } from 'lucide-react';
 import { Tenant, LandingPage, Section, Content, SectionType, SYSTEM_PLANS } from '@/types/cms';
 
 function getReadableIdFromEmail(emailAddress: string): string {
@@ -123,7 +123,138 @@ export default function TenantDashboardPage() {
 
   // Subscription Renewal Modal State
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
-  const [showExpiryWarningModal, setShowExpiryWarningModal] = useState(false);
+  // Gemini AI Assistant State & Handler
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiActiveTab, setAiActiveTab] = useState<'audit' | 'ads' | 'cs'>('ads');
+  const [aiPromptCustom, setAiPromptCustom] = useState('');
+  const [aiSelectedPlatform, setAiSelectedPlatform] = useState<'whatsapp' | 'instagram' | 'facebook'>('whatsapp');
+  const [aiSelectedTone, setAiSelectedTone] = useState<'persuasive' | 'islamic' | 'exclusive'>('persuasive');
+  const [aiCsQuestion, setAiCsQuestion] = useState('Berapa DP & syarat pendaftaran paket umrah?');
+  const [aiResultText, setAiResultText] = useState('');
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [customGeminiKey, setCustomGeminiKey] = useState('');
+  const [copiedAiResult, setCopiedAiResult] = useState(false);
+
+  const handleExecuteGeminiAi = async (mode: 'audit' | 'ads' | 'cs') => {
+    setIsAiGenerating(true);
+    setAiError('');
+    setAiResultText('');
+
+    try {
+      let apiKey = customGeminiKey.trim() || 
+                   (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '') ||
+                   process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+
+      if (!apiKey) {
+        try {
+          const sysSnap = await getDoc(doc(db, 'systemSettings', 'global'));
+          if (sysSnap.exists()) {
+            apiKey = sysSnap.data()?.gemini?.apiKey || '';
+          }
+        } catch (e) {}
+      }
+
+      if (!apiKey) {
+        setAiError('Gemini API Key belum diatur. Masukkan API Key Anda di bawah ini atau minta Super Admin mengaturnya di Portal /supa.');
+        setIsAiGenerating(false);
+        return;
+      }
+
+      const tenantName = tenantProfile?.name || 'Mitra Travel Umrah';
+      const companyName = tenantProfile?.company || 'Travel Umrah Resmi';
+      const subdomain = tenantProfile?.subdomain || 'mitra';
+      const phoneNum = tenantProfile?.phone || phone || '628xxx';
+      const landingPageUrl = `https://umrohku-samira.my.id/${subdomain}`;
+      const waLink = `https://wa.me/${phoneNum}`;
+
+      let promptText = '';
+
+      if (mode === 'audit') {
+        promptText = `Bertindaklah sebagai Pakar Marketing Travel Umrah & Haji Teremuka.
+Analisis dan berikan audit perbaikan untuk landing page travel umrah berikut:
+- Nama Travel/Konsultan: ${companyName} (${tenantName})
+- URL Landing Page: ${landingPageUrl}
+- Subdomain: /${subdomain}
+
+Tugas Anda:
+1. Berikan Skor Daya Tarik Copywriting (0 - 100).
+2. Tuliskan 3 Analisis Keunggulan landing page ini.
+3. Berikan 3 Rekomendasi Judul Headline Hero yang Lebih Menjual & Menyentuh Hati Calon Jamaah.
+4. Berikan Tips Strategis Cara Meningkatkan Jumlah Kontak WhatsApp dari Pengunjung Website.
+Gunakan Bahasa Indonesia yang ramah, profesional, dan meyakinkan.`;
+      } else if (mode === 'ads') {
+        const platformName = aiSelectedPlatform === 'whatsapp' ? 'WhatsApp Broadcast' : aiSelectedPlatform === 'instagram' ? 'Instagram Feed/Reels' : 'Facebook Post';
+        const toneName = aiSelectedTone === 'persuasive' ? 'Persuasif, Menarik & Promosional' : aiSelectedTone === 'islamic' ? 'Islami, Menyentuh Hati & Penuh Berkah' : 'Eksklusif, Premium & Terpercaya';
+
+        promptText = `Bertindaklah sebagai Copywriter Spesialis Iklan Travel Umrah & Haji.
+Buatkan teks iklan postingan media sosial untuk platform ${platformName} dengan gaya bahasa ${toneName}.
+
+Detail Informasi Travel:
+- Nama Travel / Konsultan: ${companyName} (${tenantName})
+- Link Website Landing Page: ${landingPageUrl}
+- WhatsApp Konsultasi: ${waLink}
+${aiPromptCustom ? `- Instruksi Tambahan / Promo Khusus: ${aiPromptCustom}` : ''}
+
+Ketentuan Teks Iklan:
+- Gunakan emoji yang relevan & menarik.
+- Sertakan Call-To-Action (CTA) yang jelas mengarah ke link website ${landingPageUrl} & WhatsApp ${waLink}.
+- Tambahkan 5 - 8 Hashtag populer (#Umroh2025 #TravelUmroh #SamiraTravel dll).
+- Format teks rapi siap salin (siap kirim/post).`;
+      } else if (mode === 'cs') {
+        promptText = `Bertindaklah sebagai Customer Service & Konsultan Umrah yang sangat ramah, sopan, Islami, dan responsif.
+Buatkan jawaban pesan balasan WhatsApp profesional untuk pertanyaan calon jamaah berikut:
+
+Pertanyaan Jamaah: "${aiCsQuestion || 'Berapa DP dan syarat pendaftaran paket umrah?'}"
+
+Detail Informasi Travel:
+- Nama Konsultan / Travel: ${tenantName} (${companyName})
+- Website Informasi Paket Lengkap: ${landingPageUrl}
+
+Ketentuan Balasan:
+- Menggunakan salam Islami yang hangat.
+- Menjawab pertanyaan dengan jelas, ramah, dan menenangkan calon jamaah.
+- Mengajak jamaah untuk melanjutkan konsultasi via telpon/WA atau melihat brosur di website ${landingPageUrl}. Siap disalin dan dikirim via WhatsApp.`;
+      }
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }] }]
+        })
+      });
+
+      if (!response.ok) {
+        const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        const fbRes = await fetch(fallbackEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+        });
+        
+        if (!fbRes.ok) {
+          const errData = await fbRes.json();
+          throw new Error(errData.error?.message || 'Gagal menghubungi server Gemini AI.');
+        }
+
+        const fbData = await fbRes.json();
+        const generated = fbData.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal menghasilkan teks.';
+        setAiResultText(generated);
+        return;
+      }
+
+      const data = await response.json();
+      const generated = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal menghasilkan teks.';
+      setAiResultText(generated);
+    } catch (err: any) {
+      console.error('Gemini AI execution error:', err);
+      setAiError(err.message || 'Terjadi kesalahan saat memproses permintaan AI.');
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   // Tenant Profile state for displaying dashboard info
   const [tenantProfile, setTenantProfile] = useState<Tenant | null>(null);
@@ -1096,6 +1227,18 @@ export default function TenantDashboardPage() {
             </Button>
           )}
 
+          {tenantProfile && (
+            <Button
+              onClick={() => setIsAiModalOpen(true)}
+              variant="outline"
+              className="rounded-full text-xs font-bold border-purple-300 text-purple-700 bg-purple-50/70 hover:bg-purple-600 hover:text-white flex items-center gap-1.5 h-9 px-3.5 shadow-xs transition-all"
+              title="Asisten Gemini AI - Audit Landing Page & Generator Postingan Iklan"
+            >
+              <Sparkles className="h-4 w-4 shrink-0 text-purple-600 group-hover:text-white" />
+              <span>Asisten AI</span>
+            </Button>
+          )}
+
           <Button 
             onClick={handlePublish}
             className="bg-primary text-white hover:bg-accent hover:text-accent-foreground font-bold px-4 md:px-6 h-9 rounded-full flex gap-1.5 text-xs md:text-sm"
@@ -1778,7 +1921,7 @@ export default function TenantDashboardPage() {
           )}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-50 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 md:py-3.5 md:px-4 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 group border border-emerald-500/20"
+          className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-40 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 md:py-3.5 md:px-4 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 group border border-emerald-500/20"
           title="Hubungi Layanan Support Pengembang"
         >
           <MessageCircle className="h-5 w-5 shrink-0 text-white animate-pulse" />
@@ -1788,6 +1931,276 @@ export default function TenantDashboardPage() {
           </div>
           <span className="text-[10px] font-extrabold md:hidden whitespace-nowrap">Support</span>
         </a>
+      )}
+
+      {/* Floating Gemini AI Assistant Action Bubble */}
+      {user && tenantProfile && (
+        <button
+          type="button"
+          onClick={() => setIsAiModalOpen(true)}
+          className="fixed bottom-36 right-6 md:bottom-24 md:right-8 z-40 flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold p-3 md:py-3.5 md:px-4 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 group border border-purple-400/30"
+          title="Buka Asisten Gemini AI"
+        >
+          <Sparkles className="h-5 w-5 shrink-0 text-amber-300 animate-spin" style={{ animationDuration: '4s' }} />
+          <div className="flex flex-col items-start leading-none max-w-0 overflow-hidden group-hover:max-w-[200px] transition-all duration-300 ease-out whitespace-nowrap hidden md:flex">
+            <span className="text-[8px] font-extrabold uppercase tracking-widest text-amber-300 mb-0.5">Kecerdasan Buatan</span>
+            <span className="text-[11px] font-extrabold">Asisten AI Gemini</span>
+          </div>
+          <span className="text-[10px] font-extrabold md:hidden whitespace-nowrap">Asisten AI</span>
+        </button>
+      )}
+
+      {/* ==========================================
+          MODAL DIALOG ASISTEN GEMINI AI DASHBOARD
+          ========================================== */}
+      {isAiModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 animate-in fade-in duration-200">
+          <Card className="w-full max-w-2xl shadow-2xl rounded-3xl bg-white border-none p-4 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <CardHeader className="px-0 pt-0 border-b pb-4 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+                  <Sparkles className="h-6 w-6 text-purple-600 animate-pulse" />
+                  Asisten AI Gemini Marketing
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Gunakan kecerdasan buatan AI untuk mengaudit landing page, membuat postingan promo iklan, dan menyusun balasan chat calon jamaah.
+                </CardDescription>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsAiModalOpen(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold text-sm"
+              >
+                ✕
+              </button>
+            </CardHeader>
+
+            {/* AI Mode Selector Tabs */}
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border">
+              <button
+                type="button"
+                onClick={() => { setAiActiveTab('ads'); setAiResultText(''); setAiError(''); }}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  aiActiveTab === 'ads' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Wand2 className="h-3.5 w-3.5 text-purple-600" />
+                Generator Iklan Medsos
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setAiActiveTab('cs'); setAiResultText(''); setAiError(''); }}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  aiActiveTab === 'cs' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <MessageCircle className="h-3.5 w-3.5 text-emerald-600" />
+                Balasan Chat Jamaah
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setAiActiveTab('audit'); setAiResultText(''); setAiError(''); }}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  aiActiveTab === 'audit' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Bot className="h-3.5 w-3.5 text-indigo-600" />
+                Audit Landing Page
+              </button>
+            </div>
+
+            {/* TAB 1: GENERATOR IKLAN MEDSOS */}
+            {aiActiveTab === 'ads' && (
+              <div className="space-y-4 py-1 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="font-bold text-slate-700">Platform Iklan:</Label>
+                    <select
+                      value={aiSelectedPlatform}
+                      onChange={(e) => setAiSelectedPlatform(e.target.value as any)}
+                      className="w-full bg-slate-50 border rounded-xl p-2 text-xs font-semibold focus:ring-purple-500"
+                    >
+                      <option value="whatsapp">📱 WhatsApp Broadcast / Group</option>
+                      <option value="instagram">📸 Instagram Feed / Story / Reels</option>
+                      <option value="facebook">📘 Facebook Post / Fanpage</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="font-bold text-slate-700">Gaya Bahasa (Tone):</Label>
+                    <select
+                      value={aiSelectedTone}
+                      onChange={(e) => setAiSelectedTone(e.target.value as any)}
+                      className="w-full bg-slate-50 border rounded-xl p-2 text-xs font-semibold focus:ring-purple-500"
+                    >
+                      <option value="persuasive">🎯 Persuasif, Menarik & Promosional</option>
+                      <option value="islamic">🕌 Islami, Menyentuh Hati & Penuh Berkah</option>
+                      <option value="exclusive">👑 Eksklusif, Premium & Terpercaya</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold text-slate-700">Poin Penawaran Khusus / Promo (Opsional):</Label>
+                  <Input
+                    type="text"
+                    value={aiPromptCustom}
+                    onChange={(e) => setAiPromptCustom(e.target.value)}
+                    placeholder="Contoh: Diskon DP Rp 2 Juta untuk 10 pendaftar pertama bulan ini..."
+                    className="bg-slate-50"
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => handleExecuteGeminiAi('ads')}
+                  disabled={isAiGenerating}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl h-10 flex items-center justify-center gap-2 shadow-sm text-xs"
+                >
+                  {isAiGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                  {isAiGenerating ? 'AI Sedang Meracik Postingan Iklan...' : '✨ Buat Postingan Iklan Sekarang'}
+                </Button>
+              </div>
+            )}
+
+            {/* TAB 2: BALASAN CHAT JAMAAH */}
+            {aiActiveTab === 'cs' && (
+              <div className="space-y-3 py-1 text-xs">
+                <div className="space-y-1">
+                  <Label className="font-bold text-slate-700">Pertanyaan / Keluhan Calon Jamaah:</Label>
+                  <textarea
+                    rows={3}
+                    value={aiCsQuestion}
+                    onChange={(e) => setAiCsQuestion(e.target.value)}
+                    placeholder="Ketik atau tempel pertanyaan calon jamaah..."
+                    className="w-full bg-slate-50 border rounded-2xl p-3 text-xs focus:ring-purple-500"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-500">Contoh Cepat:</span>
+                  {[
+                    'Berapa DP & syarat umrah?',
+                    'Fasilitas hotel bintang berapa?',
+                    'Apakah termasuk penerbangan langsung?',
+                    'Bagaimana jika pembatalan keberangkatan?'
+                  ].map((q, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setAiCsQuestion(q)}
+                      className="text-[10px] bg-slate-100 hover:bg-purple-100 text-slate-700 hover:text-purple-900 px-2.5 py-1 rounded-full border"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => handleExecuteGeminiAi('cs')}
+                  disabled={isAiGenerating}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl h-10 flex items-center justify-center gap-2 shadow-sm text-xs"
+                >
+                  {isAiGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                  {isAiGenerating ? 'AI Sedang Menyusun Balasan Chat...' : '💬 Buat Balasan WhatsApp Ramah'}
+                </Button>
+              </div>
+            )}
+
+            {/* TAB 3: AUDIT LANDING PAGE */}
+            {aiActiveTab === 'audit' && (
+              <div className="space-y-3 py-1 text-xs">
+                <div className="bg-purple-50 border border-purple-200 rounded-2xl p-3 text-[11px] text-purple-950 space-y-1">
+                  <p className="font-bold flex items-center gap-1.5 text-purple-900">
+                    <Bot className="h-4 w-4 text-purple-600" />
+                    Audit Otomatis AI Gemini:
+                  </p>
+                  <p>
+                    AI akan membaca judul headline hero, nama travel (<strong className="text-purple-700">{tenantProfile?.company || 'Travel'}</strong>), dan subdomain (<strong className="text-purple-700">/{tenantProfile?.subdomain}</strong>) untuk memberikan saran konversi jamaah.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => handleExecuteGeminiAi('audit')}
+                  disabled={isAiGenerating}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl h-10 flex items-center justify-center gap-2 shadow-sm text-xs"
+                >
+                  {isAiGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {isAiGenerating ? 'AI Sedang Menganalisis Landing Page...' : '📊 Audit Landing Page Saya Sekarang'}
+                </Button>
+              </div>
+            )}
+
+            {/* Error Message Box */}
+            {aiError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-800 space-y-2">
+                <p className="font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4 text-red-600 shrink-0" /> {aiError}
+                </p>
+                
+                {/* Fallback API Key Input Box */}
+                <div className="space-y-1 pt-1 border-t border-red-200">
+                  <Label className="text-[11px] font-bold text-red-900">Masukkan Gemini API Key Anda (Opsional):</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      value={customGeminiKey}
+                      onChange={(e) => setCustomGeminiKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="bg-white text-xs font-mono border-red-300"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleExecuteGeminiAi(aiActiveTab)}
+                      className="bg-purple-600 text-white font-bold text-xs shrink-0 rounded-xl"
+                    >
+                      Coba Lagi
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-red-700">
+                    Kunci ini akan disimpan di browser Anda secara privat. Dapatkan kunci gratis di <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline font-bold">Google AI Studio</a>.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* AI Result Box */}
+            {aiResultText && (
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-purple-600" /> Hasil Generasi AI Gemini:
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(aiResultText);
+                      setCopiedAiResult(true);
+                      setTimeout(() => setCopiedAiResult(false), 2500);
+                    }}
+                    className="h-7 text-xs font-bold rounded-xl border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white flex items-center gap-1.5"
+                  >
+                    {copiedAiResult ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copiedAiResult ? 'Tersalin!' : 'Salin Hasil AI'}
+                  </Button>
+                </div>
+
+                <div className="bg-slate-950 text-slate-100 p-4 rounded-2xl text-xs font-sans whitespace-pre-wrap leading-relaxed max-h-[320px] overflow-y-auto border border-slate-800 select-all shadow-inner">
+                  {aiResultText}
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
       )}
     </div>
   );
