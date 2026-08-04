@@ -276,68 +276,14 @@ HANYA berikan teks hasil tulisan tanpa tanda petik pembuka/penutup dan tanpa pen
     { type: 'ad_popup', label: '📢 Iklan Popup (Awal Muat Halaman)' },
   ];
 
-  // Render inputs dynamically based on section type
-  const renderSectionFields = () => {
-    if (!activeSection) return <p className="text-sm text-muted-foreground">Pilih seksi di layar atau daftar seksi untuk disunting.</p>;
+  // Helper to render section form content based on active section type
+  const renderSectionTypeContent = () => {
+    if (!activeSection) return null;
+    switch (activeSection.type) {
+      case 'hero':
+        return (
+          <div className="space-y-4">
 
-    return (
-      <div className="space-y-4">
-        {/* Universal AI Section Copywriter Bar */}
-        {isAiEnabled && (
-          <div className="p-3 bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-slate-900 text-white rounded-2xl border border-purple-500/30 shadow-md space-y-2 mb-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-amber-300 animate-pulse" /> Asisten Penulis AI Seksi
-              </span>
-              <span className="text-[9px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                🟢 Aktif oleh Supa
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-300">
-              Biarkan AI membuatkan judul & deskripsi menarik secara otomatis untuk seksi ini:
-            </p>
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              <Button
-                type="button"
-                size="sm"
-                disabled={aiGeneratingField !== null}
-                onClick={() => handleGenerateSectionAiContent('title', 'Judul Utama', 'Buat judul yang sangat menggugah niat ibadah umrah')}
-                className="h-7 text-[10px] font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-1 shadow-xs"
-              >
-                {aiGeneratingField === 'title' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3 text-amber-300" />}
-                ✨ AI Judul
-              </Button>
-
-              <Button
-                type="button"
-                size="sm"
-                disabled={aiGeneratingField !== null}
-                onClick={() => handleGenerateSectionAiContent('description', 'Deskripsi / Subjudul', 'Buat deskripsi singkat yang memberikan rasa tenang, amanah, dan terpercaya')}
-                className="h-7 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl gap-1 shadow-xs"
-              >
-                {aiGeneratingField === 'description' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3 text-amber-300" />}
-                ✨ AI Deskripsi
-              </Button>
-
-              <Button
-                type="button"
-                size="sm"
-                disabled={aiGeneratingField !== null}
-                onClick={() => handleGenerateSectionAiContent('badgeText', 'Teks Lencana (Badge)', 'Buat lencana singkat 3-5 kata yang menonjolkan legalitas Kemenag / keunggulan')}
-                className="h-7 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-white rounded-xl gap-1 shadow-xs border border-slate-700"
-              >
-                {aiGeneratingField === 'badgeText' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3 text-amber-300" />}
-                ✨ AI Badge
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {(() => {
-          switch (activeSection.type) {
-            case 'hero':
-              return (
-                <div className="space-y-4">
 
             <h3 className="font-bold text-base text-primary mb-2">Penyuntingan Seksi Hero</h3>
             <div className="space-y-2">
@@ -2168,13 +2114,71 @@ HANYA berikan teks hasil tulisan tanpa tanda petik pembuka/penutup dan tanpa pen
               />
             </div>
           );
-        default:
-          return null;
-      }
-    })()}
-  </div>
-);
-};
+      default:
+        return null;
+    }
+  };
+
+  const renderSectionFields = () => {
+    if (!activeSection) return <p className="text-sm text-muted-foreground">Pilih seksi di layar atau daftar seksi untuk disunting.</p>;
+
+    return (
+      <div className="space-y-4">
+        {/* Universal AI Section Copywriter Bar */}
+        {isAiEnabled && (
+          <div className="p-3 bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-slate-900 text-white rounded-2xl border border-purple-500/30 shadow-md space-y-2 mb-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-amber-300 animate-pulse" /> Asisten Penulis AI Seksi
+              </span>
+              <span className="text-[9px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                🟢 Aktif oleh Supa
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-300">
+              Biarkan AI membuatkan judul & deskripsi menarik secara otomatis untuk seksi ini:
+            </p>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <Button
+                type="button"
+                size="sm"
+                disabled={aiGeneratingField !== null}
+                onClick={() => handleGenerateSectionAiContent('title', 'Judul Utama', 'Buat judul yang sangat menggugah niat ibadah umrah')}
+                className="h-7 text-[10px] font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-1 shadow-xs"
+              >
+                {aiGeneratingField === 'title' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3 text-amber-300" />}
+                ✨ AI Judul
+              </Button>
+
+              <Button
+                type="button"
+                size="sm"
+                disabled={aiGeneratingField !== null}
+                onClick={() => handleGenerateSectionAiContent('description', 'Deskripsi / Subjudul', 'Buat deskripsi singkat yang memberikan rasa tenang, amanah, dan terpercaya')}
+                className="h-7 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl gap-1 shadow-xs"
+              >
+                {aiGeneratingField === 'description' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3 text-amber-300" />}
+                ✨ AI Deskripsi
+              </Button>
+
+              <Button
+                type="button"
+                size="sm"
+                disabled={aiGeneratingField !== null}
+                onClick={() => handleGenerateSectionAiContent('badgeText', 'Teks Lencana (Badge)', 'Buat lencana singkat 3-5 kata yang menonjolkan legalitas Kemenag / keunggulan')}
+                className="h-7 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-white rounded-xl gap-1 shadow-xs border border-slate-700"
+              >
+                {aiGeneratingField === 'badgeText' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3 text-amber-300" />}
+                ✨ AI Badge
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {renderSectionTypeContent()}
+      </div>
+    );
+  };
 
   return (
     <aside className="w-full md:w-80 h-full border-r bg-white shadow-sm flex flex-col z-30 shrink-0 pb-16 md:pb-0">
