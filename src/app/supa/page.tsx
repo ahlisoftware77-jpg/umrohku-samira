@@ -225,9 +225,19 @@ export default function SuperAdminPage() {
   const [providerHealthResults, setProviderHealthResults] = useState<Record<string, { status: string; message: string; latencyMs?: number }>>({});
   const [isTestingAllHealth, setIsTestingAllHealth] = useState(false);
 
+  const applyDetectedModelToProvider = (provId: string, detectedModel: string) => {
+    setAiProviders(prev => {
+      const updated = prev.map(p => p.id === provId ? { ...p, model: detectedModel } : p);
+      if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const handleTestAllProviderHealth = async () => {
     setIsTestingAllHealth(true);
     const results: Record<string, { status: string; message: string; latencyMs?: number }> = {};
+    let updatedProviders = [...aiProviders];
+
     for (const prov of aiProviders) {
       if (!prov.apiKey.trim()) {
         results[prov.id] = { status: 'invalid', message: '⚠️ API Key Belum Diisi' };
@@ -235,7 +245,15 @@ export default function SuperAdminPage() {
       }
       const res = await testAiProviderHealth(prov);
       results[prov.id] = { status: res.status, message: res.message, latencyMs: res.latencyMs };
+
+      if (res.detectedModel) {
+        updatedProviders = updatedProviders.map(p => p.id === prov.id ? { ...p, model: res.detectedModel! } : p);
+      }
     }
+
+    setAiProviders(updatedProviders);
+    if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updatedProviders));
+
     setProviderHealthResults(results);
     setIsTestingAllHealth(false);
   };
@@ -5683,6 +5701,9 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                                 type="button"
                                 onClick={async () => {
                                   const res = await testAiProviderHealth(prov);
+                                  if (res.detectedModel) {
+                                    applyDetectedModelToProvider(prov.id, res.detectedModel);
+                                  }
                                   setProviderHealthResults(prev => ({
                                     ...prev,
                                     [prov.id]: { status: res.status, message: res.message, latencyMs: res.latencyMs }

@@ -169,15 +169,28 @@ export async function routeAiRequest(
  */
 export async function testAiProviderHealth(provider: AiProviderConfig): Promise<AiTestResult> {
   const startTime = Date.now();
+  let detectedModel = provider.model;
+
+  // Auto-detect best active model for this API key
   try {
-    const res = await executeSingleAiProvider(provider, 'Ping test ok');
+    const detection = await detectAndSelectBestModel(provider.providerType, provider.apiKey, provider.model);
+    if (detection.recommendedModel) {
+      detectedModel = detection.recommendedModel;
+    }
+  } catch (e) {}
+
+  const tempProvider = { ...provider, model: detectedModel || provider.model };
+
+  try {
+    const res = await executeSingleAiProvider(tempProvider, 'Ping test ok');
     return {
       providerId: provider.id,
       providerName: provider.name,
       providerType: provider.providerType,
       model: provider.model,
+      detectedModel: detectedModel,
       status: 'ok',
-      message: `🟢 Aktif (${res.latencyMs}ms)`,
+      message: `🟢 Aktif (${res.latencyMs}ms) | Target Model: ${detectedModel}`,
       latencyMs: res.latencyMs
     };
   } catch (err: any) {
@@ -190,6 +203,7 @@ export async function testAiProviderHealth(provider: AiProviderConfig): Promise<
       providerName: provider.name,
       providerType: provider.providerType,
       model: provider.model,
+      detectedModel: detectedModel,
       status: isQuota ? 'quota' : isInvalid ? 'invalid' : 'error',
       message: msg,
       latencyMs: Date.now() - startTime
