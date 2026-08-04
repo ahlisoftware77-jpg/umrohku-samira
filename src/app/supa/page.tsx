@@ -65,7 +65,8 @@ import {
   Calendar,
   Link2,
   Sparkles,
-  KeyRound
+  KeyRound,
+  Bot
 } from 'lucide-react';
 import { cloudinaryService } from '@/lib/services/cloudinaryService';
 import { Tenant, TenantPlan, TenantStatus, LandingPage, Section, Content, SectionType, SYSTEM_PLANS, BuilderPlan, DatabaseServerConfig, MediaImage } from '@/types/cms';
