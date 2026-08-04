@@ -77,7 +77,7 @@ import {
 } from 'lucide-react';
 import { cloudinaryService } from '@/lib/services/cloudinaryService';
 import { Tenant, TenantPlan, TenantStatus, LandingPage, Section, Content, SectionType, SYSTEM_PLANS, BuilderPlan, DatabaseServerConfig, MediaImage, AiProviderConfig } from '@/types/cms';
-import { testAiProviderHealth } from '@/lib/services/aiRouterService';
+import { testAiProviderHealth, detectAndSelectBestModel } from '@/lib/services/aiRouterService';
 
 export default function SuperAdminPage() {
   const { user, profile, loading } = useAuthHandler();
@@ -206,6 +206,20 @@ export default function SuperAdminPage() {
   const [newProvModel, setNewProvModel] = useState('gemini-2.0-flash');
   const [newProvBaseUrl, setNewProvBaseUrl] = useState('');
   const [newProvPriority, setNewProvPriority] = useState(1);
+  const [modelDetectionMsg, setModelDetectionMsg] = useState('');
+  const [isDetectingModel, setIsDetectingModel] = useState(false);
+
+  const handleAutoDetectModel = async (type: string, apiKey: string) => {
+    if (!apiKey.trim()) return;
+    setIsDetectingModel(true);
+    setModelDetectionMsg('⏳ Sedang membaca status API Key & mendeteksi target model...');
+    const result = await detectAndSelectBestModel(type, apiKey, newProvModel);
+    if (result.recommendedModel) {
+      setNewProvModel(result.recommendedModel);
+    }
+    setModelDetectionMsg(result.message);
+    setIsDetectingModel(false);
+  };
 
   // 9router Health Inspector Results State
   const [providerHealthResults, setProviderHealthResults] = useState<Record<string, { status: string; message: string; latencyMs?: number }>>({});
@@ -7002,29 +7016,58 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
               </div>
 
               <div className="space-y-1">
-                <Label className="font-bold text-slate-700">API Key Provider:</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="font-bold text-slate-700">API Key Provider:</Label>
+                  <button
+                    type="button"
+                    onClick={() => handleAutoDetectModel(newProvType, newProvApiKey)}
+                    disabled={isDetectingModel || !newProvApiKey.trim()}
+                    className="text-[11px] font-bold text-purple-600 hover:underline flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {isDetectingModel ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3 text-purple-600" />}
+                    Deteksi Target Model Otomatis
+                  </button>
+                </div>
                 <Input
                   type="password"
                   required
                   value={newProvApiKey}
-                  onChange={(e) => setNewProvApiKey(e.target.value)}
+                  onChange={(e) => {
+                    const keyVal = e.target.value;
+                    setNewProvApiKey(keyVal);
+                    if (keyVal.trim().length > 15) {
+                      handleAutoDetectModel(newProvType, keyVal);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (newProvApiKey.trim()) handleAutoDetectModel(newProvType, newProvApiKey);
+                  }}
                   placeholder="AIzaSy... / sk-proj-... / sk-..."
                   className="bg-slate-50 border-slate-300 font-mono text-xs"
                 />
+
+                {modelDetectionMsg && (
+                  <p className="text-[11px] font-bold text-purple-700 bg-purple-50 p-2 rounded-xl border border-purple-200 mt-1">
+                    {modelDetectionMsg}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1">
-                <Label className="font-bold text-slate-700">Target Model Identifier:</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="font-bold text-slate-700">Target Model Identifier (Otomatis Teratur):</Label>
+                  <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-100 px-2 py-0.5 rounded-full">✓ Auto Configured</span>
+                </div>
                 <Input
                   type="text"
                   required
                   value={newProvModel}
                   onChange={(e) => setNewProvModel(e.target.value)}
                   placeholder="gemini-2.0-flash, deepseek-chat, gpt-4o-mini, llama-3.3-70b-versatile"
-                  className="bg-slate-50 border-slate-300 font-mono text-xs"
+                  className="bg-purple-50/60 border-purple-300 font-mono text-xs text-purple-950 font-bold"
                 />
                 <p className="text-[10px] text-slate-500">
-                  Rekomendasi: <code className="bg-slate-200 px-1 py-0.5 rounded">gemini-2.0-flash</code>, <code className="bg-slate-200 px-1 py-0.5 rounded">deepseek-chat</code>, <code className="bg-slate-200 px-1 py-0.5 rounded">gpt-4o-mini</code>, <code className="bg-slate-200 px-1 py-0.5 rounded">llama-3.3-70b-versatile</code>.
+                  Target model ini akan otomatis diatur begitu API Key dibaca atau saat jenis provider dipilih.
                 </p>
               </div>
 

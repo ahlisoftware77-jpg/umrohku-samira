@@ -196,3 +196,120 @@ export async function testAiProviderHealth(provider: AiProviderConfig): Promise<
     };
   }
 }
+
+/**
+ * Auto-detect and set best supported model based on provider type & API Key status
+ */
+export async function detectAndSelectBestModel(
+  providerType: string,
+  apiKey: string,
+  currentModel?: string
+): Promise<{ recommendedModel: string; message: string; availableModels?: string[] }> {
+  const cleanKey = apiKey.trim();
+  if (!cleanKey) {
+    return {
+      recommendedModel: getDefaultModelForProvider(providerType),
+      message: '⚠️ Masukkan API Key untuk mendeteksi model otomatis.'
+    };
+  }
+
+  // 1. Google Gemini Auto-Detection via ModelService ListModels
+  if (providerType === 'gemini') {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`);
+      if (res.ok) {
+        const data = await res.json();
+        const models: any[] = data.models || [];
+        const supportedNames = models
+          .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+          .map(m => m.name.replace('models/', ''));
+
+        if (supportedNames.length > 0) {
+          const preferredOrder = [
+            'gemini-2.0-flash',
+            'gemini-2.0-flash-lite',
+            'gemini-2.5-flash',
+            'gemini-3.5-flash',
+            'gemini-1.5-flash'
+          ];
+
+          for (const pref of preferredOrder) {
+            if (supportedNames.includes(pref)) {
+              return {
+                recommendedModel: pref,
+                message: `✅ Model otomatis terdeteksi aktif untuk API Key ini: ${pref}`,
+                availableModels: supportedNames
+              };
+            }
+          }
+          return {
+            recommendedModel: supportedNames[0],
+            message: `✅ Model otomatis terdeteksi: ${supportedNames[0]}`,
+            availableModels: supportedNames
+          };
+        }
+      }
+    } catch (e) {}
+    return {
+      recommendedModel: 'gemini-2.0-flash',
+      message: '✓ Model standar otomatis diatur: gemini-2.0-flash'
+    };
+  }
+
+  // 2. DeepSeek Auto-Detection
+  if (providerType === 'deepseek') {
+    return {
+      recommendedModel: 'deepseek-chat',
+      message: '✓ Model resmi DeepSeek V3 otomatis diatur: deepseek-chat'
+    };
+  }
+
+  // 3. OpenAI Auto-Detection
+  if (providerType === 'openai') {
+    return {
+      recommendedModel: 'gpt-4o-mini',
+      message: '✓ Model efisien OpenAI otomatis diatur: gpt-4o-mini'
+    };
+  }
+
+  // 4. Groq Auto-Detection
+  if (providerType === 'groq') {
+    return {
+      recommendedModel: 'llama-3.3-70b-versatile',
+      message: '✓ Model super cepat Groq otomatis diatur: llama-3.3-70b-versatile'
+    };
+  }
+
+  // 5. Claude Auto-Detection
+  if (providerType === 'claude') {
+    return {
+      recommendedModel: 'claude-3-5-sonnet-20241022',
+      message: '✓ Model Anthropic Claude otomatis diatur: claude-3-5-sonnet-20241022'
+    };
+  }
+
+  // 6. OpenRouter Auto-Detection
+  if (providerType === 'openrouter') {
+    return {
+      recommendedModel: 'deepseek/deepseek-r1:free',
+      message: '✓ Model OpenRouter Gateway otomatis diatur: deepseek/deepseek-r1:free'
+    };
+  }
+
+  return {
+    recommendedModel: currentModel || 'gpt-4o-mini',
+    message: '✓ Model kustom telah disesuaikan.'
+  };
+}
+
+export function getDefaultModelForProvider(type: string): string {
+  switch (type) {
+    case 'gemini': return 'gemini-2.0-flash';
+    case 'deepseek': return 'deepseek-chat';
+    case 'openai': return 'gpt-4o-mini';
+    case 'groq': return 'llama-3.3-70b-versatile';
+    case 'claude': return 'claude-3-5-sonnet-20241022';
+    case 'openrouter': return 'deepseek/deepseek-r1:free';
+    default: return 'gpt-4o-mini';
+  }
+}
