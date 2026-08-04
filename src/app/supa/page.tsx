@@ -5813,7 +5813,7 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
 
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   if (aiProviders.length <= 1) {
                                     alert('Minimal harus ada 1 Provider AI.');
                                     return;
