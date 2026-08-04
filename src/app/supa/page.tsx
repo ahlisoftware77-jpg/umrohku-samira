@@ -5503,10 +5503,10 @@ NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
                     <div className="p-3 bg-slate-50 border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="space-y-0.5">
                         <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <Bot className="h-4 w-4 text-purple-600" /> Status Akses Fitur Asisten AI Agent Mitra:
+                          <Bot className="h-4 w-4 text-purple-600" /> Status Akses Fitur Asisten Marketing Mitra:
                         </span>
                         <p className="text-[10px] text-slate-500">
-                          Aktifkan atau matikan tampilan tombol & menu Asisten AI Agent di Dashboard seluruh mitra.
+                          Aktifkan atau matikan tampilan tombol & menu Asisten Marketing di Dashboard seluruh mitra.
                         </p>
                       </div>
 
@@ -5526,12 +5526,12 @@ NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
                         {isGeminiAiEnabled ? (
                           <>
                             <span className="h-2 w-2 rounded-full bg-white animate-ping" />
-                            🟢 AI AGENT AKTIF (DAPAT DIAKSES MITRA)
+                            🟢 ASISTEN MARKETING AKTIF (DAPAT DIAKSES MITRA)
                           </>
                         ) : (
                           <>
                             <span className="h-2 w-2 rounded-full bg-white" />
-                            🔴 AI AGENT NONAKTIF (DISEMBUNYIKAN)
+                            🔴 ASISTEN MARKETING NONAKTIF (DISEMBUNYIKAN)
                           </>
                         )}
                       </button>

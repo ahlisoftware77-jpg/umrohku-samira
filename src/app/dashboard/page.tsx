@@ -2091,19 +2091,19 @@ Format Output:
           type="button"
           onClick={() => setIsAiModalOpen(true)}
           className="fixed bottom-36 right-6 md:bottom-24 md:right-8 z-40 flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold p-3 md:py-3.5 md:px-4 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 group border border-purple-400/30"
-          title="Buka Asisten Gemini AI"
+          title="Buka Asisten Marketing"
         >
           <Sparkles className="h-5 w-5 shrink-0 text-amber-300 animate-spin" style={{ animationDuration: '4s' }} />
           <div className="flex flex-col items-start leading-none max-w-0 overflow-hidden group-hover:max-w-[200px] transition-all duration-300 ease-out whitespace-nowrap hidden md:flex">
-            <span className="text-[8px] font-extrabold uppercase tracking-widest text-amber-300 mb-0.5">Kecerdasan Buatan</span>
-            <span className="text-[11px] font-extrabold">Asisten AI Gemini</span>
+            <span className="text-[8px] font-extrabold uppercase tracking-widest text-amber-300 mb-0.5">Fitur Cerdas</span>
+            <span className="text-[11px] font-extrabold">Asisten Marketing</span>
           </div>
-          <span className="text-[10px] font-extrabold md:hidden whitespace-nowrap">Asisten AI</span>
+          <span className="text-[10px] font-extrabold md:hidden whitespace-nowrap">Asisten Marketing</span>
         </button>
       )}
 
       {/* ==========================================
-          MODAL DIALOG ASISTEN GEMINI AI DASHBOARD
+          MODAL DIALOG ASISTEN MARKETING DASHBOARD
           ========================================== */}
       {isAiModalOpen && isGeminiAiEnabled && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 animate-in fade-in duration-200">
@@ -2113,10 +2113,10 @@ Format Output:
               <div>
                 <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
                   <Sparkles className="h-6 w-6 text-purple-600 animate-pulse" />
-                  Asisten AI Gemini Marketing
+                  Asisten Marketing
                 </CardTitle>
                 <CardDescription className="text-xs mt-0.5">
-                  Gunakan kecerdasan buatan AI untuk mengaudit landing page, membuat postingan promo iklan, dan menyusun balasan chat calon jamaah.
+                  Gunakan Asisten Marketing untuk mengaudit landing page, membuat postingan promo iklan, dan menyusun balasan chat calon jamaah.
                 </CardDescription>
               </div>
 
@@ -2494,7 +2494,7 @@ Format Output:
               <div className="space-y-2 pt-2 border-t">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Sparkles className="h-4 w-4 text-purple-600" /> Hasil Generasi AI Gemini:
+                    <Sparkles className="h-4 w-4 text-purple-600" /> Hasil Asisten Marketing:
                   </span>
 
                   <div className="flex items-center gap-1.5">
