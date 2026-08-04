@@ -222,7 +222,7 @@ export default function SuperAdminPage() {
   };
 
   // 9router Health Inspector Results State
-  const [providerHealthResults, setProviderHealthResults] = useState<Record<string, { status: string; message: string; latencyMs?: number }>>({});
+  const [providerHealthResults, setProviderHealthResults] = useState<Record<string, { status: string; message: string; latencyMs?: number; availableModels?: string[] }>>({});
   const [isTestingAllHealth, setIsTestingAllHealth] = useState(false);
 
   const applyDetectedModelToProvider = (provId: string, detectedModel: string) => {
@@ -235,7 +235,7 @@ export default function SuperAdminPage() {
 
   const handleTestAllProviderHealth = async () => {
     setIsTestingAllHealth(true);
-    const results: Record<string, { status: string; message: string; latencyMs?: number }> = {};
+    const results: Record<string, { status: string; message: string; latencyMs?: number; availableModels?: string[] }> = {};
     let updatedProviders = [...aiProviders];
 
     for (const prov of aiProviders) {
@@ -244,7 +244,7 @@ export default function SuperAdminPage() {
         continue;
       }
       const res = await testAiProviderHealth(prov);
-      results[prov.id] = { status: res.status, message: res.message, latencyMs: res.latencyMs };
+      results[prov.id] = { status: res.status, message: res.message, latencyMs: res.latencyMs, availableModels: res.availableModels };
 
       if (res.detectedModel) {
         updatedProviders = updatedProviders.map(p => p.id === prov.id ? { ...p, model: res.detectedModel! } : p);
@@ -5685,13 +5685,43 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
 
                             {/* Node Health Diagnostic Inspector Indicator */}
                             {health && (
-                              <div className={`p-2 rounded-xl text-[11px] font-semibold border flex items-center justify-between ${
-                                health.status === 'ok' ? 'bg-emerald-950/90 text-emerald-200 border-emerald-800' :
-                                health.status === 'quota' ? 'bg-red-950/90 text-red-200 border-red-800' :
-                                'bg-amber-950/90 text-amber-200 border-amber-800'
-                              }`}>
-                                <span>{health.message}</span>
-                                {health.latencyMs && <span className="font-mono text-[10px] text-emerald-400">{health.latencyMs}ms</span>}
+                              <div className="space-y-2">
+                                <div className={`p-2 rounded-xl text-[11px] font-semibold border flex items-center justify-between ${
+                                  health.status === 'ok' ? 'bg-emerald-950/90 text-emerald-200 border-emerald-800' :
+                                  health.status === 'quota' ? 'bg-red-950/90 text-red-200 border-red-800' :
+                                  'bg-amber-950/90 text-amber-200 border-amber-800'
+                                }`}>
+                                  <span>{health.message}</span>
+                                  {health.latencyMs && <span className="font-mono text-[10px] text-emerald-400">{health.latencyMs}ms</span>}
+                                </div>
+
+                                {/* Available Target Models Selection Matrix */}
+                                {health.availableModels && health.availableModels.length > 0 && (
+                                  <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5 text-xs">
+                                    <span className="text-[10px] font-bold text-amber-300 block">
+                                      📋 Model Didukung oleh API Key (Klik untuk Pilih Target Model):
+                                    </span>
+                                    <div className="flex flex-wrap gap-1">
+                                      {health.availableModels.map((m) => {
+                                        const isSelected = prov.model === m;
+                                        return (
+                                          <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => applyDetectedModelToProvider(prov.id, m)}
+                                            className={`text-[10px] font-mono px-2 py-0.5 rounded-lg border transition-all ${
+                                              isSelected
+                                                ? 'bg-purple-600 text-white font-bold border-purple-400 shadow-xs'
+                                                : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-purple-400 hover:text-white'
+                                            }`}
+                                          >
+                                            {isSelected ? '✓ ' : ''}{m}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
 
@@ -5706,7 +5736,7 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                                   }
                                   setProviderHealthResults(prev => ({
                                     ...prev,
-                                    [prov.id]: { status: res.status, message: res.message, latencyMs: res.latencyMs }
+                                    [prov.id]: { status: res.status, message: res.message, latencyMs: res.latencyMs, availableModels: res.availableModels }
                                   }));
                                 }}
                                 className="text-[10px] font-bold text-purple-300 hover:text-purple-100 underline"

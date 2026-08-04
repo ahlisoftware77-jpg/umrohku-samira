@@ -170,14 +170,22 @@ export async function routeAiRequest(
 export async function testAiProviderHealth(provider: AiProviderConfig): Promise<AiTestResult> {
   const startTime = Date.now();
   let detectedModel = provider.model;
+  let availableModels: string[] = [];
 
-  // Auto-detect best active model for this API key
+  // Auto-detect best active model and available models list for this API key
   try {
     const detection = await detectAndSelectBestModel(provider.providerType, provider.apiKey, provider.model);
     if (detection.recommendedModel) {
       detectedModel = detection.recommendedModel;
     }
+    if (detection.availableModels && detection.availableModels.length > 0) {
+      availableModels = detection.availableModels;
+    }
   } catch (e) {}
+
+  if (availableModels.length === 0) {
+    availableModels = getFallbackModelsForProvider(provider.providerType);
+  }
 
   const tempProvider = { ...provider, model: detectedModel || provider.model };
 
@@ -189,6 +197,7 @@ export async function testAiProviderHealth(provider: AiProviderConfig): Promise<
       providerType: provider.providerType,
       model: provider.model,
       detectedModel: detectedModel,
+      availableModels: availableModels,
       status: 'ok',
       message: `🟢 Aktif (${res.latencyMs}ms) | Target Model: ${detectedModel}`,
       latencyMs: res.latencyMs
@@ -204,10 +213,23 @@ export async function testAiProviderHealth(provider: AiProviderConfig): Promise<
       providerType: provider.providerType,
       model: provider.model,
       detectedModel: detectedModel,
+      availableModels: availableModels,
       status: isQuota ? 'quota' : isInvalid ? 'invalid' : 'error',
       message: msg,
       latencyMs: Date.now() - startTime
     };
+  }
+}
+
+export function getFallbackModelsForProvider(type: string): string[] {
+  switch (type) {
+    case 'gemini': return ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-3.5-flash'];
+    case 'deepseek': return ['deepseek-chat', 'deepseek-coder', 'deepseek-v3', 'deepseek-r1'];
+    case 'openai': return ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'o3-mini'];
+    case 'groq': return ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
+    case 'claude': return ['claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022'];
+    case 'openrouter': return ['deepseek/deepseek-r1:free', 'google/gemini-2.0-flash-lite-preview-02-05:free', 'meta-llama/llama-3.3-70b-instruct:free'];
+    default: return ['gpt-4o-mini', 'gpt-4o'];
   }
 }
 
