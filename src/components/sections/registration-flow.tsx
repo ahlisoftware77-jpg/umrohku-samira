@@ -22,63 +22,77 @@ interface RegistrationFlowProps {
   data?: Record<string, any>;
 }
 
-const defaultSteps = [
+export interface FlowStep {
+  title: string;
+  subtitle: string;
+  description: string;
+  iconName?: string; // lucide icon name for serialization
+  isHighlighted?: boolean;
+}
+
+export const DEFAULT_STEPS: FlowStep[] = [
   {
-    number: "01",
     title: "Kirim Dokumen KTP & KK",
     subtitle: "Pendaftaran Awal",
     description: "Calon jamaah cukup mengirimkan foto KTP dan Kartu Keluarga (KK) melalui WhatsApp atau Instagram resmi Samira Travel untuk memulai proses pendaftaran.",
-    icon: <FileCheck className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
-    badge: "Langkah 1"
+    iconName: "FileCheck",
   },
   {
-    number: "02",
     title: "Pembayaran Koper Rp 1.500.000",
     subtitle: "Biaya Pendaftaran",
     description: "Setelah dokumen diterima, lakukan pembayaran biaya pendaftaran awal sebesar Rp 1.500.000 untuk mendapatkan koper eksklusif Samira Travel.",
-    icon: <CreditCard className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
-    badge: "Langkah 2"
+    iconName: "CreditCard",
   },
   {
-    number: "03",
     title: "Koper Dikirim ke Rumah",
     subtitle: "Gratis Tanpa Biaya Tambahan",
     description: "Insya Allah, koper resmi Samira Travel langsung dikirim ke rumah jamaah tanpa biaya tambahan. Bisa juga diambil langsung oleh Mitra di kantor cabang atau kantor pusat.",
-    icon: <Truck className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
-    badge: "Langkah 3"
+    iconName: "Truck",
   },
   {
-    number: "04",
     title: "Pilih Jadwal Keberangkatan",
     subtitle: "Tentukan Tanggal",
     description: "Jamaah memilih tanggal keberangkatan yang tersedia sesuai preferensi, termasuk jenis paket, maskapai, dan hotel yang diinginkan.",
-    icon: <CalendarCheck className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
-    badge: "Langkah 4"
+    iconName: "CalendarCheck",
   },
   {
-    number: "05",
     title: "Booking Seat & Pelunasan H-30",
     subtitle: "Amankan Seat Anda",
     description: "Setelah menentukan jadwal, segera lakukan booking seat dan pelunasan maksimal H-30 (30 hari sebelum keberangkatan) untuk mengamankan kursi Anda.",
-    icon: <BadgeCheck className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
-    badge: "Langkah 5"
+    iconName: "BadgeCheck",
+    isHighlighted: true,
   },
   {
-    number: "06",
     title: "Terbang ke Tanah Suci",
     subtitle: "Bismillah Berangkat",
     description: "Terbang nyaman dengan penerbangan direct, didampingi Muthawwif berpengalaman selama di Makkah & Madinah hingga kembali ke Tanah Air.",
-    icon: <Plane className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
-    badge: "Langkah 6"
+    iconName: "Plane",
   },
 ];
 
-const totalSteps = defaultSteps.length;
+// Icon resolver — maps icon name string to JSX element
+const ICON_MAP: Record<string, React.ReactNode> = {
+  FileCheck: <FileCheck className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
+  CreditCard: <CreditCard className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
+  Truck: <Truck className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
+  CalendarCheck: <CalendarCheck className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
+  BadgeCheck: <BadgeCheck className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
+  Plane: <Plane className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
+  Package: <Package className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
+  UserCheck: <UserCheck className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />,
+};
 
 export default function RegistrationFlow({ data }: RegistrationFlowProps) {
   const badgeText = data?.badgeText || 'Cara Kerja & Alur Pendaftaran';
   const title = data?.title || '6 Langkah Mudah Menuju Tanah Suci';
   const description = data?.description || 'Proses pendaftaran Umrah Samira Travel yang transparan, praktis, dan mudah — mulai dari kirim KTP hingga terbang ke Tanah Suci. Didampingi tim profesional dari awal hingga akhir.';
+  
+  // Use custom steps from CMS data if available, otherwise use defaults
+  const steps: FlowStep[] = (Array.isArray(data?.steps) && data.steps.length > 0)
+    ? data.steps
+    : DEFAULT_STEPS;
+  const totalSteps = steps.length;
+
 
   return (
     <section id="alur" className="py-14 sm:py-20 md:py-28 bg-gradient-to-b from-white via-slate-50/70 to-white overflow-hidden relative w-full max-w-full">
@@ -115,9 +129,14 @@ export default function RegistrationFlow({ data }: RegistrationFlowProps) {
         </div>
 
         {/* ── FLEXIBLE RESPONSIVE TIMELINE CARDS GRID ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 md:gap-6 relative">
+        <div className={`grid grid-cols-2 ${totalSteps <= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 sm:gap-5 md:gap-6 relative`}>
           
-          {defaultSteps.map((step, idx) => (
+          {steps.map((step, idx) => {
+            const stepNumber = String(idx + 1).padStart(2, '0');
+            const isHL = step.isHighlighted;
+            const icon = ICON_MAP[step.iconName || ''] || ICON_MAP['FileCheck'];
+
+            return (
             <motion.div
               key={idx}
               initial={{ opacity: 0, y: 25 }}
@@ -125,11 +144,11 @@ export default function RegistrationFlow({ data }: RegistrationFlowProps) {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.08 }}
               className={`group relative bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer hover:border-primary/40 z-10 ${
-                idx === 4 ? 'ring-2 ring-amber-400/60 border-amber-300/80 bg-amber-50/30' : ''
+                isHL ? 'ring-2 ring-amber-400/60 border-amber-300/80 bg-amber-50/30' : ''
               }`}
             >
-              {/* Highlight badge for step 5 (pelunasan) */}
-              {idx === 4 && (
+              {/* Highlight badge for important steps */}
+              {isHL && (
                 <div className="absolute top-0 right-0 bg-amber-500 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-bl-xl">
                   ⚠️ Penting
                 </div>
@@ -138,25 +157,25 @@ export default function RegistrationFlow({ data }: RegistrationFlowProps) {
               {/* Top Step Number & Badge */}
               <div className="flex items-center justify-between mb-4">
                 <span className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl font-headline font-black text-xs sm:text-sm flex items-center justify-center shadow-md border group-hover:scale-110 transition-transform duration-300 ${
-                  idx === 4 
+                  isHL 
                     ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white border-amber-400/50' 
                     : 'bg-gradient-to-br from-primary via-[#0f3057] to-primary text-white border-primary/30'
                 }`}>
-                  {step.number}
+                  {stepNumber}
                 </span>
 
                 <span className="text-[9px] sm:text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-accent/15 text-accent-foreground border border-accent/30">
-                  {step.badge}
+                  Langkah {idx + 1}
                 </span>
               </div>
 
               {/* Icon Box */}
               <div className={`p-3 rounded-xl w-fit mb-4 transition-colors duration-300 ${
-                idx === 4 
+                isHL 
                   ? 'bg-amber-100 text-amber-700 group-hover:bg-amber-500 group-hover:text-white'
                   : 'bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white'
               }`}>
-                {step.icon}
+                {icon}
               </div>
 
               {/* Title & Content */}
@@ -178,7 +197,8 @@ export default function RegistrationFlow({ data }: RegistrationFlowProps) {
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform text-accent" />
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ── IMPORTANT NOTE: H-30 Pelunasan Warning ── */}

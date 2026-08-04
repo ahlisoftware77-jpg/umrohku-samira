@@ -49,6 +49,7 @@ import {
 import { SectionType, AiProviderConfig } from '@/types/cms';
 import { routeAiRequest } from '@/lib/services/aiRouterService';
 import { DepartureScheduleItem, DEFAULT_SCHEDULES } from '@/components/sections/departure-schedule-section';
+import { FlowStep, DEFAULT_STEPS } from '@/components/sections/registration-flow';
 
 export default function EditorSidebar() {
   const {
@@ -1573,18 +1574,65 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
 
 
       case 'flow':
+        const FLOW_ICON_OPTIONS = [
+          { value: 'FileCheck', label: '📄 Dokumen' },
+          { value: 'CreditCard', label: '💳 Pembayaran' },
+          { value: 'Truck', label: '🚚 Pengiriman' },
+          { value: 'CalendarCheck', label: '📅 Kalender' },
+          { value: 'BadgeCheck', label: '✅ Verifikasi' },
+          { value: 'Plane', label: '✈️ Pesawat' },
+          { value: 'Package', label: '📦 Paket' },
+          { value: 'UserCheck', label: '👤 Pengguna' },
+        ];
+
+        const currentFlowSteps: FlowStep[] = Array.isArray(activeSectionContent.steps) && activeSectionContent.steps.length > 0
+          ? activeSectionContent.steps
+          : [...DEFAULT_STEPS];
+
+        const updateFlowStep = (index: number, field: keyof FlowStep, value: any) => {
+          const updated = [...currentFlowSteps];
+          (updated[index] as any)[field] = value;
+          handleFieldChange('steps', updated);
+        };
+
+        const addFlowStep = () => {
+          const updated = [...currentFlowSteps, {
+            title: `Langkah Baru ${currentFlowSteps.length + 1}`,
+            subtitle: 'Subjudul',
+            description: 'Deskripsi langkah baru...',
+            iconName: 'FileCheck',
+            isHighlighted: false,
+          }];
+          handleFieldChange('steps', updated);
+        };
+
+        const removeFlowStep = (index: number) => {
+          const updated = currentFlowSteps.filter((_, i) => i !== index);
+          handleFieldChange('steps', updated);
+        };
+
+        const moveFlowStep = (index: number, direction: 'up' | 'down') => {
+          const updated = [...currentFlowSteps];
+          const swapIdx = direction === 'up' ? index - 1 : index + 1;
+          if (swapIdx < 0 || swapIdx >= updated.length) return;
+          [updated[index], updated[swapIdx]] = [updated[swapIdx], updated[index]];
+          handleFieldChange('steps', updated);
+        };
+
         return (
           <div className="space-y-4">
             <div className="border-b pb-3">
-              <h3 className="font-bold text-base text-primary">Penyuntingan Seksi Cara Kerja / Alur</h3>
-              <p className="text-xs text-muted-foreground">Seksi ini menampilkan alur pendaftaran mudah dalam 4 langkah terstruktur.</p>
+              <h3 className="font-bold text-base text-primary">Penyuntingan Seksi Alur Pendaftaran</h3>
+              <p className="text-xs text-muted-foreground">Atur langkah-langkah alur pendaftaran jamaah umrah.</p>
             </div>
+
+            {/* Header Fields */}
             <div className="space-y-2">
               <Label>Teks Lencana (Badge)</Label>
               <Input 
                 value={activeSectionContent.badgeText || ''} 
                 onChange={(e) => handleFieldChange('badgeText', e.target.value)}
-                placeholder="Cara Kerja"
+                placeholder="Cara Kerja & Alur Pendaftaran"
               />
             </div>
             <div className="space-y-2">
@@ -1592,16 +1640,107 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
               <Input 
                 value={activeSectionContent.title || ''} 
                 onChange={(e) => handleFieldChange('title', e.target.value)}
-                placeholder="Proses Pendaftaran Mudah"
+                placeholder="6 Langkah Mudah Menuju Tanah Suci"
               />
             </div>
             <div className="space-y-2">
-              <Label>Deskripsi Subtitle</Label>
+              <Label>Deskripsi</Label>
               <Textarea 
                 value={activeSectionContent.description || ''} 
                 onChange={(e) => handleFieldChange('description', e.target.value)}
-                placeholder="Sederhana, cepat, dan transparan dalam 4 langkah mudah."
+                placeholder="Proses pendaftaran Umrah yang transparan..."
               />
+            </div>
+
+            {/* Steps CRUD */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-bold text-sm text-primary">Langkah-langkah ({currentFlowSteps.length})</h4>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleFieldChange('steps', [...DEFAULT_STEPS])}>
+                    🔄 Reset Default
+                  </Button>
+                  <Button size="sm" className="text-xs h-7" onClick={addFlowStep}>
+                    + Tambah
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+                {currentFlowSteps.map((step, idx) => (
+                  <div key={idx} className={`border rounded-lg p-3 space-y-2.5 ${step.isHighlighted ? 'border-amber-400 bg-amber-50/50' : 'border-slate-200'}`}>
+                    {/* Step header with number and actions */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                        Langkah {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-xs" disabled={idx === 0} onClick={() => moveFlowStep(idx, 'up')}>↑</Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-xs" disabled={idx === currentFlowSteps.length - 1} onClick={() => moveFlowStep(idx, 'down')}>↓</Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-xs text-red-500 hover:text-red-700" onClick={() => removeFlowStep(idx)}>✕</Button>
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Judul Langkah</Label>
+                      <Input 
+                        value={step.title || ''} 
+                        onChange={(e) => updateFlowStep(idx, 'title', e.target.value)}
+                        placeholder="Judul langkah..."
+                        className="h-8 text-xs"
+                      />
+                    </div>
+
+                    {/* Subtitle */}
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Subjudul</Label>
+                      <Input 
+                        value={step.subtitle || ''} 
+                        onChange={(e) => updateFlowStep(idx, 'subtitle', e.target.value)}
+                        placeholder="Subjudul..."
+                        className="h-8 text-xs"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Deskripsi</Label>
+                      <Textarea 
+                        value={step.description || ''} 
+                        onChange={(e) => updateFlowStep(idx, 'description', e.target.value)}
+                        placeholder="Deskripsi langkah..."
+                        className="text-xs min-h-[60px]"
+                      />
+                    </div>
+
+                    {/* Icon + Highlight Row */}
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-[11px]">Ikon</Label>
+                        <select
+                          value={step.iconName || 'FileCheck'}
+                          onChange={(e) => updateFlowStep(idx, 'iconName', e.target.value)}
+                          className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white"
+                        >
+                          {FLOW_ICON_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-1.5 pb-0.5">
+                        <input
+                          type="checkbox"
+                          checked={!!step.isHighlighted}
+                          onChange={(e) => updateFlowStep(idx, 'isHighlighted', e.target.checked)}
+                          className="w-4 h-4 accent-amber-500"
+                        />
+                        <Label className="text-[10px] whitespace-nowrap">⚠️ Penting</Label>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         );
