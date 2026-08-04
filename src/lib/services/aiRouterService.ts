@@ -188,15 +188,12 @@ export async function routeAiRequest(
  */
 export async function testAiProviderHealth(provider: AiProviderConfig): Promise<AiTestResult> {
   const startTime = Date.now();
-  let detectedModel = provider.model;
+  let targetModelToTest = provider.model?.trim() || 'gemini-3.6-flash';
   let availableModels: string[] = [];
 
-  // Auto-detect best active model and available models list for this API key
+  // Auto-detect available models list for this API key
   try {
-    const detection = await detectAndSelectBestModel(provider.providerType, provider.apiKey, provider.model);
-    if (detection.recommendedModel) {
-      detectedModel = detection.recommendedModel;
-    }
+    const detection = await detectAndSelectBestModel(provider.providerType, provider.apiKey, targetModelToTest);
     if (detection.availableModels && detection.availableModels.length > 0) {
       availableModels = detection.availableModels;
     }
@@ -206,7 +203,12 @@ export async function testAiProviderHealth(provider: AiProviderConfig): Promise<
     availableModels = getFallbackModelsForProvider(provider.providerType);
   }
 
-  const tempProvider = { ...provider, model: detectedModel || provider.model };
+  // Ensure current user-selected model is included in availableModels list
+  if (targetModelToTest && !availableModels.includes(targetModelToTest)) {
+    availableModels.unshift(targetModelToTest);
+  }
+
+  const tempProvider = { ...provider, model: targetModelToTest };
 
   try {
     const res = await executeSingleAiProvider(tempProvider, 'Ping test ok');
@@ -214,11 +216,11 @@ export async function testAiProviderHealth(provider: AiProviderConfig): Promise<
       providerId: provider.id,
       providerName: provider.name,
       providerType: provider.providerType,
-      model: provider.model,
-      detectedModel: detectedModel,
+      model: targetModelToTest,
+      detectedModel: targetModelToTest,
       availableModels: availableModels,
       status: 'ok',
-      message: `🟢 Aktif (${res.latencyMs}ms) | Target Model: ${detectedModel}`,
+      message: `🟢 Aktif (${res.latencyMs}ms) | Target Model: ${targetModelToTest}`,
       latencyMs: res.latencyMs
     };
   } catch (err: any) {
@@ -230,8 +232,8 @@ export async function testAiProviderHealth(provider: AiProviderConfig): Promise<
       providerId: provider.id,
       providerName: provider.name,
       providerType: provider.providerType,
-      model: provider.model,
-      detectedModel: detectedModel,
+      model: targetModelToTest,
+      detectedModel: targetModelToTest,
       availableModels: availableModels,
       status: isQuota ? 'quota' : isInvalid ? 'invalid' : 'error',
       message: msg,
@@ -242,7 +244,7 @@ export async function testAiProviderHealth(provider: AiProviderConfig): Promise<
 
 export function getFallbackModelsForProvider(type: string): string[] {
   switch (type) {
-    case 'gemini': return ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-3.5-flash'];
+    case 'gemini': return ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
     case 'deepseek': return ['deepseek-chat', 'deepseek-coder', 'deepseek-v3', 'deepseek-r1'];
     case 'openai': return ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'o3-mini'];
     case 'groq': return ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
@@ -280,12 +282,21 @@ export async function detectAndSelectBestModel(
           .map(m => m.name.replace('models/', ''));
 
         if (supportedNames.length > 0) {
+          // If user has explicitly selected a model (e.g. gemini-3.6-flash), honor it!
+          if (currentModel && (supportedNames.includes(currentModel) || currentModel.includes('3.6') || currentModel.includes('3.5'))) {
+            return {
+              recommendedModel: currentModel,
+              message: `✅ Model pilihan Anda aktif & didukung: ${currentModel}`,
+              availableModels: supportedNames
+            };
+          }
+
           const preferredOrder = [
-            'gemini-2.0-flash',
-            'gemini-2.0-flash-lite',
-            'gemini-2.5-flash',
+            'gemini-3.6-flash',
             'gemini-3.5-flash',
-            'gemini-1.5-flash'
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-2.0-flash-lite'
           ];
 
           for (const pref of preferredOrder) {
@@ -298,16 +309,16 @@ export async function detectAndSelectBestModel(
             }
           }
           return {
-            recommendedModel: supportedNames[0],
-            message: `✅ Model otomatis terdeteksi: ${supportedNames[0]}`,
+            recommendedModel: currentModel || supportedNames[0],
+            message: `✅ Model otomatis terdeteksi: ${currentModel || supportedNames[0]}`,
             availableModels: supportedNames
           };
         }
       }
     } catch (e) {}
     return {
-      recommendedModel: 'gemini-2.0-flash',
-      message: '✓ Model standar otomatis diatur: gemini-2.0-flash'
+      recommendedModel: currentModel || 'gemini-3.6-flash',
+      message: `✓ Model pilihan Anda diatur: ${currentModel || 'gemini-3.6-flash'}`
     };
   }
 
