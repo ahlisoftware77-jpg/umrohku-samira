@@ -5797,10 +5797,18 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
 
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           const nextVal = !isGeminiAiEnabled;
                           setIsGeminiAiEnabled(nextVal);
                           if (typeof window !== 'undefined') localStorage.setItem('gemini_api_enabled', nextVal ? 'true' : 'false');
+                          // Persist to Firestore immediately so all mitra see the change
+                          try {
+                            await setDoc(doc(db, 'systemSettings', 'global'), {
+                              gemini: { enabled: nextVal }
+                            }, { merge: true });
+                          } catch (e) {
+                            console.warn('Firestore write failed, saved to LocalStorage only.');
+                          }
                         }}
                         className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-xs ${
                           isGeminiAiEnabled 

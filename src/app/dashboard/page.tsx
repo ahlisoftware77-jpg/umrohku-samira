@@ -147,32 +147,37 @@ export default function TenantDashboardPage() {
   const [usePersonalKey, setUsePersonalKey] = useState(false);
   const [copiedAiResult, setCopiedAiResult] = useState(false);
 
-  // Load Cloud System Config for Gemini AI
+  // Load Cloud System Config for Asisten Marketing (real-time from Firestore)
   useEffect(() => {
-    const loadGeminiConfig = async () => {
-      try {
-        const sysSnap = await getDoc(doc(db, 'systemSettings', 'global'));
-        if (sysSnap.exists()) {
-          const sysData = sysSnap.data();
-          if (sysData.gemini?.apiKey) setAdminGeminiKey(sysData.gemini.apiKey);
-          if (sysData.gemini?.mode) {
-            setGeminiConfigMode(sysData.gemini.mode);
-            if (sysData.gemini.mode === 'custom') {
-              setUsePersonalKey(true);
-            }
-          }
-          if (sysData.gemini?.enabled !== undefined) {
-            const enabled = sysData.gemini.enabled !== false;
-            setIsGeminiAiEnabled(enabled);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('gemini_api_enabled', enabled ? 'true' : 'false');
-            }
+    const systemRef = doc(db, 'systemSettings', 'global');
+    const unsub = onSnapshot(systemRef, (sysSnap) => {
+      if (sysSnap.exists()) {
+        const sysData = sysSnap.data();
+        if (sysData.gemini?.apiKey) setAdminGeminiKey(sysData.gemini.apiKey);
+        if (sysData.gemini?.mode) {
+          setGeminiConfigMode(sysData.gemini.mode);
+          if (sysData.gemini.mode === 'custom') {
+            setUsePersonalKey(true);
           }
         }
-      } catch (e) {}
-    };
-    loadGeminiConfig();
+        if (sysData.gemini?.enabled !== undefined) {
+          const enabled = sysData.gemini.enabled !== false;
+          setIsGeminiAiEnabled(enabled);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('gemini_api_enabled', enabled ? 'true' : 'false');
+          }
+        }
+        // Load 9router cluster providers
+        if (Array.isArray(sysData.aiProviders) && sysData.aiProviders.length > 0) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ai_providers_cluster', JSON.stringify(sysData.aiProviders));
+          }
+        }
+      }
+    }, () => {});
+    return () => unsub();
   }, []);
+
 
   // Comprehensive Phone Number Detection across all Contact Settings & CMS sections
   const getDetectedContactPhone = (): string => {
