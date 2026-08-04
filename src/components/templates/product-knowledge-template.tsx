@@ -16,7 +16,9 @@ import {
   Search,
   ZoomIn,
   ZoomOut,
-  Grid
+  Grid,
+  MessageCircle,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -137,6 +139,33 @@ export default function ProductKnowledgeTemplate({ agent }: ProductKnowledgeTemp
                 <Share2 className="w-4 h-4" /> Bagikan
               </Button>
             </div>
+          </div>
+
+          {/* WhatsApp Consultation & Brochure Banner */}
+          <div className="mb-6 p-4 md:p-5 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 border border-emerald-500/40 rounded-2xl text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 text-left">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-5 h-5 text-emerald-400 animate-pulse" />
+              </div>
+              <div className="space-y-0.5">
+                <h3 className="text-xs md:text-sm font-headline font-extrabold text-emerald-200 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  Konsultasi Gratis & Dapatkan Brosur Jadwal Umrah Terbaru via WhatsApp
+                </h3>
+                <p className="text-[11px] md:text-xs text-slate-300 leading-snug">
+                  Dapatkan info tanggal keberangkatan resmi, rincian biaya hemat, hotel bintang 5, serta brosur jadwal umrah lengkap langsung di WhatsApp Anda.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href={`https://api.whatsapp.com/send?phone=${(agent?.whatsapp || agent?.phone || '6283815862300').replace(/\D/g, '')}&text=${encodeURIComponent("Assalamu'alaikum Konsultan Samira Travel, saya ingin Konsultasi Gratis & minta Brosur Jadwal Umrah Terbaru.")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-lg hover:scale-105 transition-all shrink-0 whitespace-nowrap"
+            >
+              <MessageCircle className="w-4 h-4" /> Dapatkan Brosur via WhatsApp ↗
+            </a>
           </div>
 
           <div className="relative group w-full" ref={fullContainerRef}>

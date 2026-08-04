@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Download, Share2, ChevronLeft, ChevronRight, Maximize2, Sparkles, FileText, CheckCircle2, Eye } from 'lucide-react';
+import { BookOpen, Download, Share2, ChevronLeft, ChevronRight, Maximize2, Sparkles, FileText, CheckCircle2, Eye, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Agent } from '@/lib/agents';
@@ -224,12 +224,21 @@ export default function ProductKnowledgeSection({ agent, data }: ProductKnowledg
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-slate-800 mt-6 flex flex-col sm:flex-row gap-3">
+              <div className="pt-6 border-t border-slate-800 mt-6 flex flex-col gap-3">
                 <a
                   href="/product-knowledge"
-                  className="flex-1 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shadow-lg transition-all"
+                  className="w-full inline-flex items-center justify-center gap-2 h-11 px-5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-lg transition-all"
                 >
                   <BookOpen className="w-4 h-4" /> Buka E-Book Flipbook Full
+                </a>
+
+                <a
+                  href={`https://api.whatsapp.com/send?phone=${(agent?.whatsapp || agent?.phone || '6283815862300').replace(/\D/g, '')}&text=${encodeURIComponent("Assalamu'alaikum Konsultan Samira Travel, saya ingin Konsultasi Gratis & minta Brosur Jadwal Umrah Terbaru.")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2 h-11 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg transition-all"
+                >
+                  <MessageCircle className="w-4 h-4 animate-pulse text-emerald-200" /> Konsultasi Gratis & Dapatkan Brosur via WA ↗
                 </a>
               </div>
             </Card>
