@@ -2168,6 +2168,8 @@ HANYA berikan teks hasil tulisan tanpa tanda petik pembuka/penutup dan tanpa pen
               />
             </div>
           );
+        default:
+          return null;
       }
     })()}
   </div>
