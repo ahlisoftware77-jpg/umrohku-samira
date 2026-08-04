@@ -144,7 +144,7 @@ export default function SuperAdminPage() {
   const [geminiApiKey, setGeminiApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : ''));
   const [geminiApiKeyMode, setGeminiApiKeyMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
   const [isGeminiAiEnabled, setIsGeminiAiEnabled] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
-  const [aiGenerateLimit, setAiGenerateLimit] = useState<number>(10);
+  const [aiGenerateLimit, setAiGenerateLimit] = useState<number>(() => (typeof window !== 'undefined' ? parseInt(localStorage.getItem('ai_generate_limit') || '10', 10) : 10));
   const [isSavingLimit, setIsSavingLimit] = useState(false);
 
   // 9router Multi-Provider AI Cluster States
@@ -1511,6 +1511,7 @@ service cloud.firestore {
           }
           if (typeof sysData.aiGenerateLimit === 'number') {
             setAiGenerateLimit(sysData.aiGenerateLimit);
+            if (typeof window !== 'undefined') localStorage.setItem('ai_generate_limit', String(sysData.aiGenerateLimit));
           }
         }
       } catch (sysErr) {
@@ -5880,13 +5881,16 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                           disabled={isSavingLimit}
                           onClick={async () => {
                             setIsSavingLimit(true);
+                            if (typeof window !== 'undefined') {
+                              localStorage.setItem('ai_generate_limit', String(aiGenerateLimit));
+                            }
                             try {
                               await setDoc(doc(db, 'systemSettings', 'global'), {
                                 aiGenerateLimit: aiGenerateLimit
                               }, { merge: true });
                               alert(`✅ Batas generate berhasil disimpan: ${aiGenerateLimit === 0 ? 'Tidak Terbatas' : `${aiGenerateLimit}x per hari`}`);
                             } catch (e) {
-                              alert('Gagal menyimpan ke Firestore.');
+                              alert('Simpan lokal berhasil, namun gagal update Firestore (dikarenakan aturan izin).');
                             } finally {
                               setIsSavingLimit(false);
                             }

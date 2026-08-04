@@ -172,6 +172,9 @@ export default function TenantDashboardPage() {
         // Load global generate limit
         if (typeof sysData.aiGenerateLimit === 'number') {
           setAiDailyLimit(sysData.aiGenerateLimit);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ai_generate_limit', String(sysData.aiGenerateLimit));
+          }
         }
         // Load 9router cluster providers
         if (Array.isArray(sysData.aiProviders) && sysData.aiProviders.length > 0) {
