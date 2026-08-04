@@ -133,6 +133,8 @@ export default function TenantDashboardPage() {
   const [aiSelectedTone, setAiSelectedTone] = useState<'persuasive' | 'islamic' | 'exclusive'>('persuasive');
   const [aiCsQuestion, setAiCsQuestion] = useState('Berapa DP & syarat pendaftaran paket umrah?');
   const [aiResultText, setAiResultText] = useState('');
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState('');
   const [customGeminiKey, setCustomGeminiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('tenant_gemini_api_key') || '' : ''));
   const [adminGeminiKey, setAdminGeminiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : ''));
   const [geminiConfigMode, setGeminiConfigMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
