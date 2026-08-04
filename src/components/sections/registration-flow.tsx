@@ -156,10 +156,10 @@ export default function RegistrationFlow({ data }: RegistrationFlowProps) {
 
               {/* Top Step Number & Badge */}
               <div className="flex items-center justify-between mb-4">
-                <span className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl font-headline font-black text-xs sm:text-sm flex items-center justify-center shadow-md border group-hover:scale-110 transition-transform duration-300 ${
+                <span className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl font-headline font-black text-sm sm:text-base flex items-center justify-center shadow-md border group-hover:scale-110 transition-transform duration-300 ${
                   isHL 
-                    ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white border-amber-400/50' 
-                    : 'bg-gradient-to-br from-primary via-[#0f3057] to-primary text-white border-primary/30'
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-amber-500/20' 
+                    : 'bg-slate-900 text-amber-400 border-slate-700 shadow-slate-900/30'
                 }`}>
                   {stepNumber}
                 </span>
