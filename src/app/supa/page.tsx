@@ -5692,10 +5692,13 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
 
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   const updated = aiProviders.map(p => p.id === prov.id ? { ...p, enabled: !p.enabled } : p);
                                   setAiProviders(updated);
                                   if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
+                                  try {
+                                    await setDoc(doc(db, 'systemSettings', 'global'), { aiProviders: updated }, { merge: true });
+                                  } catch (e) {}
                                 }}
                                 className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold transition-all border ${
                                   prov.enabled ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-slate-200 text-slate-600 border-slate-300'
@@ -5811,6 +5814,9 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                                   const updated = aiProviders.filter(p => p.id !== prov.id);
                                   setAiProviders(updated);
                                   if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
+                                  try {
+                                    await setDoc(doc(db, 'systemSettings', 'global'), { aiProviders: updated }, { merge: true });
+                                  } catch (e) {}
                                 }}
                                 className="text-[10px] font-bold text-red-400 hover:text-red-200 underline"
                               >
@@ -7150,6 +7156,9 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                 updated.sort((a, b) => a.priority - b.priority);
                 setAiProviders(updated);
                 if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
+
+                // Save to Firestore systemSettings in background
+                setDoc(doc(db, 'systemSettings', 'global'), { aiProviders: updated }, { merge: true }).catch(() => {});
 
                 setIsAddProviderModalOpen(false);
                 alert(`✅ Node Provider '${providerObj.name}' berhasil disimpan ke 9router Cluster!`);
