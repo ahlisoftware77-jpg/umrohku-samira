@@ -16,6 +16,7 @@ import Testimonials from '@/components/sections/testimonials';
 import RegistrationFlow from '@/components/sections/registration-flow';
 import ContactSection from '@/components/sections/contact-section';
 import SocialMediaSection from '@/components/sections/social-media-section';
+import MitraPromoSection from '@/components/sections/mitra-promo-section';
 import FaqSection from '@/components/sections/faq-section';
 import ProductKnowledgeSection from '@/components/sections/product-knowledge-section';
 import BuilderPromoBanner from '@/components/sections/builder-promo-banner';
@@ -158,6 +159,9 @@ export default function DynamicHomeTemplate({
         return <SocialMediaSection key={section.sectionId} data={data} />;
       case 'airlines':
         return <AirlinesSection key={section.sectionId} agent={agentCompat} data={data} />;
+      case 'mitra_promo':
+      case 'mitra-promo':
+        return <MitraPromoSection key={section.sectionId} agent={agentCompat} data={data} />;
       case 'ad_popup':
       case 'ad-popup':
         return <AdPopupModal key={section.sectionId} agent={agentCompat} data={data} />;

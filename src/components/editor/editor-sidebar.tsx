@@ -337,6 +337,7 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
     hotel_explanation: 'Informasi Akomodasi & Hotel',
     flow: 'Cara Kerja / Alur',
     social_media: 'Media Sosial',
+    mitra_promo: '🎁 Promo Reward Mitra',
   };
 
   const getSectionLabel = (type?: string) => {
@@ -402,6 +403,7 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
     { type: 'social_media', label: 'Media Sosial' },
     { type: 'airlines', label: 'Maskapai Penerbangan Resmi' },
     { type: 'ad_popup', label: '📢 Iklan Popup (Awal Muat Halaman)' },
+    { type: 'mitra_promo', label: '🎁 Promo Reward Keberangkatan Mitra' },
   ];
 
   // Render inputs dynamically based on section type
@@ -2298,7 +2300,119 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
                   </p>
                 )}
               </div>
-            )}
+          </div>
+        );
+
+      case 'mitra_promo':
+        return (
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-primary">Penyuntingan Seksi Promo Reward Mitra</h3>
+            <p className="text-xs text-muted-foreground">Atur judul, deskripsi, dan rincian target reward keberangkatan rombongan khusus Mitra.</p>
+
+            <div className="space-y-2">
+              {renderLabelWithAi('Teks Lencana (Badge)', 'badgeText')}
+              <Input 
+                value={activeSectionContent.badgeText || ''} 
+                onChange={(e) => handleFieldChange('badgeText', e.target.value)} 
+                placeholder="🎁 PROMO REWARD KEBERANGKATAN MITRA"
+              />
+            </div>
+
+            <div className="space-y-2">
+              {renderLabelWithAi('Judul Utama Seksi', 'title')}
+              <Input 
+                value={activeSectionContent.title || ''} 
+                onChange={(e) => handleFieldChange('title', e.target.value)} 
+                placeholder="Program Bonus Gratis Keberangkatan Rombongan"
+              />
+            </div>
+
+            <div className="space-y-2">
+              {renderLabelWithAi('Deskripsi Singkat', 'description')}
+              <Textarea 
+                value={activeSectionContent.description || ''} 
+                onChange={(e) => handleFieldChange('description', e.target.value)} 
+                placeholder="Dapatkan bonus GRATIS 1 Tiket Keberangkatan Umrah untuk setiap pencapaian target rombongan..."
+              />
+            </div>
+
+            {/* Target 1 */}
+            <div className="p-3 border rounded-xl bg-slate-50 space-y-2">
+              <Label className="font-bold text-xs text-primary">Target 1 (misal: Majol)</Label>
+              <Input 
+                value={activeSectionContent.card1_title || ''} 
+                onChange={(e) => handleFieldChange('card1_title', e.target.value)} 
+                placeholder="Daftar 5 Jamaah Majol"
+              />
+              <Input 
+                value={activeSectionContent.card1_badge || ''} 
+                onChange={(e) => handleFieldChange('card1_badge', e.target.value)} 
+                placeholder="✨ GRATIS 1 ORANG SAFARA"
+              />
+              <Input 
+                value={activeSectionContent.card1_desc || ''} 
+                onChange={(e) => handleFieldChange('card1_desc', e.target.value)} 
+                placeholder="Bonus 1 Tiket Keberangkatan Paket Safara"
+              />
+            </div>
+
+            {/* Target 2 */}
+            <div className="p-3 border rounded-xl bg-slate-50 space-y-2">
+              <Label className="font-bold text-xs text-primary">Target 2 (misal: Sukari)</Label>
+              <Input 
+                value={activeSectionContent.card2_title || ''} 
+                onChange={(e) => handleFieldChange('card2_title', e.target.value)} 
+                placeholder="Daftar 7 Jamaah Sukari"
+              />
+              <Input 
+                value={activeSectionContent.card2_badge || ''} 
+                onChange={(e) => handleFieldChange('card2_badge', e.target.value)} 
+                placeholder="✨ GRATIS 1 ORANG SAFARA"
+              />
+              <Input 
+                value={activeSectionContent.card2_desc || ''} 
+                onChange={(e) => handleFieldChange('card2_desc', e.target.value)} 
+                placeholder="Bonus 1 Tiket Keberangkatan Paket Safara"
+              />
+            </div>
+
+            {/* Target 3 */}
+            <div className="p-3 border rounded-xl bg-slate-50 space-y-2">
+              <Label className="font-bold text-xs text-primary">Target 3 (misal: Safawi)</Label>
+              <Input 
+                value={activeSectionContent.card3_title || ''} 
+                onChange={(e) => handleFieldChange('card3_title', e.target.value)} 
+                placeholder="Daftar 10 Jamaah Safawi"
+              />
+              <Input 
+                value={activeSectionContent.card3_badge || ''} 
+                onChange={(e) => handleFieldChange('card3_badge', e.target.value)} 
+                placeholder="✨ GRATIS 1 ORANG SAFAWI"
+              />
+              <Input 
+                value={activeSectionContent.card3_desc || ''} 
+                onChange={(e) => handleFieldChange('card3_desc', e.target.value)} 
+                placeholder="Bonus 1 Tiket Keberangkatan Paket Safawi"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Teks Tombol Konsultasi / CTA</Label>
+              <Input 
+                value={activeSectionContent.ctaText || ''} 
+                onChange={(e) => handleFieldChange('ctaText', e.target.value)} 
+                placeholder="Konsultasi Promo Reward Mitra"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Link Tujuan Tombol (URL WA)</Label>
+              <Input 
+                value={activeSectionContent.targetUrl || ''} 
+                onChange={(e) => handleFieldChange('targetUrl', e.target.value)} 
+                placeholder="https://api.whatsapp.com/send?phone=..."
+              />
+            </div>
           </div>
         );
     }

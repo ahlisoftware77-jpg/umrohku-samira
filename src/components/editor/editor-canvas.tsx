@@ -24,6 +24,7 @@ import AirlinesSection from '@/components/sections/airlines-section';
 import AdPopupModal from '@/components/sections/ad-popup-modal';
 import FaqSection from '@/components/sections/faq-section';
 import SocialMediaSection from '@/components/sections/social-media-section';
+import MitraPromoSection from '@/components/sections/mitra-promo-section';
 import { Agent } from '@/lib/agents';
 import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Trash2, EyeOff } from 'lucide-react';
@@ -153,6 +154,9 @@ export default function EditorCanvas() {
         return <SocialMediaSection data={data} />;
       case 'airlines':
         return <AirlinesSection agent={agentCompat} data={data} />;
+      case 'mitra_promo':
+      case 'mitra-promo':
+        return <MitraPromoSection agent={agentCompat} data={data} />;
       case 'ad_popup':
       case 'ad-popup':
         return <AdPopupModal agent={agentCompat} data={data} isPreview={true} />;
