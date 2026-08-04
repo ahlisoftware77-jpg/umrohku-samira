@@ -14,7 +14,8 @@ import {
   query, 
   where,
   setDoc,
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from '@/lib/firestore-tracker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -142,6 +143,8 @@ export default function SuperAdminPage() {
   const [cldUploadPreset, setCldUploadPreset] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_upload_preset') || 'ml_default' : 'ml_default'));
   const [geminiApiKeyMode, setGeminiApiKeyMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
   const [isGeminiAiEnabled, setIsGeminiAiEnabled] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
+  const [aiGenerateLimit, setAiGenerateLimit] = useState<number>(10);
+  const [isSavingLimit, setIsSavingLimit] = useState(false);
 
   // 9router Multi-Provider AI Cluster States
   const defaultInitialProviders: AiProviderConfig[] = [
@@ -1504,6 +1507,9 @@ service cloud.firestore {
               setGeminiApiKeyMode(sysData.gemini.mode);
               if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key_mode', sysData.gemini.mode);
             }
+          }
+          if (typeof sysData.aiGenerateLimit === 'number') {
+            setAiGenerateLimit(sysData.aiGenerateLimit);
           }
         }
       } catch (sysErr) {
@@ -5828,6 +5834,98 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                           </>
                         )}
                       </button>
+                    </div>
+
+                    {/* Generate Limit Configuration Card */}
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                            <Zap className="h-4 w-4 text-amber-600" /> Batas Jumlah Generate Asisten Marketing (Per Mitra / Per Hari):
+                          </span>
+                          <p className="text-[10px] text-amber-700">
+                            Atur berapa kali setiap mitra dapat menggunakan Asisten Marketing dalam sehari. Hitung ulang setiap tengah malam (00:00 WIB). Masukkan <strong>0</strong> untuk tanpa batas.
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-[11px] font-extrabold text-amber-900 bg-amber-200 px-3 py-1 rounded-full">
+                          {aiGenerateLimit === 0 ? '∞ Tidak Terbatas' : `${aiGenerateLimit}x / Hari`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center border border-amber-300 rounded-xl overflow-hidden bg-white">
+                          <button
+                            type="button"
+                            onClick={() => setAiGenerateLimit(prev => Math.max(0, prev - 1))}
+                            className="px-3 py-2 text-amber-800 font-extrabold hover:bg-amber-100 transition-colors text-lg leading-none"
+                          >−</button>
+                          <input
+                            type="number"
+                            min={0}
+                            max={999}
+                            value={aiGenerateLimit}
+                            onChange={(e) => setAiGenerateLimit(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-16 text-center py-2 font-mono font-extrabold text-amber-900 text-sm bg-transparent border-none outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setAiGenerateLimit(prev => Math.min(999, prev + 1))}
+                            className="px-3 py-2 text-amber-800 font-extrabold hover:bg-amber-100 transition-colors text-lg leading-none"
+                          >+</button>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={isSavingLimit}
+                          onClick={async () => {
+                            setIsSavingLimit(true);
+                            try {
+                              await setDoc(doc(db, 'systemSettings', 'global'), {
+                                aiGenerateLimit: aiGenerateLimit
+                              }, { merge: true });
+                              alert(`✅ Batas generate berhasil disimpan: ${aiGenerateLimit === 0 ? 'Tidak Terbatas' : `${aiGenerateLimit}x per hari`}`);
+                            } catch (e) {
+                              alert('Gagal menyimpan ke Firestore.');
+                            } finally {
+                              setIsSavingLimit(false);
+                            }
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition-all disabled:opacity-60 shadow-xs"
+                        >
+                          {isSavingLimit ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                          Simpan Batas
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!confirm('Reset semua hitungan generate mitra hari ini?')) return;
+                            try {
+                              const snapshot = await getDocs(collection(db, 'aiUsage'));
+                              const batch = writeBatch(db);
+                              snapshot.forEach(d => batch.delete(d.ref));
+                              await batch.commit();
+                              alert('✅ Semua hitungan generate mitra berhasil direset!');
+                            } catch (e) {
+                              alert('Gagal reset hitungan.');
+                            }
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-600 hover:bg-slate-700 text-white transition-all shadow-xs"
+                        >
+                          <RefreshCw className="h-3 w-3" /> Reset Hitungan Semua Mitra
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-[10px] text-amber-800 font-semibold">
+                        {[5, 10, 20, 30, 50, 0].map(n => (
+                          <button key={n} type="button"
+                            onClick={() => setAiGenerateLimit(n)}
+                            className={`py-1.5 rounded-xl border font-bold transition-all ${aiGenerateLimit === n ? 'bg-amber-600 text-white border-amber-500' : 'bg-white border-amber-300 hover:bg-amber-100 text-amber-800'}`}
+                          >
+                            {n === 0 ? '∞ Unlimited' : `${n}x/hari`}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Mode Selection: Admin Global vs Custom Tenant Input */}

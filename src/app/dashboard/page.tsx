@@ -146,6 +146,8 @@ export default function TenantDashboardPage() {
   const [isGeminiAiEnabled, setIsGeminiAiEnabled] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
   const [usePersonalKey, setUsePersonalKey] = useState(false);
   const [copiedAiResult, setCopiedAiResult] = useState(false);
+  const [aiUsageToday, setAiUsageToday] = useState(0);
+  const [aiDailyLimit, setAiDailyLimit] = useState(0);
 
   // Load Cloud System Config for Asisten Marketing (real-time from Firestore)
   useEffect(() => {
@@ -167,6 +169,10 @@ export default function TenantDashboardPage() {
             localStorage.setItem('gemini_api_enabled', enabled ? 'true' : 'false');
           }
         }
+        // Load global generate limit
+        if (typeof sysData.aiGenerateLimit === 'number') {
+          setAiDailyLimit(sysData.aiGenerateLimit);
+        }
         // Load 9router cluster providers
         if (Array.isArray(sysData.aiProviders) && sysData.aiProviders.length > 0) {
           if (typeof window !== 'undefined') {
@@ -178,6 +184,21 @@ export default function TenantDashboardPage() {
     return () => unsub();
   }, []);
 
+  // Track today's AI usage for this user (real-time)
+  useEffect(() => {
+    if (!user?.uid) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const usageRef = doc(db, 'aiUsage', user.uid);
+    const unsub = onSnapshot(usageRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setAiUsageToday(data.date === today ? (data.count || 0) : 0);
+      } else {
+        setAiUsageToday(0);
+      }
+    }, () => {});
+    return () => unsub();
+  }, [user?.uid]);
 
   // Comprehensive Phone Number Detection across all Contact Settings & CMS sections
   const getDetectedContactPhone = (): string => {
@@ -244,6 +265,38 @@ export default function TenantDashboardPage() {
     setAiResultText('');
 
     try {
+      // --- Generate Limit Check ---
+      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const userId = user?.uid;
+
+      if (userId) {
+        const sysSnap = await getDoc(doc(db, 'systemSettings', 'global'));
+        const sysData = sysSnap.exists() ? sysSnap.data() : {};
+        const globalLimit: number = typeof sysData.aiGenerateLimit === 'number' ? sysData.aiGenerateLimit : 10;
+
+        if (globalLimit > 0) {
+          const usageRef = doc(db, 'aiUsage', userId);
+          const usageSnap = await getDoc(usageRef);
+          const usageData = usageSnap.exists() ? usageSnap.data() : {};
+          const usedToday: number = usageData.date === today ? (usageData.count || 0) : 0;
+
+          if (usedToday >= globalLimit) {
+            setAiError(`⚠️ Anda telah mencapai batas generate hari ini (${globalLimit}x). Batas akan direset esok hari pukul 00:00. Hubungi Super Admin jika membutuhkan tambahan.`);
+            setIsAiGenerating(false);
+            return;
+          }
+
+          // Increment usage counter
+          await setDoc(usageRef, {
+            userId,
+            date: today,
+            count: usedToday + 1,
+            updatedAt: new Date().toISOString()
+          }, { merge: false });
+        }
+      }
+      // --- End Limit Check ---
+
       let apiKey = '';
 
       if (usePersonalKey || geminiConfigMode === 'custom') {
@@ -2124,7 +2177,7 @@ Format Output:
           <Card className="w-full max-w-2xl shadow-2xl rounded-3xl bg-white border-none p-4 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <CardHeader className="px-0 pt-0 border-b pb-4 flex flex-row items-center justify-between">
-              <div>
+              <div className="flex-1">
                 <CardTitle className="text-xl font-headline font-bold text-primary flex items-center gap-2">
                   <Sparkles className="h-6 w-6 text-purple-600 animate-pulse" />
                   Asisten Marketing
@@ -2134,14 +2187,40 @@ Format Output:
                 </CardDescription>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsAiModalOpen(false)}
-                className="h-8 w-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold text-sm"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Quota Badge */}
+                {aiDailyLimit > 0 && (
+                  <div className={`flex flex-col items-center px-3 py-1.5 rounded-2xl border text-center ${
+                    aiUsageToday >= aiDailyLimit
+                      ? 'bg-red-50 border-red-200 text-red-700'
+                      : aiUsageToday >= aiDailyLimit * 0.8
+                      ? 'bg-amber-50 border-amber-200 text-amber-800'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  }`}>
+                    <span className="text-[9px] font-extrabold uppercase tracking-widest opacity-70">Kuota Hari Ini</span>
+                    <span className="text-sm font-extrabold leading-tight">
+                      {aiDailyLimit - aiUsageToday <= 0 ? '0' : aiDailyLimit - aiUsageToday}
+                      <span className="text-[10px] font-semibold opacity-60"> / {aiDailyLimit}x</span>
+                    </span>
+                  </div>
+                )}
+                {aiDailyLimit === 0 && (
+                  <div className="flex flex-col items-center px-3 py-1.5 rounded-2xl border bg-slate-50 border-slate-200 text-slate-600 text-center">
+                    <span className="text-[9px] font-extrabold uppercase tracking-widest opacity-70">Kuota</span>
+                    <span className="text-sm font-extrabold">∞</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setIsAiModalOpen(false)}
+                  className="h-8 w-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold text-sm"
+                >
+                  ✕
+                </button>
+              </div>
             </CardHeader>
+
 
             {/* Auto-Detected & Custom Contact Phone Number Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 bg-emerald-50/90 border border-emerald-200/90 rounded-2xl text-xs">
