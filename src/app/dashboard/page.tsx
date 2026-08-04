@@ -164,6 +164,29 @@ export default function TenantDashboardPage() {
     loadGeminiConfig();
   }, []);
 
+  // Comprehensive Phone Number Detection across all Contact Settings & CMS sections
+  const getDetectedContactPhone = (): string => {
+    if (tenantProfile?.phone && tenantProfile.phone.trim().length >= 8) {
+      return formatPhoneNumber(tenantProfile.phone);
+    }
+    if (phone && phone.trim().length >= 8) {
+      return formatPhoneNumber(phone);
+    }
+    try {
+      const storeContents = useCmsStore.getState().contents || {};
+      const allItems = Object.values(storeContents).flat();
+      for (const item of allItems) {
+        const d = (item as any)?.data || {};
+        const foundPhone = d.phone || d.whatsapp || d.contactPhone || d.noWa || d.nomorWa || d.phone_number || d.contact_number;
+        if (foundPhone && typeof foundPhone === 'string' && foundPhone.trim().length >= 8) {
+          return formatPhoneNumber(foundPhone);
+        }
+      }
+    } catch (e) {}
+
+    return '628123456789';
+  };
+
   const handleExecuteGeminiAi = async (mode: 'audit' | 'ads' | 'cs') => {
     setIsAiGenerating(true);
     setAiError('');
@@ -191,7 +214,7 @@ export default function TenantDashboardPage() {
       const tenantName = tenantProfile?.name || 'Mitra Travel Umrah';
       const companyName = tenantProfile?.company || 'Travel Umrah Resmi';
       const subdomain = tenantProfile?.subdomain || 'mitra';
-      const phoneNum = tenantProfile?.phone || phone || '628xxx';
+      const phoneNum = getDetectedContactPhone();
       const landingPageUrl = `https://umrohku-samira.my.id/${subdomain}`;
       const waLink = `https://wa.me/${phoneNum}`;
 
@@ -2059,6 +2082,21 @@ Format Output:
                 ✕
               </button>
             </CardHeader>
+
+            {/* Auto-Detected Contact Phone Number Banner */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-emerald-50/90 border border-emerald-200/90 rounded-2xl text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                  📱 Nomor WhatsApp Kontak:
+                </span>
+                <span className="font-mono font-extrabold text-emerald-800 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-xs">
+                  +{getDetectedContactPhone()}
+                </span>
+              </div>
+              <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100/80 px-2 py-0.5 rounded-full shrink-0">
+                ✓ Otomatis Terdeteksi dari Pengaturan Kontak
+              </span>
+            </div>
 
             {/* API Key Source Mode Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 border rounded-2xl text-xs">
