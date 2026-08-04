@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Sparkles, Bot, Loader2, ArrowLeft } from 'lucide-react';
 import { routeAiRequest } from '@/lib/services/aiRouterService';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { AiProviderConfig } from '@/types/cms';
+import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
+import { collection, query, where, getDocs, doc, getDoc } from '@/lib/firestore-tracker';
+import { AiProviderConfig, Content, Section, Tenant } from '@/types/cms';
 
 interface PageProps {
   params: Promise<{ tenant: string }>;
@@ -19,60 +19,125 @@ interface PageProps {
 
 export default function TenantSchedulePage({ params }: PageProps) {
   const { tenant: tenantSlug } = use(params);
-  const { loading: resolverLoading, agent, error } = useTenantResolver(tenantSlug);
+  const { loading: resolverLoading, agent, tenant, error } = useTenantResolver(tenantSlug);
   
   const [scheduleSectionData, setScheduleSectionData] = useState<Record<string, any> | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState<string>('');
 
-  // Fetch tenant's custom departure schedule section content from Firestore & localStorage
+  // Fetch tenant's custom departure schedule section content from Firestore
+  // Uses the same pattern as [tenant]/page.tsx: query `contents` collection by tenantId,
+  // reconstruct contentsMap[sectionId][key] = value, then find departure_schedule section data
   useEffect(() => {
     async function loadTenantScheduleSection() {
-      if (!tenantSlug) return;
+      if (!tenantSlug || resolverLoading) return;
       try {
-        let foundData: Record<string, any> | null = null;
+        const possibleIds = Array.from(new Set([
+          tenantSlug.toLowerCase(), 
+          tenantSlug,
+          tenant?.tenantId,
+        ])).filter(Boolean) as string[];
 
-        // A. Check localStorage for local CMS editor preview
-        if (typeof window !== 'undefined') {
-          const savedContents = localStorage.getItem('cms_contents') || localStorage.getItem(`cms_contents_${tenantSlug}`);
-          const savedSections = localStorage.getItem('cms_sections') || localStorage.getItem(`cms_sections_${tenantSlug}`);
-          if (savedContents && savedSections) {
-            try {
-              const parsedContents = JSON.parse(savedContents);
-              const parsedSections = JSON.parse(savedSections);
-              if (Array.isArray(parsedSections)) {
-                const schedSec = parsedSections.find((s: any) => s.type === 'departure_schedule' || s.type === 'departure-schedule');
-                if (schedSec && parsedContents[schedSec.sectionId]) {
-                  foundData = parsedContents[schedSec.sectionId];
-                }
+        // Resolve active database (may be a cluster DB if tenant has dbServerId)
+        let activeDb = db;
+        if (tenant?.dbServerId && tenant.dbServerId !== 'default') {
+          try {
+            let serverConfig: any = null;
+            if (typeof window !== 'undefined') {
+              const storedServers = localStorage.getItem('database_servers');
+              if (storedServers) {
+                const servers: any[] = JSON.parse(storedServers);
+                serverConfig = servers.find(s => s.serverId === tenant.dbServerId);
               }
-            } catch (e) {}
+            }
+            if (!serverConfig) {
+              const dbServerDoc = await getDoc(doc(db, 'databaseServers', tenant.dbServerId));
+              if (dbServerDoc.exists()) {
+                serverConfig = dbServerDoc.data();
+              }
+            }
+            if (serverConfig && serverConfig.apiKey) {
+              activeDb = getDynamicFirebaseInstance(serverConfig).db;
+            }
+          } catch (e) {}
+        }
+
+        // 1. Find departure_schedule section from sections collection
+        let scheduleSectionId: string | null = null;
+        const sectionsRef = collection(activeDb, 'sections');
+
+        for (const tid of possibleIds) {
+          const qSec = query(sectionsRef, where('tenantId', '==', tid));
+          const snap = await getDocs(qSec);
+          if (!snap.empty) {
+            const targetDoc = snap.docs.find(d => {
+              const type = d.data().type;
+              return type === 'departure_schedule' || type === 'departure-schedule';
+            });
+            if (targetDoc) {
+              scheduleSectionId = targetDoc.data().sectionId || targetDoc.id;
+              break;
+            }
           }
         }
 
-        // B. Query Firestore if not found in localStorage
-        if (!foundData) {
-          const possibleIds = Array.from(new Set([tenantSlug.toLowerCase(), tenantSlug])).filter(Boolean);
-          const sectionsRef = collection(db, 'sections');
+        // 2. Query ALL contents for this tenant, reconstruct contentsMap[sectionId][key] = value
+        // (same pattern as [tenant]/page.tsx)
+        const contentsRef = collection(activeDb, 'contents');
+        const contentsMap: Record<string, Record<string, any>> = {};
 
-          for (const tid of possibleIds) {
-            const qSec = query(sectionsRef, where('tenantId', '==', tid));
-            const snap = await getDocs(qSec);
-            if (!snap.empty) {
-              const targetDoc = snap.docs.find(d => {
-                const type = d.data().type;
-                return type === 'departure_schedule' || type === 'departure-schedule';
-              });
-
-              if (targetDoc) {
-                const secId = targetDoc.id;
-                const contentSnap = await getDoc(doc(db, 'contents', secId));
-                if (contentSnap.exists()) {
-                  foundData = contentSnap.data();
-                  break;
-                }
+        for (const tid of possibleIds) {
+          const qContent = query(contentsRef, where('tenantId', '==', tid));
+          const cSnap = await getDocs(qContent);
+          if (!cSnap.empty) {
+            cSnap.docs.forEach(docSnap => {
+              const c = docSnap.data() as Content;
+              if (c.sectionId) {
+                if (!contentsMap[c.sectionId]) contentsMap[c.sectionId] = {};
+                contentsMap[c.sectionId][c.key] = c.value;
               }
+            });
+          }
+        }
+
+        // Fallback: also try primary DB if activeDb was a cluster and we found nothing
+        if (Object.keys(contentsMap).length === 0 && activeDb !== db) {
+          const primaryContentsRef = collection(db, 'contents');
+          for (const tid of possibleIds) {
+            const qContent = query(primaryContentsRef, where('tenantId', '==', tid));
+            const cSnap = await getDocs(qContent);
+            if (!cSnap.empty) {
+              cSnap.docs.forEach(docSnap => {
+                const c = docSnap.data() as Content;
+                if (c.sectionId) {
+                  if (!contentsMap[c.sectionId]) contentsMap[c.sectionId] = {};
+                  contentsMap[c.sectionId][c.key] = c.value;
+                }
+              });
+            }
+          }
+        }
+
+        // 3. Extract schedule section data from contentsMap
+        let foundData: Record<string, any> | null = null;
+
+        // Try by known scheduleSectionId first
+        if (scheduleSectionId && contentsMap[scheduleSectionId]) {
+          foundData = contentsMap[scheduleSectionId];
+        }
+
+        // Fallback: search all section contents for one that has 'schedules' array
+        if (!foundData) {
+          for (const secId of Object.keys(contentsMap)) {
+            if (secId.includes('departure_schedule') || secId.includes('departure-schedule')) {
+              foundData = contentsMap[secId];
+              break;
+            }
+            // Also check if any section has a 'schedules' array (generic match)
+            if (contentsMap[secId].schedules && Array.isArray(contentsMap[secId].schedules)) {
+              foundData = contentsMap[secId];
+              break;
             }
           }
         }
@@ -86,7 +151,7 @@ export default function TenantSchedulePage({ params }: PageProps) {
     }
 
     loadTenantScheduleSection();
-  }, [tenantSlug]);
+  }, [tenantSlug, resolverLoading, tenant]);
 
   const getActiveAiCluster = (): AiProviderConfig[] => {
     let activeCluster: AiProviderConfig[] = [];

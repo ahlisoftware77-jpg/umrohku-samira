@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import DepartureScheduleSection, { DEFAULT_SCHEDULES, DepartureScheduleItem } from '@/components/sections/departure-schedule-section';
@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sparkles, Calendar, Search, Filter, PhoneCall, Plane, Building2, Check, Clock, Bot, Loader2, ArrowLeft } from 'lucide-react';
 import { routeAiRequest } from '@/lib/services/aiRouterService';
-import { AiProviderConfig } from '@/types/cms';
+import { AiProviderConfig, Content } from '@/types/cms';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from '@/lib/firestore-tracker';
 
 export default function PublicSchedulePage() {
   const [aiPrompt, setAiPrompt] = useState('');
@@ -16,23 +18,44 @@ export default function PublicSchedulePage() {
   const [aiRecommendation, setAiRecommendation] = useState<string>('');
   const [scheduleSectionData, setScheduleSectionData] = useState<Record<string, any> | null>(null);
 
+  // Try to load schedule data for the 'default' tenant from Firestore
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedContents = localStorage.getItem('cms_contents');
-      const savedSections = localStorage.getItem('cms_sections');
-      if (savedContents && savedSections) {
-        try {
-          const parsedContents = JSON.parse(savedContents);
-          const parsedSections = JSON.parse(savedSections);
-          if (Array.isArray(parsedSections)) {
-            const schedSec = parsedSections.find((s: any) => s.type === 'departure_schedule' || s.type === 'departure-schedule');
-            if (schedSec && parsedContents[schedSec.sectionId]) {
-              setScheduleSectionData(parsedContents[schedSec.sectionId]);
-            }
+    async function loadDefaultSchedule() {
+      try {
+        // Query contents for the default tenant
+        const possibleIds = ['default'];
+        const contentsRef = collection(db, 'contents');
+        const contentsMap: Record<string, Record<string, any>> = {};
+
+        for (const tid of possibleIds) {
+          const qContent = query(contentsRef, where('tenantId', '==', tid));
+          const cSnap = await getDocs(qContent);
+          if (!cSnap.empty) {
+            cSnap.docs.forEach(docSnap => {
+              const c = docSnap.data() as Content;
+              if (c.sectionId) {
+                if (!contentsMap[c.sectionId]) contentsMap[c.sectionId] = {};
+                contentsMap[c.sectionId][c.key] = c.value;
+              }
+            });
           }
-        } catch (e) {}
-      }
+        }
+
+        // Find departure_schedule section data
+        for (const secId of Object.keys(contentsMap)) {
+          if (secId.includes('departure_schedule') || secId.includes('departure-schedule')) {
+            setScheduleSectionData(contentsMap[secId]);
+            return;
+          }
+          if (contentsMap[secId].schedules && Array.isArray(contentsMap[secId].schedules)) {
+            setScheduleSectionData(contentsMap[secId]);
+            return;
+          }
+        }
+      } catch (e) {}
     }
+
+    loadDefaultSchedule();
   }, []);
 
   const getActiveAiCluster = (): AiProviderConfig[] => {
