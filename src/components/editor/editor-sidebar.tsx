@@ -39,15 +39,11 @@ import {
   MessageSquare,
   RefreshCw,
   Check,
-  Wand2,
   Loader2,
-  Bot
+  Wand2
 } from 'lucide-react';
 import { SectionType, AiProviderConfig } from '@/types/cms';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, onSnapshot } from '@/lib/firestore-tracker';
 import { routeAiRequest } from '@/lib/services/aiRouterService';
-
 
 export default function EditorSidebar() {
   const {
@@ -81,114 +77,221 @@ export default function EditorSidebar() {
   const [mapPreviewUrl, setMapPreviewUrl] = useState('');
   const [mapTargetField, setMapTargetField] = useState<'mapUrl' | 'officePusatMapUrl'>('mapUrl');
 
-  // AI Assistant States (Supa Config Enforced)
-  const [isAiEnabled, setIsAiEnabled] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
-  const [aiGeneratingField, setAiGeneratingField] = useState<string | null>(null);
-
-  // Real-time listener for Supa AI configuration
-  React.useEffect(() => {
-    const systemRef = doc(db, 'systemSettings', 'global');
-    const unsub = onSnapshot(systemRef, (sysSnap) => {
-      if (sysSnap.exists()) {
-        const sysData = sysSnap.data();
-        if (sysData.gemini?.enabled !== undefined) {
-          const enabled = sysData.gemini.enabled !== false;
-          setIsAiEnabled(enabled);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('gemini_api_enabled', enabled ? 'true' : 'false');
-          }
-        }
-        if (Array.isArray(sysData.aiProviders) && sysData.aiProviders.length > 0) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('ai_providers_cluster', JSON.stringify(sysData.aiProviders));
-          }
-        }
-      }
-    }, () => {});
-    return () => unsub();
-  }, []);
-
-  // AI Content Generator for Section Fields
-  const handleGenerateSectionAiContent = async (fieldKey: string, fieldLabel: string, promptInstruction: string) => {
-    if (!isAiEnabled) {
-      toast({
-        title: "Asisten AI Nonaktif",
-        description: "Asisten AI saat ini dinonaktifkan oleh Super Admin di portal /supa.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAiGeneratingField(fieldKey);
-    try {
-      let activeCluster: AiProviderConfig[] = [];
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem('ai_providers_cluster');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) activeCluster = parsed;
-          } catch (e) {}
-        }
-      }
-
-      if (activeCluster.length === 0) {
-        const defaultKey = (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '') || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
-        if (defaultKey) {
-          activeCluster = [{
-            id: 'prov_default',
-            name: 'Default Provider',
-            providerType: 'gemini',
-            apiKey: defaultKey,
-            model: 'gemini-2.0-flash',
-            enabled: true,
-            priority: 1
-          }];
-        }
-      }
-
-      if (activeCluster.length === 0) {
-        toast({
-          title: "API Key Belum Dikonfigurasi",
-          description: "Silakan minta Super Admin mengatur API Key AI di portal /supa.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const activeSecType = sections.find(s => s.sectionId === activeSectionId)?.type || 'seksi website';
-      const prompt = `Bertindaklah sebagai Copywriter Profesional Travel Umrah & Haji (Samira Travel).
-Buatkan draf teks ${fieldLabel} yang menarik, islami, profesional, dan meyakinkan calon jamaah untuk seksi "${activeSecType}".
-Petunjuk Khusus: ${promptInstruction}.
-HANYA berikan teks hasil tulisan tanpa tanda petik pembuka/penutup dan tanpa penjelasan tambahan.`;
-
-      const res = await routeAiRequest(activeCluster, prompt);
-      if (res && res.text) {
-        const cleanedText = res.text.trim().replace(/^["']|["']$/g, '');
-        handleFieldChange(fieldKey, cleanedText);
-        toast({
-          title: "✨ Teks AI Berhasil Dibuat",
-          description: `Teks ${fieldLabel} telah diperbarui dengan kreasi AI.`,
-        });
-      }
-    } catch (err: any) {
-      toast({
-        title: "Gagal Generate AI",
-        description: err.message || "Terjadi kendala saat menghubungi AI.",
-        variant: "destructive",
-      });
-    } finally {
-      setAiGeneratingField(null);
-    }
-  };
-
-
   const openMapPicker = (targetField: 'mapUrl' | 'officePusatMapUrl', initialQuery: string) => {
     setMapTargetField(targetField);
     setMapSearchQuery(initialQuery);
     setMapPreviewUrl(initialQuery ? `https://www.google.com/maps?q=${encodeURIComponent(initialQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '');
     setIsMapPickerOpen(true);
   };
+
+  // AI Section Assistant States
+  const [aiCustomInstruction, setAiCustomInstruction] = useState('');
+  const [isAiSectionGenerating, setIsAiSectionGenerating] = useState(false);
+  const [aiSectionError, setAiSectionError] = useState('');
+
+  // AI Field Suggestion Dialog States
+  const [isAiFieldDialogOpen, setIsAiFieldDialogOpen] = useState(false);
+  const [aiFieldTargetKey, setAiFieldTargetKey] = useState('');
+  const [aiFieldTargetLabel, setAiFieldTargetLabel] = useState('');
+  const [aiFieldVariations, setAiFieldVariations] = useState<string[]>([]);
+  const [isAiFieldLoading, setIsAiFieldLoading] = useState(false);
+
+  const getActiveAiCluster = (): AiProviderConfig[] => {
+    let activeCluster: AiProviderConfig[] = [];
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ai_providers_cluster');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) activeCluster = parsed;
+        } catch (e) {}
+      }
+    }
+    if (activeCluster.length === 0 && typeof window !== 'undefined') {
+      const apiKey = localStorage.getItem('tenant_gemini_api_key') || 
+                     localStorage.getItem('gemini_api_key') || 
+                     process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+      if (apiKey) {
+        activeCluster = [{
+          id: 'prov_default_gemini',
+          name: 'Google Gemini Admin',
+          providerType: 'gemini',
+          apiKey: apiKey,
+          model: 'gemini-2.0-flash',
+          enabled: true,
+          priority: 1
+        }];
+      }
+    }
+    return activeCluster;
+  };
+
+  const handleGenerateSectionAi = async (sectionType: string, isEnhance: boolean = false) => {
+    if (!activeSectionId) return;
+    setIsAiSectionGenerating(true);
+    setAiSectionError('');
+
+    try {
+      const cluster = getActiveAiCluster();
+      if (cluster.length === 0) {
+        setAiSectionError('API Key AI belum diatur. Harap isi API Key di Portal /supa.');
+        setIsAiSectionGenerating(false);
+        return;
+      }
+
+      const sectionLabel = SECTION_NAMES[sectionType.toLowerCase()] || sectionType;
+      const currentFields = contents[activeSectionId] || {};
+
+      let promptText = '';
+      if (isEnhance) {
+        promptText = `Bertindaklah sebagai Copywriter Islami & Social Media Specialist Biro Perjalanan Umrah Samira Travel.
+Tolong poles, perbaiki, dan tingkatkan teks saat ini pada seksi "${sectionLabel}" (${sectionType}) agar tampil lebih profesional, menarik, menyentuh hati calon jamaah, dan berorientasi konversi tinggi.
+
+Teks & Isian Seksi Saat Ini:
+${JSON.stringify(currentFields, null, 2)}
+
+${aiCustomInstruction ? `Instruksi Khusus dari Pengguna: ${aiCustomInstruction}` : ''}
+
+Format Output: HANYA kembalikan objek JSON valid (tanpa markdown atau teks penjelasan) yang memetakan nama field ke hasil teks perbaikan terbaru. Contoh format:
+{
+  "title": "...",
+  "description": "...",
+  "badgeText": "..."
+}`;
+      } else {
+        promptText = `Bertindaklah sebagai Copywriter Islami & Strategist Konten Biro Perjalanan Umrah & Haji Samira Travel.
+Buatkan isi teks dan deskripsi lengkap yang sangat menarik, Islami, hangat, dan berwibawa untuk seksi website landing page: "${sectionLabel}" (Tipe Seksi: ${sectionType}).
+
+Detail konteks:
+- Biro Travel: Samira Travel / UmrohKu
+- Nilai Utama: Kepastian Keberangkatan, Bintang 5, Pembayaran DP Ringan, Bimbingan Ibadah Sesuai Sunnah, Muthawwif Berpengalaman.
+${aiCustomInstruction ? `- Catatan Khusus Pengguna: ${aiCustomInstruction}` : ''}
+
+Format Output: HANYA kembalikan objek JSON valid (tanpa markdown) yang memuat field-field berikut sesuai kebutuhan seksi "${sectionType}":
+{
+  "badgeText": "...",
+  "title": "...",
+  "subtitle": "...",
+  "description": "...",
+  "primaryBtnText": "..."
+  ${['why_samira', 'why_umrah', 'feature'].includes(sectionType) ? `,
+  "feature1_title": "...", "feature1_desc": "...",
+  "feature2_title": "...", "feature2_desc": "...",
+  "feature3_title": "...", "feature3_desc": "..."` : ''}
+  ${sectionType === 'faq' ? `,
+  "faq1_q": "...", "faq1_a": "...",
+  "faq2_q": "...", "faq2_a": "...",
+  "faq3_q": "...", "faq3_a": "..."` : ''}
+}`;
+      }
+
+      const res = await routeAiRequest(cluster, promptText);
+      if (res && res.text) {
+        let cleaned = res.text.trim();
+        if (cleaned.startsWith('```')) {
+          cleaned = cleaned.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '').trim();
+        }
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (typeof parsed === 'object' && parsed !== null) {
+            Object.entries(parsed).forEach(([k, v]) => {
+              if (typeof v === 'string' && v.trim()) {
+                updateContent(activeSectionId, k, v);
+              }
+            });
+            toast({
+              title: "✨ Teks Seksi Diperbarui AI!",
+              description: `Seluruh teks pada seksi ${sectionLabel} telah disesuaikan dengan saran AI Cerdas.`,
+            });
+          }
+        } catch (pErr) {
+          console.error('JSON parsing error from AI response:', pErr, res.text);
+          setAiSectionError('AI merespons namun format JSON tidak terurai sempurna. Silakan coba lagi.');
+        }
+      }
+    } catch (err: any) {
+      console.error('AI Section Generation Error:', err);
+      setAiSectionError(err.message || 'Gagal menghubungi server AI.');
+    } finally {
+      setIsAiSectionGenerating(false);
+    }
+  };
+
+  const handleFieldAiAssist = async (fieldKey: string, fieldLabel: string, currentValue: string) => {
+    setAiFieldTargetKey(fieldKey);
+    setAiFieldTargetLabel(fieldLabel);
+    setAiFieldVariations([]);
+    setIsAiFieldDialogOpen(true);
+    setIsAiFieldLoading(true);
+
+    try {
+      const cluster = getActiveAiCluster();
+      if (cluster.length === 0) {
+        toast({
+          title: "⚠️ API Key Belum Diisi",
+          description: "Harap masukkan API Key AI di portal Supa atau pengaturan.",
+          variant: "destructive"
+        });
+        setIsAiFieldLoading(false);
+        return;
+      }
+
+      const sectionLabel = activeSection ? (SECTION_NAMES[activeSection.type] || activeSection.type) : 'Seksi';
+
+      const promptText = `Bertindaklah sebagai Copywriter Islami Biro Travel Umrah Profesional.
+Tolong buatkan 3 (tiga) variasi kalimat / teks pilihan yang sangat indah, menarik, dan profesional untuk kolom "${fieldLabel}" pada seksi "${sectionLabel}".
+Teks asal saat ini: "${currentValue || 'Belum diisi'}"
+${aiCustomInstruction ? `Instruksi Tambahan: ${aiCustomInstruction}` : ''}
+
+Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown backtick). Contoh:
+[
+  "Pilihan 1...",
+  "Pilihan 2...",
+  "Pilihan 3..."
+]`;
+
+      const res = await routeAiRequest(cluster, promptText);
+      if (res && res.text) {
+        let cleaned = res.text.trim();
+        if (cleaned.startsWith('```')) {
+          cleaned = cleaned.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '').trim();
+        }
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setAiFieldVariations(parsed.map(item => String(item)));
+          } else {
+            setAiFieldVariations([res.text]);
+          }
+        } catch (e) {
+          setAiFieldVariations([res.text]);
+        }
+      }
+    } catch (err: any) {
+      toast({
+        title: "Gagal Mengambil Saran AI",
+        description: err.message || "Terjadi kesalahan saat memproses AI.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAiFieldLoading(false);
+    }
+  };
+
+  const renderLabelWithAi = (label: string, fieldKey: string) => (
+    <div className="flex items-center justify-between gap-1 w-full mb-1">
+      <Label className="font-semibold text-xs text-slate-700">{label}</Label>
+      <button
+        type="button"
+        onClick={() => handleFieldAiAssist(fieldKey, label, activeSectionContent[fieldKey] || '')}
+        className="text-[10px] font-bold text-purple-700 hover:text-purple-900 bg-purple-100/80 hover:bg-purple-200 px-2 py-0.5 rounded-full flex items-center gap-1 transition-all shrink-0 border border-purple-200 cursor-pointer"
+        title={`Dapatkan saran AI untuk ${label}`}
+      >
+        <Sparkles className="h-3 w-3 text-amber-500 animate-pulse" />
+        <span>Saran AI</span>
+      </button>
+    </div>
+  );
 
   const SECTION_NAMES: Record<string, string> = {
     hero: 'Banner Utama',
@@ -276,54 +379,54 @@ HANYA berikan teks hasil tulisan tanpa tanda petik pembuka/penutup dan tanpa pen
     { type: 'ad_popup', label: '📢 Iklan Popup (Awal Muat Halaman)' },
   ];
 
-  // Helper to render section form content based on active section type
-  const renderSectionTypeContent = () => {
-    if (!activeSection) return null;
-    switch (activeSection.type) {
-      case 'hero':
-        return (
-          <div className="space-y-4">
+  // Render inputs dynamically based on section type
+  const renderSectionFields = () => {
+    if (!activeSection) return <p className="text-sm text-muted-foreground">Pilih seksi di layar atau daftar seksi untuk disunting.</p>;
 
-
-            <h3 className="font-bold text-base text-primary mb-2">Penyuntingan Seksi Hero</h3>
-            <div className="space-y-2">
-              <Label>Teks Lencana (Badge)</Label>
-              <Input 
-                value={activeSectionContent.badgeText || ''} 
-                onChange={(e) => handleFieldChange('badgeText', e.target.value)} 
-                placeholder="Biro Perjalanan Haji & Umrah Terpercaya"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Judul Utama (Title)</Label>
-              <Textarea 
-                value={activeSectionContent.title || ''} 
-                onChange={(e) => handleFieldChange('title', e.target.value)}
-                placeholder="Mulailah Perjalanan Suci Anda Bersama SAMIRA"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Deskripsi Singkat</Label>
-              <Textarea 
-                value={activeSectionContent.description || ''} 
-                onChange={(e) => handleFieldChange('description', e.target.value)}
-                placeholder="Rasakan pengalaman ibadah yang lancar..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Teks Tombol Utama</Label>
-              <Input 
-                value={activeSectionContent.primaryBtnText || ''} 
-                onChange={(e) => handleFieldChange('primaryBtnText', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>URL Tombol Utama</Label>
-              <Input 
-                value={activeSectionContent.primaryBtnUrl || ''} 
-                onChange={(e) => handleFieldChange('primaryBtnUrl', e.target.value)}
-              />
-            </div>
+    const renderInnerSectionContent = () => {
+      switch (activeSection.type) {
+        case 'hero':
+          return (
+            <div className="space-y-4">
+              <h3 className="font-bold text-base text-primary mb-2">Penyuntingan Seksi Hero</h3>
+              <div className="space-y-2">
+                {renderLabelWithAi('Teks Lencana (Badge)', 'badgeText')}
+                <Input 
+                  value={activeSectionContent.badgeText || ''} 
+                  onChange={(e) => handleFieldChange('badgeText', e.target.value)} 
+                  placeholder="Biro Perjalanan Haji & Umrah Terpercaya"
+                />
+              </div>
+              <div className="space-y-2">
+                {renderLabelWithAi('Judul Utama (Title)', 'title')}
+                <Textarea 
+                  value={activeSectionContent.title || ''} 
+                  onChange={(e) => handleFieldChange('title', e.target.value)}
+                  placeholder="Mulailah Perjalanan Suci Anda Bersama SAMIRA"
+                />
+              </div>
+              <div className="space-y-2">
+                {renderLabelWithAi('Deskripsi Singkat', 'description')}
+                <Textarea 
+                  value={activeSectionContent.description || ''} 
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  placeholder="Rasakan pengalaman ibadah yang lancar..."
+                />
+              </div>
+              <div className="space-y-2">
+                {renderLabelWithAi('Teks Tombol Utama', 'primaryBtnText')}
+                <Input 
+                  value={activeSectionContent.primaryBtnText || ''} 
+                  onChange={(e) => handleFieldChange('primaryBtnText', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                {renderLabelWithAi('URL Tombol Utama', 'primaryBtnUrl')}
+                <Input 
+                  value={activeSectionContent.primaryBtnUrl || ''} 
+                  onChange={(e) => handleFieldChange('primaryBtnUrl', e.target.value)}
+                />
+              </div>   </div>
 
             {/* Transition Effect Selection */}
             <div className="space-y-2 border-t pt-3 mt-3">
@@ -400,21 +503,21 @@ HANYA berikan teks hasil tulisan tanpa tanda petik pembuka/penutup dan tanpa pen
           <div className="space-y-4">
             <h3 className="font-bold text-base text-primary mb-2">Penyuntingan Seksi Tentang Kami</h3>
             <div className="space-y-2">
-              <Label>Label Badge</Label>
+              {renderLabelWithAi('Label Badge', 'badgeText')}
               <Input 
                 value={activeSectionContent.badgeText || ''} 
                 onChange={(e) => handleFieldChange('badgeText', e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Judul Seksi</Label>
+              {renderLabelWithAi('Judul Seksi', 'title')}
               <Textarea 
                 value={activeSectionContent.title || ''} 
                 onChange={(e) => handleFieldChange('title', e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Isi Deskripsi</Label>
+              {renderLabelWithAi('Isi Deskripsi', 'description')}
               <Textarea 
                 value={activeSectionContent.description || ''} 
                 onChange={(e) => handleFieldChange('description', e.target.value)}
@@ -2113,69 +2216,71 @@ HANYA berikan teks hasil tulisan tanpa tanda petik pembuka/penutup dan tanpa pen
                 placeholder="https://api.whatsapp.com/send?phone=..."
               />
             </div>
-          );
-      default:
-        return null;
+          </div>
+        );
     }
   };
 
   const renderSectionFields = () => {
-    if (!activeSection) return <p className="text-sm text-muted-foreground">Pilih seksi di layar atau daftar seksi untuk disunting.</p>;
-
     return (
       <div className="space-y-4">
-        {/* Universal AI Section Copywriter Bar */}
-        {isAiEnabled && (
-          <div className="p-3 bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-slate-900 text-white rounded-2xl border border-purple-500/30 shadow-md space-y-2 mb-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-amber-300 animate-pulse" /> Asisten Penulis AI Seksi
-              </span>
-              <span className="text-[9px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                🟢 Aktif oleh Supa
-              </span>
+        {/* Banner Card Asisten AI Seksi */}
+        <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-amber-50 border border-purple-200/80 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-bold text-xs text-purple-900">
+              <Sparkles className="h-4 w-4 text-purple-600 animate-pulse" />
+              <span>Asisten AI Seksi: {getSectionLabel(activeSection.type)}</span>
             </div>
-            <p className="text-[10px] text-slate-300">
-              Biarkan AI membuatkan judul & deskripsi menarik secara otomatis untuk seksi ini:
-            </p>
-            <div className="flex flex-wrap gap-1.5 pt-1">
+            <span className="text-[10px] font-extrabold bg-purple-200/80 text-purple-900 px-2 py-0.5 rounded-full">
+              Fitur AI Cerdas
+            </span>
+          </div>
+
+          <p className="text-[11px] text-purple-800/80 leading-relaxed">
+            Otomatiskan penyusunan & perbaikan teks deskripsi seksi ini dengan kecerdasan buatan AI.
+          </p>
+
+          <div className="space-y-2">
+            <Input
+              type="text"
+              placeholder="Instruksi khusus AI (opsional, cth: 'Sebut diskon DP 1,5 juta')..."
+              value={aiCustomInstruction}
+              onChange={(e) => setAiCustomInstruction(e.target.value)}
+              className="bg-white/90 border-purple-200 text-xs h-8 placeholder:text-purple-300 rounded-xl"
+            />
+
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
-                size="sm"
-                disabled={aiGeneratingField !== null}
-                onClick={() => handleGenerateSectionAiContent('title', 'Judul Utama', 'Buat judul yang sangat menggugah niat ibadah umrah')}
-                className="h-7 text-[10px] font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-1 shadow-xs"
+                disabled={isAiSectionGenerating}
+                onClick={() => handleGenerateSectionAi(activeSection.type, false)}
+                className="w-full h-8 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-1.5 shadow-xs"
               >
-                {aiGeneratingField === 'title' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3 text-amber-300" />}
-                ✨ AI Judul
+                {isAiSectionGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-amber-300" />}
+                <span>Generate Teks AI</span>
               </Button>
 
               <Button
                 type="button"
-                size="sm"
-                disabled={aiGeneratingField !== null}
-                onClick={() => handleGenerateSectionAiContent('description', 'Deskripsi / Subjudul', 'Buat deskripsi singkat yang memberikan rasa tenang, amanah, dan terpercaya')}
-                className="h-7 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl gap-1 shadow-xs"
+                variant="outline"
+                disabled={isAiSectionGenerating}
+                onClick={() => handleGenerateSectionAi(activeSection.type, true)}
+                className="w-full h-8 text-xs font-bold border-purple-300 text-purple-800 hover:bg-purple-100/80 rounded-xl gap-1.5"
               >
-                {aiGeneratingField === 'description' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3 text-amber-300" />}
-                ✨ AI Deskripsi
-              </Button>
-
-              <Button
-                type="button"
-                size="sm"
-                disabled={aiGeneratingField !== null}
-                onClick={() => handleGenerateSectionAiContent('badgeText', 'Teks Lencana (Badge)', 'Buat lencana singkat 3-5 kata yang menonjolkan legalitas Kemenag / keunggulan')}
-                className="h-7 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-white rounded-xl gap-1 shadow-xs border border-slate-700"
-              >
-                {aiGeneratingField === 'badgeText' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3 text-amber-300" />}
-                ✨ AI Badge
+                <RefreshCw className="h-3.5 w-3.5 text-purple-600" />
+                <span>Poles Teks AI</span>
               </Button>
             </div>
           </div>
-        )}
 
-        {renderSectionTypeContent()}
+          {aiSectionError && (
+            <p className="text-[11px] font-bold text-red-600 bg-red-50 p-2 rounded-xl border border-red-200">
+              {aiSectionError}
+            </p>
+          )}
+        </div>
+
+        {renderInnerSectionContent()}
       </div>
     );
   };
@@ -2849,6 +2954,72 @@ HANYA berikan teks hasil tulisan tanpa tanda petik pembuka/penutup dan tanpa pen
               Gunakan Lokasi Ini
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Modal untuk 3 Variasi AI per Field */}
+      <Dialog open={isAiFieldDialogOpen} onOpenChange={setIsAiFieldDialogOpen}>
+        <DialogContent className="max-w-lg rounded-3xl p-5 space-y-4">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-primary flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600 animate-pulse" />
+              Saran AI untuk {aiFieldTargetLabel}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Pilih salah satu variasi kalimat buatan AI di bawah ini untuk langsung menerapkannya.
+            </DialogDescription>
+          </DialogHeader>
+
+          {isAiFieldLoading ? (
+            <div className="flex flex-col items-center justify-center p-8 space-y-3">
+              <Loader2 className="h-8 w-8 text-purple-600 animate-spin" />
+              <p className="text-xs font-semibold text-purple-800">Sedang merumuskan 3 variasi kalimat terbaik...</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {aiFieldVariations.map((variation, vIdx) => (
+                <div key={vIdx} className="p-3.5 bg-slate-50 border rounded-2xl space-y-2 hover:border-purple-300 transition-all">
+                  <span className="text-[10px] font-extrabold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">
+                    Variasi {vIdx + 1}
+                  </span>
+                  <p className="text-xs font-medium text-slate-800 leading-relaxed whitespace-pre-wrap">
+                    {variation}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      if (activeSectionId && aiFieldTargetKey) {
+                        updateContent(activeSectionId, aiFieldTargetKey, variation);
+                        setIsAiFieldDialogOpen(false);
+                        toast({
+                          title: "✅ Teks Diterapkan!",
+                          description: `Teks variasi ${vIdx + 1} telah diterapkan ke ${aiFieldTargetLabel}.`,
+                        });
+                      }
+                    }}
+                    className="w-full h-8 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-1.5"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Gunakan Variasi Ini</span>
+                  </Button>
+                </div>
+              ))}
+
+              <div className="pt-2 flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFieldAiAssist(aiFieldTargetKey, aiFieldTargetLabel, activeSectionContent[aiFieldTargetKey] || '')}
+                  className="text-xs font-bold gap-1.5 rounded-xl border-purple-300 text-purple-800 hover:bg-purple-50"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Minta Variasi Lain
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </aside>
