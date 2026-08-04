@@ -135,6 +135,87 @@ export default function SuperAdminPage() {
   const [geminiApiKeyMode, setGeminiApiKeyMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
   const [isGeminiKeyVisible, setIsGeminiKeyVisible] = useState(false);
 
+  // Gemini API Quota Inspector States
+  const [isTestingGeminiQuota, setIsTestingGeminiQuota] = useState(false);
+  const [geminiQuotaStatus, setGeminiQuotaStatus] = useState<{
+    status: 'active' | 'quota_exceeded' | 'invalid_key' | 'error';
+    message: string;
+    testedModel?: string;
+    testedAt?: string;
+  } | null>(null);
+
+  const handleCheckGeminiQuotaStatus = async () => {
+    const keyToTest = geminiApiKey.trim() || (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '');
+    if (!keyToTest) {
+      setGeminiQuotaStatus({
+        status: 'invalid_key',
+        message: '⚠️ Kunci API Gemini belum diisi. Masukkan API Key di kolom di atas terlebih dahulu.'
+      });
+      return;
+    }
+
+    setIsTestingGeminiQuota(true);
+    setGeminiQuotaStatus(null);
+
+    const modelsToTest = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-lite', 'gemini-2.0-flash'];
+    let lastError = '';
+
+    for (const model of modelsToTest) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToTest}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: 'Ping test' }] }] })
+        });
+
+        if (res.ok) {
+          setGeminiQuotaStatus({
+            status: 'active',
+            message: `🟢 KUNCI API SEHAT & AKTIF! Berhasil merespons menggunakan model '${model}'. Kuota gratis siap digunakan oleh mitra.`,
+            testedModel: model,
+            testedAt: new Date().toLocaleTimeString()
+          });
+          setIsTestingGeminiQuota(false);
+          return;
+        } else {
+          const data = await res.json().catch(() => ({}));
+          const msg = data.error?.message || res.statusText || '';
+          
+          if (msg.toLowerCase().includes('quota') || res.status === 429) {
+            setGeminiQuotaStatus({
+              status: 'quota_exceeded',
+              message: `🔴 BATAS KUOTA TERLAMPAUI (Quota Exceeded / Limit 0). Kunci API telah mencapai batas pemakaian harian gratis dari Google. Disarankan membuat API Key baru di Google AI Studio atau mengalihkan ke mode API Key pribadi mitra.`,
+              testedModel: model,
+              testedAt: new Date().toLocaleTimeString()
+            });
+            setIsTestingGeminiQuota(false);
+            return;
+          } else if (msg.toLowerCase().includes('key not valid') || msg.toLowerCase().includes('invalid') || res.status === 400) {
+            setGeminiQuotaStatus({
+              status: 'invalid_key',
+              message: `⚠️ KUNCI API TIDAK VALID (${msg}). Periksa kembali karakter API Key yang dimasukkan dari Google AI Studio.`,
+              testedModel: model,
+              testedAt: new Date().toLocaleTimeString()
+            });
+            setIsTestingGeminiQuota(false);
+            return;
+          }
+          lastError = msg;
+        }
+      } catch (err: any) {
+        lastError = err.message || 'Gagal koneksi ke Gemini API';
+      }
+    }
+
+    setGeminiQuotaStatus({
+      status: 'error',
+      message: `❌ Gagal mengecek status kuota: ${lastError}`,
+      testedAt: new Date().toLocaleTimeString()
+    });
+    setIsTestingGeminiQuota(false);
+  };
+
   // Security PIN & API Key Masking state
   const [savedPin, setSavedPin] = useState(() => 
     typeof window !== 'undefined' ? localStorage.getItem('supa_security_pin') || '123456' : '123456'
@@ -5431,7 +5512,46 @@ NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
                       </p>
                     </div>
 
-                    <div className="pt-2">
+                    {/* Gemini Quota Health Inspector Controls */}
+                    <div className="p-4 bg-slate-900 text-slate-100 rounded-2xl space-y-3 border border-slate-800">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <span className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                            <Sparkles className="h-4 w-4 text-purple-400" /> Inspektur Status Kuota & Kesehatan Gemini API
+                          </span>
+                          <p className="text-[11px] text-slate-300">
+                            Uji langsung respon server Google AI Studio untuk mengecek ketersediaan kuota gratis (429 Quota Limit status).
+                          </p>
+                        </div>
+
+                        <Button
+                          type="button"
+                          onClick={handleCheckGeminiQuotaStatus}
+                          disabled={isTestingGeminiQuota}
+                          className="h-9 text-xs font-bold rounded-xl bg-purple-600 hover:bg-purple-500 text-white shrink-0 shadow-sm"
+                        >
+                          {isTestingGeminiQuota ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Search className="h-3.5 w-3.5 mr-1.5" />}
+                          {isTestingGeminiQuota ? 'Mengecek Kuota Google AI...' : '🔍 Cek Status Kuota API'}
+                        </Button>
+                      </div>
+
+                      {geminiQuotaStatus && (
+                        <div className={`p-3 rounded-xl text-xs leading-relaxed border space-y-1 ${
+                          geminiQuotaStatus.status === 'active' ? 'bg-emerald-950/80 text-emerald-200 border-emerald-800' :
+                          geminiQuotaStatus.status === 'quota_exceeded' ? 'bg-red-950/80 text-red-200 border-red-800 font-semibold' :
+                          'bg-amber-950/80 text-amber-200 border-amber-800'
+                        }`}>
+                          <p>{geminiQuotaStatus.message}</p>
+                          {geminiQuotaStatus.testedAt && (
+                            <p className="text-[10px] opacity-75 font-mono">
+                              Waktu Pengujian: {geminiQuotaStatus.testedAt} {geminiQuotaStatus.testedModel ? `| Model: ${geminiQuotaStatus.testedModel}` : ''}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 flex gap-3">
                       <Button type="submit" disabled={isSavingSettings} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full font-bold px-6 h-10 w-full flex items-center justify-center gap-2 shadow-sm">
                         {isSavingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                         Simpan Pengaturan API ke Database
