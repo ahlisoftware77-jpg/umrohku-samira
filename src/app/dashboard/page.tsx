@@ -127,11 +127,14 @@ export default function TenantDashboardPage() {
 
   // Gemini AI Assistant State & Handler
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-  const [aiActiveTab, setAiActiveTab] = useState<'audit' | 'ads' | 'cs'>('ads');
+  const [aiActiveTab, setAiActiveTab] = useState<'ads' | 'followup' | 'cs' | 'ideas' | 'audit'>('ads');
   const [aiPromptCustom, setAiPromptCustom] = useState('');
-  const [aiSelectedPlatform, setAiSelectedPlatform] = useState<'whatsapp' | 'instagram' | 'facebook'>('whatsapp');
+  const [aiSelectedPlatform, setAiSelectedPlatform] = useState<'whatsapp' | 'instagram' | 'facebook' | 'tiktok' | 'email'>('whatsapp');
   const [aiSelectedTone, setAiSelectedTone] = useState<'persuasive' | 'islamic' | 'exclusive'>('persuasive');
+  const [aiFollowupType, setAiFollowupType] = useState<'h1' | 'h3_urgency' | 'jumat' | 'eid'>('h1');
+  const [aiCsTopic, setAiCsTopic] = useState<'dp_cost' | 'passport_docs' | 'hotel_flight' | 'price_objection'>('dp_cost');
   const [aiCsQuestion, setAiCsQuestion] = useState('Berapa DP & syarat pendaftaran paket umrah?');
+  const [aiIdeaType, setAiIdeaType] = useState<'calendar_7d' | 'reels_viral'>('calendar_7d');
   const [aiResultText, setAiResultText] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiError, setAiError] = useState('');
@@ -208,7 +211,12 @@ Tugas Anda:
 4. Berikan Tips Strategis Cara Meningkatkan Jumlah Kontak WhatsApp dari Pengunjung Website.
 Gunakan Bahasa Indonesia yang ramah, profesional, dan meyakinkan.`;
       } else if (mode === 'ads') {
-        const platformName = aiSelectedPlatform === 'whatsapp' ? 'WhatsApp Broadcast' : aiSelectedPlatform === 'instagram' ? 'Instagram Feed/Reels' : 'Facebook Post';
+        const platformName = 
+          aiSelectedPlatform === 'whatsapp' ? 'WhatsApp Broadcast / Group' : 
+          aiSelectedPlatform === 'instagram' ? 'Instagram Feed / Reels' : 
+          aiSelectedPlatform === 'facebook' ? 'Facebook Post / Fanpage' :
+          aiSelectedPlatform === 'tiktok' ? 'TikTok Video Script & Hook (15-30 detik)' : 'Email Marketing & Newsletter';
+
         const toneName = aiSelectedTone === 'persuasive' ? 'Persuasif, Menarik & Promosional' : aiSelectedTone === 'islamic' ? 'Islami, Menyentuh Hati & Penuh Berkah' : 'Eksklusif, Premium & Terpercaya';
 
         promptText = `Bertindaklah sebagai Copywriter Spesialis Iklan Travel Umrah & Haji.
@@ -218,13 +226,32 @@ Detail Informasi Travel:
 - Nama Travel / Konsultan: ${companyName} (${tenantName})
 - Link Website Landing Page: ${landingPageUrl}
 - WhatsApp Konsultasi: ${waLink}
-${aiPromptCustom ? `- Instruksi Tambahan / Promo Khusus: ${aiPromptCustom}` : ''}
+${aiPromptCustom ? `- Promo Khusus / Pesan Tambahan: ${aiPromptCustom}` : ''}
 
 Ketentuan Teks Iklan:
 - Gunakan emoji yang relevan & menarik.
 - Sertakan Call-To-Action (CTA) yang jelas mengarah ke link website ${landingPageUrl} & WhatsApp ${waLink}.
 - Tambahkan 5 - 8 Hashtag populer (#Umroh2025 #TravelUmroh #SamiraTravel dll).
 - Format teks rapi siap salin (siap kirim/post).`;
+      } else if (mode === 'followup') {
+        const followupTitle = 
+          aiFollowupType === 'h1' ? 'Follow Up H+1 setelah konsultasi pertama (Penyapaan Ramah)' :
+          aiFollowupType === 'h3_urgency' ? 'Follow Up H+3 (Pemberitahuan Sisa 3 Kursi / Urgency Kuota Terbatas)' :
+          aiFollowupType === 'jumat' ? 'Broadcast Pesan Hari Jumat (Menyapa & Doa Berkah Ke Baitullah)' :
+          'Ucapan Selamat Hari Raya (Idul Fitri / Idul Adha & Doa Ke Tanah Suci)';
+
+        promptText = `Bertindaklah sebagai Konsultan Travel Umrah yang hangat dan perhatian.
+Buatkan pesan broadcast / follow up WhatsApp dengan tipe: ${followupTitle}.
+
+Detail Travel:
+- Nama Konsultan / Travel: ${tenantName} (${companyName})
+- Link Website Brosur: ${landingPageUrl}
+- WhatsApp: ${waLink}
+${aiPromptCustom ? `- Pesan Tambahan: ${aiPromptCustom}` : ''}
+
+Ketentuan Teks WA:
+- Bahasa Indonesia yang ramah, sopan, Islami, tidak terkesan memaksa.
+- Gunakan emoji secukupnya. Format teks siap disalin dan dikirim langsung via WhatsApp.`;
       } else if (mode === 'cs') {
         promptText = `Bertindaklah sebagai Customer Service & Konsultan Umrah yang sangat ramah, sopan, Islami, dan responsif.
 Buatkan jawaban pesan balasan WhatsApp profesional untuk pertanyaan calon jamaah berikut:
@@ -239,6 +266,21 @@ Ketentuan Balasan:
 - Menggunakan salam Islami yang hangat.
 - Menjawab pertanyaan dengan jelas, ramah, dan menenangkan calon jamaah.
 - Mengajak jamaah untuk melanjutkan konsultasi via telpon/WA atau melihat brosur di website ${landingPageUrl}. Siap disalin dan dikirim via WhatsApp.`;
+      } else if (mode === 'ideas') {
+        const ideaTitle = 
+          aiIdeaType === 'calendar_7d' ? 'Jadwal Kalender Ide Konten Marketing 7 Hari (Senin - Minggu)' :
+          '5 Ide Konten Video Pendek (Reels / TikTok Viral Umrah & Haji)';
+
+        promptText = `Bertindaklah sebagai Social Media Strategist & Content Creator Travel Umrah.
+Buatkan ${ideaTitle} untuk travel: ${companyName} (${tenantName}).
+
+Detail Website: ${landingPageUrl}
+${aiPromptCustom ? `- Fokus Promo Khusus: ${aiPromptCustom}` : ''}
+
+Format Output:
+- Berikan judul konten yang menarik (Hook).
+- Berikan ringkasan pesan utama & jenis format (Foto / Video Reels / Carousel).
+- Sertakan saran caption singkat. Siap dipraktikkan langsung minggu ini.`;
       }
 
       const modelsToTry = [
@@ -2063,39 +2105,61 @@ Ketentuan Balasan:
               </div>
             )}
 
-            {/* AI Mode Selector Tabs */}
-            <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border">
+            {/* AI Mode Selector Tabs (5 Rich Marketing Points) */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl border overflow-x-auto">
               <button
                 type="button"
                 onClick={() => { setAiActiveTab('ads'); setAiResultText(''); setAiError(''); }}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
                   aiActiveTab === 'ads' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Wand2 className="h-3.5 w-3.5 text-purple-600" />
-                Generator Iklan Medsos
+                Iklan Medsos
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setAiActiveTab('followup'); setAiResultText(''); setAiError(''); }}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
+                  aiActiveTab === 'followup' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Send className="h-3.5 w-3.5 text-amber-600" />
+                WA Follow Up
               </button>
 
               <button
                 type="button"
                 onClick={() => { setAiActiveTab('cs'); setAiResultText(''); setAiError(''); }}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
                   aiActiveTab === 'cs' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <MessageCircle className="h-3.5 w-3.5 text-emerald-600" />
-                Balasan Chat Jamaah
+                CS & Chat FAQ
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setAiActiveTab('ideas'); setAiResultText(''); setAiError(''); }}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
+                  aiActiveTab === 'ideas' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                Ide & Kalender
               </button>
 
               <button
                 type="button"
                 onClick={() => { setAiActiveTab('audit'); setAiResultText(''); setAiError(''); }}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
                   aiActiveTab === 'audit' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Bot className="h-3.5 w-3.5 text-indigo-600" />
-                Audit Landing Page
+                Audit Website
               </button>
             </div>
 
@@ -2113,6 +2177,8 @@ Ketentuan Balasan:
                       <option value="whatsapp">📱 WhatsApp Broadcast / Group</option>
                       <option value="instagram">📸 Instagram Feed / Story / Reels</option>
                       <option value="facebook">📘 Facebook Post / Fanpage</option>
+                      <option value="tiktok">🎵 TikTok Video Script & Hook (15-30d)</option>
+                      <option value="email">✉️ Email Marketing & Newsletter</option>
                     </select>
                   </div>
 
@@ -2153,7 +2219,47 @@ Ketentuan Balasan:
               </div>
             )}
 
-            {/* TAB 2: BALASAN CHAT JAMAAH */}
+            {/* TAB 2: GENERATOR WA FOLLOW UP & GREETINGS */}
+            {aiActiveTab === 'followup' && (
+              <div className="space-y-4 py-1 text-xs">
+                <div className="space-y-1">
+                  <Label className="font-bold text-slate-700">Pilih Tipe Pesan Broadcast / Follow Up:</Label>
+                  <select
+                    value={aiFollowupType}
+                    onChange={(e) => setAiFollowupType(e.target.value as any)}
+                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-semibold focus:ring-amber-500"
+                  >
+                    <option value="h1">👋 Follow Up H+1 (Penyapaan Ramah Setelah Konsultasi)</option>
+                    <option value="h3_urgency">⏳ Follow Up H+3 (Urgency / Sisa 3 Kursi Terbatas)</option>
+                    <option value="jumat">🕌 Broadcast Hari Jumat (Menyapa & Doa Berkah Ke Baitullah)</option>
+                    <option value="eid">🌙 Ucapan Selamat Hari Raya (Idul Fitri / Idul Adha)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold text-slate-700">Pesan Tambahan / Catatan Khusus (Opsional):</Label>
+                  <Input
+                    type="text"
+                    value={aiPromptCustom}
+                    onChange={(e) => setAiPromptCustom(e.target.value)}
+                    placeholder="Contoh: Cantumkan nama ustaz pembimbing Ust. Ahmad..."
+                    className="bg-slate-50"
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => handleExecuteGeminiAi('followup')}
+                  disabled={isAiGenerating}
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-2xl h-10 flex items-center justify-center gap-2 shadow-sm text-xs"
+                >
+                  {isAiGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {isAiGenerating ? 'AI Sedang Menyusun Pesan WA...' : '📱 Buat Pesan Follow Up WhatsApp'}
+                </Button>
+              </div>
+            )}
+
+            {/* TAB 3: BALASAN CHAT CS JAMAAH */}
             {aiActiveTab === 'cs' && (
               <div className="space-y-3 py-1 text-xs">
                 <div className="space-y-1">
@@ -2171,9 +2277,9 @@ Ketentuan Balasan:
                   <span className="text-[10px] font-bold text-slate-500">Contoh Cepat:</span>
                   {[
                     'Berapa DP & syarat umrah?',
-                    'Fasilitas hotel bintang berapa?',
-                    'Apakah termasuk penerbangan langsung?',
-                    'Bagaimana jika pembatalan keberangkatan?'
+                    'Fasilitas hotel bintang berapa & maskapai apa?',
+                    'Kenapa harganya lebih mahal dari travel sebelah?',
+                    'Bagaimana prosedur pembatalan keberangkatan?'
                   ].map((q, idx) => (
                     <button
                       key={idx}
@@ -2198,7 +2304,45 @@ Ketentuan Balasan:
               </div>
             )}
 
-            {/* TAB 3: AUDIT LANDING PAGE */}
+            {/* TAB 4: IDE & KALENDER KONTEN MARKETING */}
+            {aiActiveTab === 'ideas' && (
+              <div className="space-y-4 py-1 text-xs">
+                <div className="space-y-1">
+                  <Label className="font-bold text-slate-700">Pilih Jenis Ide Konten:</Label>
+                  <select
+                    value={aiIdeaType}
+                    onChange={(e) => setAiIdeaType(e.target.value as any)}
+                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-semibold focus:ring-blue-500"
+                  >
+                    <option value="calendar_7d">📅 Kalender Ide Konten Marketing 7 Hari (Senin - Minggu)</option>
+                    <option value="reels_viral">🎬 5 Ide Konten Video Pendek (Reels / TikTok Viral Umrah & Haji)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold text-slate-700">Fokus Program / Keunggulan Travel (Opsional):</Label>
+                  <Input
+                    type="text"
+                    value={aiPromptCustom}
+                    onChange={(e) => setAiPromptCustom(e.target.value)}
+                    placeholder="Contoh: Paket Umrah Ramadhan, Hotel Bintang 5 Depan Masjid..."
+                    className="bg-slate-50"
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => handleExecuteGeminiAi('ideas')}
+                  disabled={isAiGenerating}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl h-10 flex items-center justify-center gap-2 shadow-sm text-xs"
+                >
+                  {isAiGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {isAiGenerating ? 'AI Sedang Merancang Strategi Konten...' : '💡 Generasi Ide Konten Marketing'}
+                </Button>
+              </div>
+            )}
+
+            {/* TAB 5: AUDIT LANDING PAGE */}
             {aiActiveTab === 'audit' && (
               <div className="space-y-3 py-1 text-xs">
                 <div className="bg-purple-50 border border-purple-200 rounded-2xl p-3 text-[11px] text-purple-950 space-y-1">
