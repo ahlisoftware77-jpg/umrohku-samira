@@ -274,7 +274,8 @@ export default function SuperAdminPage() {
   } | null>(null);
 
   const handleCheckGeminiQuotaStatus = async () => {
-    const keyToTest = geminiApiKey.trim() || (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '');
+    const geminiProvider = aiProviders.find(p => p.providerType === 'gemini');
+    const keyToTest = geminiProvider?.apiKey?.trim() || (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '');
     if (!keyToTest) {
       setGeminiQuotaStatus({
         status: 'invalid_key',
