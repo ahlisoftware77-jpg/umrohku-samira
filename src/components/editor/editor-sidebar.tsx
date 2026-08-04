@@ -2167,11 +2167,12 @@ HANYA berikan teks hasil tulisan tanpa tanda petik pembuka/penutup dan tanpa pen
                 placeholder="https://api.whatsapp.com/send?phone=..."
               />
             </div>
-          }
-        })()}
-      </div>
-    );
-  };
+          );
+      }
+    })()}
+  </div>
+);
+};
 
   return (
     <aside className="w-full md:w-80 h-full border-r bg-white shadow-sm flex flex-col z-30 shrink-0 pb-16 md:pb-0">
