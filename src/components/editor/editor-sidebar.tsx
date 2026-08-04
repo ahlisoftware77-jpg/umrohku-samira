@@ -43,10 +43,12 @@ import {
   Check,
   Loader2,
   Wand2,
-  AlertTriangle
+  AlertTriangle,
+  Calendar
 } from 'lucide-react';
 import { SectionType, AiProviderConfig } from '@/types/cms';
 import { routeAiRequest } from '@/lib/services/aiRouterService';
+import { DepartureScheduleItem, DEFAULT_SCHEDULES } from '@/components/sections/departure-schedule-section';
 
 export default function EditorSidebar() {
   const {
@@ -218,7 +220,7 @@ Format Output: HANYA kembalikan objek JSON valid (tanpa markdown) yang memuat fi
           const parsed = JSON.parse(cleaned);
           if (typeof parsed === 'object' && parsed !== null) {
             Object.entries(parsed).forEach(([k, v]) => {
-              if (typeof v === 'string' && v.trim()) {
+              if (v !== undefined && v !== null) {
                 updateContent(activeSectionId, k, v);
               }
             });
@@ -2361,11 +2363,42 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
           </div>
         );
 
-      case 'departure_schedule':
+      case 'departure_schedule': {
+        const currentSchedules: DepartureScheduleItem[] = (activeSectionContent.schedules && Array.isArray(activeSectionContent.schedules) && activeSectionContent.schedules.length > 0)
+          ? activeSectionContent.schedules
+          : DEFAULT_SCHEDULES;
+
+        const handleUpdateScheduleItem = (index: number, key: string, val: any) => {
+          const updated = [...currentSchedules];
+          updated[index] = { ...updated[index], [key]: val };
+          handleFieldChange('schedules', updated);
+        };
+
+        const handleAddScheduleItem = () => {
+          const newItem: DepartureScheduleItem = {
+            id: Date.now().toString(),
+            date: '20 November 2026',
+            packageName: 'Umrah Promo Milad Samira',
+            airline: 'Batik Air Premium Direct',
+            duration: '9 Hari',
+            hotelMakkah: 'Anjum Makkah (⭐️5)',
+            hotelMadinah: 'Grand Plaza (⭐️4)',
+            price: 'Rp 32.500.000',
+            seatsLeft: 10,
+            status: 'Tersedia'
+          };
+          handleFieldChange('schedules', [...currentSchedules, newItem]);
+        };
+
+        const handleRemoveScheduleItem = (index: number) => {
+          const updated = currentSchedules.filter((_, i) => i !== index);
+          handleFieldChange('schedules', updated);
+        };
+
         return (
           <div className="space-y-4">
             <h3 className="font-bold text-base text-primary">Penyuntingan Seksi Jadwal Keberangkatan</h3>
-            <p className="text-xs text-muted-foreground">Sunting judul, deskripsi, dan teks lencana untuk seksi jadwal keberangkatan terkonfirmasi.</p>
+            <p className="text-xs text-muted-foreground">Sunting judul, deskripsi, dan kelola rincian item jadwal keberangkatan resmi di bawah ini.</p>
 
             <div className="space-y-2">
               {renderLabelWithAi('Teks Lencana (Badge)', 'badgeText')}
@@ -2394,17 +2427,148 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
               />
             </div>
 
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-900 font-medium">
-              <p className="font-bold flex items-center gap-1.5 text-amber-950">
-                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                Sistem Jadwal Otomatis Active
-              </p>
-              <p className="leading-relaxed">
-                Jadwal keberangkatan terintegrasi secara otomatis dengan daftar paket resmi. Anda dapat mengarahkan jamaah ke halaman jadwal lengkap melalui tombol di bawah seksi ini.
-              </p>
+            {/* List of Departure Schedule Items */}
+            <div className="space-y-3 border-t pt-3">
+              <div className="flex items-center justify-between">
+                <Label className="font-extrabold text-xs uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-amber-500" /> Rincian Jadwal Keberangkatan ({currentSchedules.length})
+                </Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddScheduleItem}
+                  className="h-7 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-300 rounded-lg gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Tambah Jadwal
+                </Button>
+              </div>
+
+              {currentSchedules.map((item, idx) => (
+                <div key={item.id || idx} className="p-3 bg-slate-50 border rounded-2xl space-y-2.5 relative group">
+                  <div className="flex items-center justify-between border-b pb-1.5">
+                    <span className="text-[11px] font-extrabold text-slate-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md">
+                      Jadwal #{idx + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleRemoveScheduleItem(idx)}
+                      className="h-6 w-6 text-red-600 hover:bg-red-50 rounded-lg"
+                      title="Hapus Jadwal Ini"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-600">Tanggal Keberangkatan</Label>
+                      <Input 
+                        value={item.date || ''} 
+                        onChange={(e) => handleUpdateScheduleItem(idx, 'date', e.target.value)} 
+                        placeholder="15 September 2026"
+                        className="text-xs h-8 bg-white"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-600">Status Seat</Label>
+                      <select
+                        value={item.status || 'Tersedia'}
+                        onChange={(e) => handleUpdateScheduleItem(idx, 'status', e.target.value)}
+                        className="w-full h-8 px-2 rounded-lg border border-input bg-white text-xs font-bold text-slate-800"
+                      >
+                        <option value="Tersedia">🟢 Tersedia</option>
+                        <option value="Terbatas">🔥 Terbatas</option>
+                        <option value="Full Booked">🔴 Full Booked</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-slate-600">Nama Paket Umrah</Label>
+                    <Input 
+                      value={item.packageName || ''} 
+                      onChange={(e) => handleUpdateScheduleItem(idx, 'packageName', e.target.value)} 
+                      placeholder="Umrah Safara Bintang 5"
+                      className="text-xs h-8 bg-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-600">Maskapai & Rute</Label>
+                      <Input 
+                        value={item.airline || ''} 
+                        onChange={(e) => handleUpdateScheduleItem(idx, 'airline', e.target.value)} 
+                        placeholder="Saudia Airlines (Direct)"
+                        className="text-xs h-8 bg-white"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-600">Durasi Hari</Label>
+                      <Input 
+                        value={item.duration || ''} 
+                        onChange={(e) => handleUpdateScheduleItem(idx, 'duration', e.target.value)} 
+                        placeholder="9 Hari"
+                        className="text-xs h-8 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-600">Hotel Makkah</Label>
+                      <Input 
+                        value={item.hotelMakkah || ''} 
+                        onChange={(e) => handleUpdateScheduleItem(idx, 'hotelMakkah', e.target.value)} 
+                        placeholder="Pullman Zamzam (⭐️5)"
+                        className="text-xs h-8 bg-white"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-600">Hotel Madinah</Label>
+                      <Input 
+                        value={item.hotelMadinah || ''} 
+                        onChange={(e) => handleUpdateScheduleItem(idx, 'hotelMadinah', e.target.value)} 
+                        placeholder="Frontel Al Harithia (⭐️5)"
+                        className="text-xs h-8 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-600">Harga Paket</Label>
+                      <Input 
+                        value={item.price || ''} 
+                        onChange={(e) => handleUpdateScheduleItem(idx, 'price', e.target.value)} 
+                        placeholder="Rp 34.500.000"
+                        className="text-xs h-8 bg-white font-bold text-amber-700"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-600">Sisa Kuota Seat</Label>
+                      <Input 
+                        type="number"
+                        value={item.seatsLeft ?? 5} 
+                        onChange={(e) => handleUpdateScheduleItem(idx, 'seatsLeft', parseInt(e.target.value) || 0)} 
+                        placeholder="5"
+                        className="text-xs h-8 bg-white font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         );
+      }
     }
   };
 
