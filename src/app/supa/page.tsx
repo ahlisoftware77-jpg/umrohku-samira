@@ -5465,85 +5465,115 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                   </CardHeader>
                   
                   <CardContent className="px-0 py-4 space-y-4">
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <Label className="text-xs font-bold">API Key (apiKey)</Label>
-                        <div className="flex gap-2">
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => {
-                              if (isApiKeyVisible) {
-                                setIsApiKeyVisible(false);
-                              } else {
-                                setEnteredPin('');
-                                setPinError('');
-                                setIsPinModalOpen(true);
-                              }
-                            }}
-                            className="h-7 px-2.5 text-xs text-primary font-bold hover:bg-primary/10 flex items-center gap-1 rounded-full"
-                          >
-                            {isApiKeyVisible ? (
-                              <>
-                                <EyeOff className="h-3.5 w-3.5" /> Sembunyikan API Key
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="h-3.5 w-3.5 text-accent" /> Tampilkan (Pakai PIN)
-                              </>
-                            )}
-                          </Button>
+                      <div className="space-y-1.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                          <Label className="text-xs font-bold">API Key (apiKey)</Label>
+                          <div className="flex flex-wrap gap-1.5">
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => {
+                                if (isApiKeyVisible) {
+                                  setIsApiKeyVisible(false);
+                                } else {
+                                  setEnteredPin('');
+                                  setPinError('');
+                                  setIsPinModalOpen(true);
+                                }
+                              }}
+                              className="h-7 px-2 text-[11px] text-primary font-bold hover:bg-primary/10 flex items-center gap-1 rounded-full"
+                            >
+                              {isApiKeyVisible ? (
+                                <>
+                                  <EyeOff className="h-3.5 w-3.5" /> Sembunyikan Key
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-3.5 w-3.5 text-accent" /> Tampilkan (Pakai PIN)
+                                </>
+                              )}
+                            </Button>
 
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              setOldPinInput('');
-                              setNewPinInput('');
-                              setConfirmPinInput('');
-                              setChangePinError('');
-                              setIsChangePinModalOpen(true);
-                            }}
-                            className="h-7 px-2.5 text-xs border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 font-bold flex items-center gap-1 rounded-full"
-                          >
-                            <Lock className="h-3 w-3" /> Atur PIN Security
-                          </Button>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                setOldPinInput('');
+                                setNewPinInput('');
+                                setConfirmPinInput('');
+                                setChangePinError('');
+                                setIsChangePinModalOpen(true);
+                              }}
+                              className="h-7 px-2 text-[11px] border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 font-bold flex items-center gap-1 rounded-full"
+                            >
+                              <Lock className="h-3 w-3" /> Atur PIN
+                            </Button>
+
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const text = await navigator.clipboard.readText();
+                                  if (text) {
+                                    setFbApiKey(text.trim());
+                                    setIsApiKeyVisible(true);
+                                  }
+                                } catch (e) {
+                                  const pasted = prompt('Paste API Key di sini:');
+                                  if (pasted) {
+                                    setFbApiKey(pasted.trim());
+                                    setIsApiKeyVisible(true);
+                                  }
+                                }
+                              }}
+                              className="h-7 px-2 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center gap-1 rounded-full"
+                            >
+                              📋 Tempel (Paste)
+                            </Button>
+                          </div>
+                        </div>
+
+                        <Input 
+                          type={isApiKeyVisible ? "text" : "password"}
+                          value={isApiKeyVisible ? fbApiKey : (fbApiKey ? "••••••••••••••••••••••••••••••••" : "")} 
+                          onChange={(e) => setFbApiKey(e.target.value)}
+                          onPaste={(e) => {
+                            const pasted = e.clipboardData.getData('text');
+                            if (pasted) {
+                              setFbApiKey(pasted.trim());
+                              setIsApiKeyVisible(true);
+                            }
+                          }}
+                          placeholder="AIzaSy... (Bisa Tempel/Paste di sini)" 
+                          className="font-mono text-xs bg-white focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-xs font-bold">Auth Domain</Label>
+                          <Input value={fbAuthDomain} onChange={(e) => setFbAuthDomain(e.target.value)} placeholder="project.firebaseapp.com" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-bold">Project ID</Label>
+                          <Input value={fbProjectId} onChange={(e) => setFbProjectId(e.target.value)} placeholder="project-id" />
                         </div>
                       </div>
 
-                      <Input 
-                        type={isApiKeyVisible ? "text" : "password"}
-                        value={isApiKeyVisible ? fbApiKey : (fbApiKey ? "••••••••••••••••••••••••••••••••" : "")} 
-                        onChange={(e) => setFbApiKey(e.target.value)} 
-                        readOnly={!isApiKeyVisible}
-                        placeholder="AIzaSy..." 
-                        className={`font-mono text-xs ${!isApiKeyVisible ? 'bg-slate-100 text-slate-500 cursor-not-allowed select-none' : 'bg-white'}`}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-xs font-bold">Auth Domain</Label>
-                        <Input value={fbAuthDomain} onChange={(e) => setFbAuthDomain(e.target.value)} placeholder="project.firebaseapp.com" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-xs font-bold">Storage Bucket</Label>
+                          <Input value={fbStorageBucket} onChange={(e) => setFbStorageBucket(e.target.value)} placeholder="project.appspot.com" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-bold">Messaging Sender ID</Label>
+                          <Input value={fbMessagingSenderId} onChange={(e) => setFbMessagingSenderId(e.target.value)} placeholder="104581499400" />
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs font-bold">Project ID</Label>
-                        <Input value={fbProjectId} onChange={(e) => setFbProjectId(e.target.value)} placeholder="project-id" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-xs font-bold">Storage Bucket</Label>
-                        <Input value={fbStorageBucket} onChange={(e) => setFbStorageBucket(e.target.value)} placeholder="project.appspot.com" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs font-bold">Messaging Sender ID</Label>
-                        <Input value={fbMessagingSenderId} onChange={(e) => setFbMessagingSenderId(e.target.value)} placeholder="104581499400" />
-                      </div>
-                    </div>
 
                     <div className="space-y-1">
                       <Label className="text-xs font-bold">App ID</Label>
@@ -7179,20 +7209,46 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
               </div>
 
               <div className="space-y-1">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <Label className="font-bold text-slate-700">API Key Provider:</Label>
-                  <button
-                    type="button"
-                    onClick={() => handleAutoDetectModel(newProvType, newProvApiKey)}
-                    disabled={isDetectingModel || !newProvApiKey.trim()}
-                    className="text-[11px] font-bold text-purple-600 hover:underline flex items-center gap-1 disabled:opacity-50"
-                  >
-                    {isDetectingModel ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3 text-purple-600" />}
-                    Deteksi Target Model Otomatis
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          if (text) {
+                            const trimmed = text.trim();
+                            setNewProvApiKey(trimmed);
+                            if (trimmed.length > 15) handleAutoDetectModel(newProvType, trimmed);
+                          }
+                        } catch (e) {
+                          const pasted = prompt('Paste API Key Provider di sini:');
+                          if (pasted) {
+                            const trimmed = pasted.trim();
+                            setNewProvApiKey(trimmed);
+                            if (trimmed.length > 15) handleAutoDetectModel(newProvType, trimmed);
+                          }
+                        }
+                      }}
+                      className="text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-lg border border-slate-300 flex items-center gap-1"
+                    >
+                      📋 Tempel Key
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutoDetectModel(newProvType, newProvApiKey)}
+                      disabled={isDetectingModel || !newProvApiKey.trim()}
+                      className="text-[11px] font-bold text-purple-600 hover:underline flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {isDetectingModel ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3 text-purple-600" />}
+                      Deteksi Target Model
+                    </button>
+                  </div>
                 </div>
                 <Input
-                  type="password"
+                  type="text"
                   required
                   value={newProvApiKey}
                   onChange={(e) => {
@@ -7200,6 +7256,14 @@ NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?
                     setNewProvApiKey(keyVal);
                     if (keyVal.trim().length > 15) {
                       handleAutoDetectModel(newProvType, keyVal);
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    if (pasted) {
+                      const trimmed = pasted.trim();
+                      setNewProvApiKey(trimmed);
+                      if (trimmed.length > 15) handleAutoDetectModel(newProvType, trimmed);
                     }
                   }}
                   onBlur={() => {
