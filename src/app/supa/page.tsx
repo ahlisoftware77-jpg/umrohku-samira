@@ -1513,6 +1513,14 @@ service cloud.firestore {
             setAiGenerateLimit(sysData.aiGenerateLimit);
             if (typeof window !== 'undefined') localStorage.setItem('ai_generate_limit', String(sysData.aiGenerateLimit));
           }
+
+          // Load 9router AI Providers from Firestore (critical for cross-device persistence)
+          if (Array.isArray(sysData.aiProviders) && sysData.aiProviders.length > 0) {
+            setAiProviders(sysData.aiProviders);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('ai_providers_cluster', JSON.stringify(sysData.aiProviders));
+            }
+          }
         }
       } catch (sysErr) {
         console.log('Using local settings for system config form.');
