@@ -142,6 +142,12 @@ export default function SuperAdminPage() {
     message: string;
     testedModel?: string;
     testedAt?: string;
+    modelMatrix?: {
+      model: string;
+      status: 'ok' | 'quota' | 'invalid' | 'error';
+      latencyMs?: number;
+      errorMsg?: string;
+    }[];
   } | null>(null);
 
   const handleCheckGeminiQuotaStatus = async () => {
@@ -157,10 +163,28 @@ export default function SuperAdminPage() {
     setIsTestingGeminiQuota(true);
     setGeminiQuotaStatus(null);
 
-    const modelsToTest = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-lite', 'gemini-2.0-flash'];
-    let lastError = '';
+    const modelsToTest = [
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-2.0-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-2.5-flash'
+    ];
+
+    const matrixResults: {
+      model: string;
+      status: 'ok' | 'quota' | 'invalid' | 'error';
+      latencyMs?: number;
+      errorMsg?: string;
+    }[] = [];
+
+    let hasAnyOk = false;
+    let hasQuotaExceeded = false;
+    let hasInvalidKey = false;
+    let primaryModelOk = '';
 
     for (const model of modelsToTest) {
+      const startTime = Date.now();
       try {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToTest}`;
         const res = await fetch(endpoint, {
@@ -169,50 +193,62 @@ export default function SuperAdminPage() {
           body: JSON.stringify({ contents: [{ parts: [{ text: 'Ping test' }] }] })
         });
 
+        const latencyMs = Date.now() - startTime;
+
         if (res.ok) {
-          setGeminiQuotaStatus({
-            status: 'active',
-            message: `🟢 KUNCI API SEHAT & AKTIF! Berhasil merespons menggunakan model '${model}'. Kuota gratis siap digunakan oleh mitra.`,
-            testedModel: model,
-            testedAt: new Date().toLocaleTimeString()
-          });
-          setIsTestingGeminiQuota(false);
-          return;
+          hasAnyOk = true;
+          if (!primaryModelOk) primaryModelOk = model;
+          matrixResults.push({ model, status: 'ok', latencyMs });
         } else {
           const data = await res.json().catch(() => ({}));
           const msg = data.error?.message || res.statusText || '';
           
           if (msg.toLowerCase().includes('quota') || res.status === 429) {
-            setGeminiQuotaStatus({
-              status: 'quota_exceeded',
-              message: `🔴 BATAS KUOTA TERLAMPAUI (Quota Exceeded / Limit 0). Kunci API telah mencapai batas pemakaian harian gratis dari Google. Disarankan membuat API Key baru di Google AI Studio atau mengalihkan ke mode API Key pribadi mitra.`,
-              testedModel: model,
-              testedAt: new Date().toLocaleTimeString()
-            });
-            setIsTestingGeminiQuota(false);
-            return;
+            hasQuotaExceeded = true;
+            matrixResults.push({ model, status: 'quota', latencyMs, errorMsg: 'Quota Exceeded (429 Limit 0)' });
           } else if (msg.toLowerCase().includes('key not valid') || msg.toLowerCase().includes('invalid') || res.status === 400) {
-            setGeminiQuotaStatus({
-              status: 'invalid_key',
-              message: `⚠️ KUNCI API TIDAK VALID (${msg}). Periksa kembali karakter API Key yang dimasukkan dari Google AI Studio.`,
-              testedModel: model,
-              testedAt: new Date().toLocaleTimeString()
-            });
-            setIsTestingGeminiQuota(false);
-            return;
+            hasInvalidKey = true;
+            matrixResults.push({ model, status: 'invalid', latencyMs, errorMsg: 'API Key Tidak Valid' });
+          } else {
+            matrixResults.push({ model, status: 'error', latencyMs, errorMsg: msg });
           }
-          lastError = msg;
         }
       } catch (err: any) {
-        lastError = err.message || 'Gagal koneksi ke Gemini API';
+        matrixResults.push({ model, status: 'error', latencyMs: Date.now() - startTime, errorMsg: err.message });
       }
     }
 
-    setGeminiQuotaStatus({
-      status: 'error',
-      message: `❌ Gagal mengecek status kuota: ${lastError}`,
-      testedAt: new Date().toLocaleTimeString()
-    });
+    if (hasAnyOk) {
+      setGeminiQuotaStatus({
+        status: 'active',
+        message: `🟢 KUNCI API SEHAT & SIAP DIGUNAKAN! Berhasil merespons pada model '${primaryModelOk}'. Mitra dapat menggunakan fitur AI dengan lancar.`,
+        testedModel: primaryModelOk,
+        testedAt: new Date().toLocaleTimeString(),
+        modelMatrix: matrixResults
+      });
+    } else if (hasQuotaExceeded) {
+      setGeminiQuotaStatus({
+        status: 'quota_exceeded',
+        message: `🔴 BATAS KUOTA TERLAMPAUI (Quota Exceeded / Limit 0). Seluruh model telah mencapai batas pemakaian harian gratis dari Google. Disarankan membuat API Key baru di Google AI Studio atau mengalihkan ke mode API Key pribadi mitra.`,
+        testedAt: new Date().toLocaleTimeString(),
+        modelMatrix: matrixResults
+      });
+    } else if (hasInvalidKey) {
+      setGeminiQuotaStatus({
+        status: 'invalid_key',
+        message: `⚠️ KUNCI API TIDAK VALID. Periksa kembali karakter API Key yang dimasukkan dari Google AI Studio.`,
+        testedAt: new Date().toLocaleTimeString(),
+        modelMatrix: matrixResults
+      });
+    } else {
+      setGeminiQuotaStatus({
+        status: 'error',
+        message: `❌ Gagal memverifikasi status model Gemini API.`,
+        testedAt: new Date().toLocaleTimeString(),
+        modelMatrix: matrixResults
+      });
+    }
+
     setIsTestingGeminiQuota(false);
   };
 
@@ -5536,16 +5572,56 @@ NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
                       </div>
 
                       {geminiQuotaStatus && (
-                        <div className={`p-3 rounded-xl text-xs leading-relaxed border space-y-1 ${
-                          geminiQuotaStatus.status === 'active' ? 'bg-emerald-950/80 text-emerald-200 border-emerald-800' :
-                          geminiQuotaStatus.status === 'quota_exceeded' ? 'bg-red-950/80 text-red-200 border-red-800 font-semibold' :
-                          'bg-amber-950/80 text-amber-200 border-amber-800'
-                        }`}>
-                          <p>{geminiQuotaStatus.message}</p>
-                          {geminiQuotaStatus.testedAt && (
-                            <p className="text-[10px] opacity-75 font-mono">
-                              Waktu Pengujian: {geminiQuotaStatus.testedAt} {geminiQuotaStatus.testedModel ? `| Model: ${geminiQuotaStatus.testedModel}` : ''}
-                            </p>
+                        <div className="space-y-2">
+                          <div className={`p-3 rounded-xl text-xs leading-relaxed border space-y-1 ${
+                            geminiQuotaStatus.status === 'active' ? 'bg-emerald-950/80 text-emerald-200 border-emerald-800' :
+                            geminiQuotaStatus.status === 'quota_exceeded' ? 'bg-red-950/80 text-red-200 border-red-800 font-semibold' :
+                            'bg-amber-950/80 text-amber-200 border-amber-800'
+                          }`}>
+                            <p>{geminiQuotaStatus.message}</p>
+                            {geminiQuotaStatus.testedAt && (
+                              <p className="text-[10px] opacity-75 font-mono">
+                                Waktu Pengujian: {geminiQuotaStatus.testedAt} {geminiQuotaStatus.testedModel ? `| Model Utama: ${geminiQuotaStatus.testedModel}` : ''}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Model Matrix Support Inspector List */}
+                          {geminiQuotaStatus.modelMatrix && geminiQuotaStatus.modelMatrix.length > 0 && (
+                            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                              <span className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                                <span>Matriks Dukungan Jenis Model Gemini:</span>
+                                <span className="text-[10px] text-slate-400 font-normal">Google Generative AI API v1beta</span>
+                              </span>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {geminiQuotaStatus.modelMatrix.map((m) => (
+                                  <div 
+                                    key={m.model}
+                                    className={`p-2 rounded-lg border text-xs flex items-center justify-between font-mono ${
+                                      m.status === 'ok' ? 'bg-emerald-950/50 border-emerald-800/80 text-emerald-300' :
+                                      m.status === 'quota' ? 'bg-red-950/50 border-red-800/80 text-red-300' :
+                                      'bg-slate-900 border-slate-800 text-slate-400'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-1.5 truncate">
+                                      <span className="text-xs">
+                                        {m.status === 'ok' ? '🟢' : m.status === 'quota' ? '🔴' : '⚠️'}
+                                      </span>
+                                      <span className="font-bold truncate">{m.model}</span>
+                                    </div>
+
+                                    <div className="text-[10px] shrink-0 font-sans">
+                                      {m.status === 'ok' ? (
+                                        <span className="text-emerald-400 font-bold">{m.latencyMs}ms</span>
+                                      ) : (
+                                        <span className="text-red-400 font-medium">{m.errorMsg || 'Error'}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}
