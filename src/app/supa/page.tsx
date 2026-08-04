@@ -63,7 +63,8 @@ import {
   CheckSquare,
   Square,
   Calendar,
-  Link2
+  Link2,
+  Sparkles
 } from 'lucide-react';
 import { cloudinaryService } from '@/lib/services/cloudinaryService';
 import { Tenant, TenantPlan, TenantStatus, LandingPage, Section, Content, SectionType, SYSTEM_PLANS, BuilderPlan, DatabaseServerConfig, MediaImage } from '@/types/cms';
@@ -129,6 +130,8 @@ export default function SuperAdminPage() {
 
   const [cldCloudName, setCldCloudName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_cloud_name') || '' : ''));
   const [cldUploadPreset, setCldUploadPreset] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_upload_preset') || 'ml_default' : 'ml_default'));
+  const [geminiApiKey, setGeminiApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : ''));
+  const [isGeminiKeyVisible, setIsGeminiKeyVisible] = useState(false);
 
   // Security PIN & API Key Masking state
   const [savedPin, setSavedPin] = useState(() => 
@@ -1248,6 +1251,10 @@ service cloud.firestore {
             const up = sysData.cloudinary.uploadPreset || 'ml_default';
             if (cn) setCldCloudName(cn);
             if (up) setCldUploadPreset(up);
+          }
+          if (sysData.gemini?.apiKey) {
+            setGeminiApiKey(sysData.gemini.apiKey);
+            if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key', sysData.gemini.apiKey);
           }
         }
       } catch (sysErr) {
@@ -2824,6 +2831,7 @@ service cloud.firestore {
         localStorage.setItem('fb_storage_bucket', fbStorageBucket);
         localStorage.setItem('fb_messaging_sender_id', fbMessagingSenderId);
         localStorage.setItem('fb_app_id', fbAppId);
+        localStorage.setItem('gemini_api_key', geminiApiKey);
       }
 
       // 2. Try saving to Firestore in background if rules permit
@@ -2841,13 +2849,16 @@ service cloud.firestore {
             cloudName: cldCloudName,
             uploadPreset: cldUploadPreset,
           },
+          gemini: {
+            apiKey: geminiApiKey,
+          },
           updatedAt: new Date(),
-        });
+        }, { merge: true });
       } catch (dbErr) {
         console.log('Saved to LocalStorage (Firestore rules restricted cloud write).');
       }
 
-      alert('Pengaturan API Firebase & Cloudinary berhasil disimpan dan langsung aktif tanpa merubah .env!');
+      alert('Pengaturan API Firebase, Cloudinary, & Google Gemini berhasil disimpan!');
     } catch (err: any) {
       console.error(err);
       alert('Gagal menyimpan pengaturan API.');
@@ -3153,7 +3164,10 @@ NEXT_PUBLIC_FIREBASE_APP_ID=${fbAppId}
 
 # Cloudinary Unsigned Upload Credentials
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=${cldCloudName}
-NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}
+
+# Google Gemini AI Key (Landing Page Analytics & Ad Copy Generator)
+NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
 
   const handleCopyEnv = () => {
     navigator.clipboard.writeText(generatedEnvText);
@@ -5304,6 +5318,67 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}`;
 
                     <div className="pt-4 border-t">
                       <Button type="submit" disabled={isSavingSettings} className="bg-primary text-white rounded-full font-bold px-6 h-10 w-full flex items-center justify-center gap-2">
+                        {isSavingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        Simpan Pengaturan API ke Database
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Google Gemini AI API Configuration Card */}
+                <Card className="rounded-3xl border shadow-none bg-white p-6 md:col-span-2">
+                  <CardHeader className="px-0 pt-0 pb-4 border-b">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-purple-600 animate-pulse" />
+                        <CardTitle className="text-lg font-headline font-bold text-primary">Google Gemini AI API Key (Analisis Landing Page & Generator Iklan)</CardTitle>
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+                        AI Studio Integration
+                      </span>
+                    </div>
+                    <CardDescription className="text-xs">
+                      Kunci API Google Gemini untuk analisis cerdas landing page, audit efektivitas narasi, dan pembuatan konten postingan iklan media sosial otomatis.
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="px-0 py-4 space-y-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-slate-700">Gemini API Key</Label>
+                        <button
+                          type="button"
+                          onClick={() => setIsGeminiKeyVisible(!isGeminiKeyVisible)}
+                          className="text-[11px] font-bold text-purple-600 hover:underline flex items-center gap-1"
+                        >
+                          {isGeminiKeyVisible ? <EyeOff className="h-3.5 w-3.5 text-slate-500" /> : <Eye className="h-3.5 w-3.5 text-purple-600" />}
+                          {isGeminiKeyVisible ? 'Sembunyikan Key' : 'Tampilkan Key'}
+                        </button>
+                      </div>
+                      <Input 
+                        type={isGeminiKeyVisible ? 'text' : 'password'}
+                        value={geminiApiKey} 
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setGeminiApiKey(val);
+                          if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key', val);
+                        }} 
+                        placeholder="AIzaSy..." 
+                        className="font-mono text-xs border-purple-200 focus-visible:ring-purple-500"
+                      />
+                    </div>
+
+                    <div className="p-3.5 bg-purple-50/70 border border-purple-200/80 rounded-2xl text-[11px] text-purple-950 leading-relaxed space-y-1.5">
+                      <p className="font-bold flex items-center gap-1.5 text-purple-900">
+                        <Sparkles className="h-4 w-4 text-purple-600" /> Petunjuk Google Gemini AI Key:
+                      </p>
+                      <p>
+                        Dapatkan API Key gratis di <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="font-bold text-purple-700 underline hover:text-purple-900">Google AI Studio (aistudio.google.com)</a>, lalu tempel kunci API Anda di atas untuk mengaktifkan seluruh fitur analisis AI dan generator materi iklan media sosial secara instan.
+                      </p>
+                    </div>
+
+                    <div className="pt-2">
+                      <Button type="submit" disabled={isSavingSettings} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full font-bold px-6 h-10 w-full flex items-center justify-center gap-2 shadow-sm">
                         {isSavingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                         Simpan Pengaturan API ke Database
                       </Button>
