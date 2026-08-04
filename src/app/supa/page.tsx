@@ -3386,7 +3386,7 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=${cldCloudName}
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${cldUploadPreset}
 
 # Google Gemini AI Key (Landing Page Analytics & Ad Copy Generator)
-NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
+NEXT_PUBLIC_GEMINI_API_KEY=${aiProviders.find(p => p.providerType === 'gemini')?.apiKey || ''}`;
 
   const handleCopyEnv = () => {
     navigator.clipboard.writeText(generatedEnvText);
