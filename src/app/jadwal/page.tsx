@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sparkles, Calendar, Search, Filter, PhoneCall, Plane, Building2, Check, Clock, Bot, Loader2, ArrowLeft } from 'lucide-react';
 import { routeAiRequest } from '@/lib/services/aiRouterService';
-import { AiProviderConfig, Content } from '@/types/cms';
+import { AiProviderConfig } from '@/types/cms';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from '@/lib/firestore-tracker';
+import { doc, getDoc } from '@/lib/firestore-tracker';
 
 export default function PublicSchedulePage() {
   const [aiPrompt, setAiPrompt] = useState('');
@@ -18,39 +18,36 @@ export default function PublicSchedulePage() {
   const [aiRecommendation, setAiRecommendation] = useState<string>('');
   const [scheduleSectionData, setScheduleSectionData] = useState<Record<string, any> | null>(null);
 
-  // Try to load schedule data for the 'default' tenant from Firestore
+  // Optimized: direct getDoc with deterministic IDs (4 reads) instead of getDocs query (100+ reads)
+  // Content ID pattern: {tenantId}_{sectionId}_{key}
+  const SCHEDULE_FIELDS = ['schedules', 'title', 'description', 'badgeText'];
+
   useEffect(() => {
     async function loadDefaultSchedule() {
       try {
-        // Query contents for the default tenant
-        const possibleIds = ['default'];
-        const contentsRef = collection(db, 'contents');
-        const contentsMap: Record<string, Record<string, any>> = {};
+        const tid = 'default';
+        const sectionId = `sec_${tid}_departure_schedule`;
 
-        for (const tid of possibleIds) {
-          const qContent = query(contentsRef, where('tenantId', '==', tid));
-          const cSnap = await getDocs(qContent);
-          if (!cSnap.empty) {
-            cSnap.docs.forEach(docSnap => {
-              const c = docSnap.data() as Content;
-              if (c.sectionId) {
-                if (!contentsMap[c.sectionId]) contentsMap[c.sectionId] = {};
-                contentsMap[c.sectionId][c.key] = c.value;
-              }
-            });
-          }
-        }
+        // Fetch all needed fields in parallel
+        const results = await Promise.all(
+          SCHEDULE_FIELDS.map(field => {
+            const contentId = `${tid}_${sectionId}_${field}`;
+            return getDoc(doc(db, 'contents', contentId));
+          })
+        );
 
-        // Find departure_schedule section data
-        for (const secId of Object.keys(contentsMap)) {
-          if (secId.includes('departure_schedule') || secId.includes('departure-schedule')) {
-            setScheduleSectionData(contentsMap[secId]);
-            return;
+        const data: Record<string, any> = {};
+        results.forEach(snap => {
+          if (snap.exists()) {
+            const c = snap.data();
+            if (c.key && c.value !== undefined) {
+              data[c.key] = c.value;
+            }
           }
-          if (contentsMap[secId].schedules && Array.isArray(contentsMap[secId].schedules)) {
-            setScheduleSectionData(contentsMap[secId]);
-            return;
-          }
+        });
+
+        if (Object.keys(data).length > 0) {
+          setScheduleSectionData(data);
         }
       } catch (e) {}
     }

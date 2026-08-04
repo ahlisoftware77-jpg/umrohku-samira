@@ -11,7 +11,7 @@ import { routeAiRequest } from '@/lib/services/aiRouterService';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { db, getDynamicFirebaseInstance } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc } from '@/lib/firestore-tracker';
-import { AiProviderConfig, Content, Section, Tenant } from '@/types/cms';
+import { AiProviderConfig } from '@/types/cms';
 
 interface PageProps {
   params: Promise<{ tenant: string }>;
@@ -26,9 +26,12 @@ export default function TenantSchedulePage({ params }: PageProps) {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState<string>('');
 
-  // Fetch tenant's custom departure schedule section content from Firestore
-  // Uses the same pattern as [tenant]/page.tsx: query `contents` collection by tenantId,
-  // reconstruct contentsMap[sectionId][key] = value, then find departure_schedule section data
+  // Optimized: fetch only departure_schedule fields via direct getDoc (4-5 reads)
+  // instead of querying ALL tenant contents (100+ reads).
+  // Document IDs are deterministic: contentId = `${tenantId}_${sectionId}_${fieldKey}`
+  // Section ID pattern: `sec_${tenantId}_departure_schedule`
+  const SCHEDULE_FIELDS = ['schedules', 'title', 'description', 'badgeText'];
+
   useEffect(() => {
     async function loadTenantScheduleSection() {
       if (!tenantSlug || resolverLoading) return;
@@ -63,80 +66,105 @@ export default function TenantSchedulePage({ params }: PageProps) {
           } catch (e) {}
         }
 
-        // 1. Find departure_schedule section from sections collection
-        let scheduleSectionId: string | null = null;
-        const sectionsRef = collection(activeDb, 'sections');
-
-        for (const tid of possibleIds) {
-          const qSec = query(sectionsRef, where('tenantId', '==', tid));
-          const snap = await getDocs(qSec);
-          if (!snap.empty) {
-            const targetDoc = snap.docs.find(d => {
-              const type = d.data().type;
-              return type === 'departure_schedule' || type === 'departure-schedule';
-            });
-            if (targetDoc) {
-              scheduleSectionId = targetDoc.data().sectionId || targetDoc.id;
-              break;
-            }
-          }
-        }
-
-        // 2. Query ALL contents for this tenant, reconstruct contentsMap[sectionId][key] = value
-        // (same pattern as [tenant]/page.tsx)
-        const contentsRef = collection(activeDb, 'contents');
-        const contentsMap: Record<string, Record<string, any>> = {};
-
-        for (const tid of possibleIds) {
-          const qContent = query(contentsRef, where('tenantId', '==', tid));
-          const cSnap = await getDocs(qContent);
-          if (!cSnap.empty) {
-            cSnap.docs.forEach(docSnap => {
-              const c = docSnap.data() as Content;
-              if (c.sectionId) {
-                if (!contentsMap[c.sectionId]) contentsMap[c.sectionId] = {};
-                contentsMap[c.sectionId][c.key] = c.value;
-              }
-            });
-          }
-        }
-
-        // Fallback: also try primary DB if activeDb was a cluster and we found nothing
-        if (Object.keys(contentsMap).length === 0 && activeDb !== db) {
-          const primaryContentsRef = collection(db, 'contents');
-          for (const tid of possibleIds) {
-            const qContent = query(primaryContentsRef, where('tenantId', '==', tid));
-            const cSnap = await getDocs(qContent);
-            if (!cSnap.empty) {
-              cSnap.docs.forEach(docSnap => {
-                const c = docSnap.data() as Content;
-                if (c.sectionId) {
-                  if (!contentsMap[c.sectionId]) contentsMap[c.sectionId] = {};
-                  contentsMap[c.sectionId][c.key] = c.value;
-                }
-              });
-            }
-          }
-        }
-
-        // 3. Extract schedule section data from contentsMap
         let foundData: Record<string, any> | null = null;
 
-        // Try by known scheduleSectionId first
-        if (scheduleSectionId && contentsMap[scheduleSectionId]) {
-          foundData = contentsMap[scheduleSectionId];
+        // === STRATEGY A: Direct getDoc with deterministic IDs (most efficient, ~5 reads) ===
+        // Section ID = sec_{tenantId}_departure_schedule
+        // Content ID = {tenantId}_{sectionId}_{key}
+        for (const tid of possibleIds) {
+          const sectionId = `sec_${tid}_departure_schedule`;
+
+          // Fetch all needed fields in parallel via Promise.all
+          const results = await Promise.all(
+            SCHEDULE_FIELDS.map(field => {
+              const contentId = `${tid}_${sectionId}_${field}`;
+              return getDoc(doc(activeDb, 'contents', contentId));
+            })
+          );
+
+          const data: Record<string, any> = {};
+          results.forEach(snap => {
+            if (snap.exists()) {
+              const c = snap.data();
+              if (c.key && c.value !== undefined) {
+                data[c.key] = c.value;
+              }
+            }
+          });
+
+          if (Object.keys(data).length > 0) {
+            foundData = data;
+            break;
+          }
         }
 
-        // Fallback: search all section contents for one that has 'schedules' array
+        // === STRATEGY B: Fallback for non-deterministic sectionId (e.g. sec_1234567890) ===
+        // Only triggered if Strategy A found nothing — 1 query to find the sectionId, 
+        // then direct getDoc for each field (~6 reads total)
         if (!foundData) {
-          for (const secId of Object.keys(contentsMap)) {
-            if (secId.includes('departure_schedule') || secId.includes('departure-schedule')) {
-              foundData = contentsMap[secId];
-              break;
+          for (const tid of possibleIds) {
+            const sectionsRef = collection(activeDb, 'sections');
+            const qSec = query(sectionsRef, where('tenantId', '==', tid));
+            const snap = await getDocs(qSec);
+            if (!snap.empty) {
+              const targetDoc = snap.docs.find(d => {
+                const type = d.data().type;
+                return type === 'departure_schedule' || type === 'departure-schedule';
+              });
+
+              if (targetDoc) {
+                const sectionId = targetDoc.data().sectionId || targetDoc.id;
+                
+                // Fetch fields in parallel via getDoc
+                const results = await Promise.all(
+                  SCHEDULE_FIELDS.map(field => {
+                    const contentId = `${tid}_${sectionId}_${field}`;
+                    return getDoc(doc(activeDb, 'contents', contentId));
+                  })
+                );
+
+                const data: Record<string, any> = {};
+                results.forEach(snap => {
+                  if (snap.exists()) {
+                    const c = snap.data();
+                    if (c.key && c.value !== undefined) {
+                      data[c.key] = c.value;
+                    }
+                  }
+                });
+
+                if (Object.keys(data).length > 0) {
+                  foundData = data;
+                  break;
+                }
+              }
             }
-            // Also check if any section has a 'schedules' array (generic match)
-            if (contentsMap[secId].schedules && Array.isArray(contentsMap[secId].schedules)) {
-              foundData = contentsMap[secId];
+          }
+        }
+
+        // === STRATEGY C: Fallback to primary DB if cluster DB returned nothing ===
+        if (!foundData && activeDb !== db) {
+          for (const tid of possibleIds) {
+            const sectionId = `sec_${tid}_departure_schedule`;
+            const results = await Promise.all(
+              SCHEDULE_FIELDS.map(field => {
+                const contentId = `${tid}_${sectionId}_${field}`;
+                return getDoc(doc(db, 'contents', contentId));
+              })
+            );
+
+            const data: Record<string, any> = {};
+            results.forEach(snap => {
+              if (snap.exists()) {
+                const c = snap.data();
+                if (c.key && c.value !== undefined) {
+                  data[c.key] = c.value;
+                }
+              }
+            });
+
+            if (Object.keys(data).length > 0) {
+              foundData = data;
               break;
             }
           }
