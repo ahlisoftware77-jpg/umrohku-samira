@@ -338,6 +338,7 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
     flow: 'Cara Kerja / Alur',
     social_media: 'Media Sosial',
     mitra_promo: '🎁 Promo Reward Mitra',
+    departure_schedule: '✈️ Jadwal Keberangkatan',
   };
 
   const getSectionLabel = (type?: string) => {
@@ -404,6 +405,7 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
     { type: 'airlines', label: 'Maskapai Penerbangan Resmi' },
     { type: 'ad_popup', label: '📢 Iklan Popup (Awal Muat Halaman)' },
     { type: 'mitra_promo', label: '🎁 Promo Reward Keberangkatan Mitra' },
+    { type: 'departure_schedule', label: '✈️ Jadwal Informasi Keberangkatan' },
   ];
 
   // Render inputs dynamically based on section type
@@ -2355,6 +2357,51 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
                 onChange={(e) => handleFieldChange('targetUrl', e.target.value)} 
                 placeholder="https://api.whatsapp.com/send?phone=..."
               />
+            </div>
+          </div>
+        );
+
+      case 'departure_schedule':
+        return (
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-primary">Penyuntingan Seksi Jadwal Keberangkatan</h3>
+            <p className="text-xs text-muted-foreground">Sunting judul, deskripsi, dan teks lencana untuk seksi jadwal keberangkatan terkonfirmasi.</p>
+
+            <div className="space-y-2">
+              {renderLabelWithAi('Teks Lencana (Badge)', 'badgeText')}
+              <Input 
+                value={activeSectionContent.badgeText || ''} 
+                onChange={(e) => handleFieldChange('badgeText', e.target.value)} 
+                placeholder="✈️ JADWAL KEBERANGKATAN RESMI"
+              />
+            </div>
+
+            <div className="space-y-2">
+              {renderLabelWithAi('Judul Utama Seksi', 'title')}
+              <Input 
+                value={activeSectionContent.title || ''} 
+                onChange={(e) => handleFieldChange('title', e.target.value)} 
+                placeholder="Jadwal Informasi Keberangkatan Umrah"
+              />
+            </div>
+
+            <div className="space-y-2">
+              {renderLabelWithAi('Deskripsi Singkat', 'description')}
+              <Textarea 
+                value={activeSectionContent.description || ''} 
+                onChange={(e) => handleFieldChange('description', e.target.value)} 
+                placeholder="Pilih tanggal keberangkatan impian Anda bersama Samira Travel. Jadwal terkonfirmasi pasti dengan visa & penerbangan direct:"
+              />
+            </div>
+
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-900 font-medium">
+              <p className="font-bold flex items-center gap-1.5 text-amber-950">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                Sistem Jadwal Otomatis Active
+              </p>
+              <p className="leading-relaxed">
+                Jadwal keberangkatan terintegrasi secara otomatis dengan daftar paket resmi. Anda dapat mengarahkan jamaah ke halaman jadwal lengkap melalui tombol di bawah seksi ini.
+              </p>
             </div>
           </div>
         );

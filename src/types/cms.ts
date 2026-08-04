@@ -149,7 +149,8 @@ export const SectionTypeSchema = z.enum([
   'hotel_explanation',
   'airlines',
   'ad_popup',
-  'mitra_promo'
+  'mitra_promo',
+  'departure_schedule'
 ]);
 export type SectionType = z.infer<typeof SectionTypeSchema>;
 
