@@ -23,7 +23,8 @@ export interface AiTestResult {
  */
 export async function executeSingleAiProvider(
   provider: AiProviderConfig,
-  promptText: string
+  promptText: string,
+  imageUrl?: string
 ): Promise<AiExecutionResult> {
   const startTime = Date.now();
   const apiKey = provider.apiKey.trim();
@@ -32,6 +33,40 @@ export async function executeSingleAiProvider(
 
   if (!apiKey) {
     throw new Error(`API Key untuk provider '${provider.name}' belum diisi.`);
+  }
+
+  // Convert image URL or Data URI for Gemini Vision inlineData if available
+  let geminiParts: any[] = [{ text: promptText }];
+  if (imageUrl) {
+    try {
+      let base64Data = '';
+      let mimeType = 'image/jpeg';
+
+      if (imageUrl.startsWith('data:image/')) {
+        const split = imageUrl.split(';base64,');
+        mimeType = split[0].replace('data:', '');
+        base64Data = split[1];
+      } else {
+        const imgRes = await fetch(imageUrl);
+        if (imgRes.ok) {
+          const buffer = await imgRes.arrayBuffer();
+          base64Data = Buffer.from(buffer).toString('base64');
+          const contentType = imgRes.headers.get('content-type');
+          if (contentType) mimeType = contentType.split(';')[0];
+        }
+      }
+
+      if (base64Data) {
+        geminiParts.push({
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Data
+          }
+        });
+      }
+    } catch (imgErr) {
+      console.warn('[Gemini Vision Image Convert Failed]:', imgErr);
+    }
   }
 
   // 1. Google Gemini Provider with Multi-Model Auto-Failover
@@ -53,7 +88,7 @@ export async function executeSingleAiProvider(
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+          body: JSON.stringify({ contents: [{ parts: geminiParts }] })
         });
 
         const data = await res.json().catch(() => ({}));
@@ -123,6 +158,17 @@ export async function executeSingleAiProvider(
 
   const endpointUrl = provider.baseUrl?.trim() || defaultUrl;
 
+  let messagesPayload: any[] = [{ role: 'user', content: promptText }];
+  if (imageUrl) {
+    messagesPayload = [{
+      role: 'user',
+      content: [
+        { type: 'text', text: promptText },
+        { type: 'image_url', image_url: { url: imageUrl } }
+      ]
+    }];
+  }
+
   const res = await fetch(endpointUrl, {
     method: 'POST',
     headers: {
@@ -131,7 +177,7 @@ export async function executeSingleAiProvider(
     },
     body: JSON.stringify({
       model: model,
-      messages: [{ role: 'user', content: promptText }]
+      messages: messagesPayload
     })
   });
 
@@ -158,7 +204,8 @@ export async function executeSingleAiProvider(
  */
 export async function routeAiRequest(
   providers: AiProviderConfig[],
-  promptText: string
+  promptText: string,
+  imageUrl?: string
 ): Promise<AiExecutionResult> {
   const activeProviders = providers
     .filter(p => p.enabled && p.apiKey.trim().length > 0)
@@ -172,7 +219,7 @@ export async function routeAiRequest(
 
   for (const provider of activeProviders) {
     try {
-      const result = await executeSingleAiProvider(provider, promptText);
+      const result = await executeSingleAiProvider(provider, promptText, imageUrl);
       return result;
     } catch (err: any) {
       console.warn(`[9router Failover] Provider '${provider.name}' gagal: ${err.message}. Mencoba provider berikutnya...`);

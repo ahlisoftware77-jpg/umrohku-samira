@@ -81,6 +81,8 @@ export default function EditorSidebar() {
   const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [mapPreviewUrl, setMapPreviewUrl] = useState('');
   const [mapTargetField, setMapTargetField] = useState<'mapUrl' | 'officePusatMapUrl'>('mapUrl');
+  const [brochureImageUrl, setBrochureImageUrl] = useState<string>('');
+  const [isExtractingBrochure, setIsExtractingBrochure] = useState<boolean>(false);
 
   const openMapPicker = (targetField: 'mapUrl' | 'officePusatMapUrl', initialQuery: string) => {
     setMapTargetField(targetField);
@@ -2395,6 +2397,74 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
           handleFieldChange('schedules', updated);
         };
 
+        const handleExtractBrochureSchedule = async () => {
+          if (!brochureImageUrl.trim()) {
+            toast({
+              title: "Pilih Gambar Brosur",
+              description: "Harap pilih atau masukkan URL gambar brosur terlebih dahulu.",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          setIsExtractingBrochure(true);
+          try {
+            const cluster = getActiveAiCluster();
+            if (cluster.length === 0) {
+              toast({
+                title: "API Key AI Belum Diatur",
+                description: "Harap masukkan API Key di portal admin terlebih dahulu.",
+                variant: "destructive"
+              });
+              setIsExtractingBrochure(false);
+              return;
+            }
+
+            const promptText = `Bertindaklah sebagai Data Extractor OCR Spesialis Biro Perjalanan Umrah Samira Travel.
+Tolong baca dan analisis seluruh informasi jadwal keberangkatan, tanggal, nama paket umrah, maskapai, durasi hari, hotel Makkah & Madinah, harga, dan sisa seat dari gambar poster brosur umrah ini.
+
+Format Output: HANYA kembalikan array JSON valid (tanpa markdown atau teks penjelasan) dengan skema berikut:
+[
+  {
+    "id": "1",
+    "date": "15 September 2026",
+    "packageName": "Umrah Safara Bintang 5",
+    "airline": "Saudia Airlines Direct",
+    "duration": "9 Hari",
+    "hotelMakkah": "Pullman Zamzam ⭐️5",
+    "hotelMadinah": "Frontel Al Harithia ⭐️5",
+    "price": "Rp 34.500.000",
+    "seatsLeft": 5,
+    "status": "Tersedia"
+  }
+]`;
+
+            const res = await routeAiRequest(cluster, promptText, brochureImageUrl);
+            if (res && res.text) {
+              let cleaned = res.text.trim();
+              if (cleaned.startsWith('```')) {
+                cleaned = cleaned.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '').trim();
+              }
+              const parsed = JSON.parse(cleaned);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                handleFieldChange('schedules', parsed);
+                toast({
+                  title: "✨ Jadwal Berhasil Dideteksi dari Brosur!",
+                  description: `AI berhasil mengekstrak ${parsed.length} jadwal dari gambar brosur Anda.`,
+                });
+              }
+            }
+          } catch (err: any) {
+            toast({
+              title: "Gagal Mendeteksi Brosur",
+              description: err.message || "Gagal membaca teks dari gambar brosur.",
+              variant: "destructive"
+            });
+          } finally {
+            setIsExtractingBrochure(false);
+          }
+        };
+
         return (
           <div className="space-y-4">
             <h3 className="font-bold text-base text-primary">Penyuntingan Seksi Jadwal Keberangkatan</h3>
@@ -2426,6 +2496,60 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
                 placeholder="Pilih tanggal keberangkatan impian Anda bersama Samira Travel. Jadwal terkonfirmasi pasti dengan visa & penerbangan direct:"
               />
             </div>
+
+            {/* AI Vision Brochure Detection Card */}
+            {isGeminiAiEnabled && (
+              <div className="p-3.5 bg-gradient-to-r from-indigo-50 via-purple-50 to-amber-50 border border-purple-200/90 rounded-2xl space-y-2.5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-black text-xs text-purple-950">
+                    <Sparkles className="w-4 h-4 text-purple-600 animate-pulse" />
+                    <span>Deteksi Jadwal dari Gambar Brosur (Vision AI)</span>
+                  </div>
+                  <span className="text-[10px] font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full">
+                    OCR & AI Multimodal
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-purple-900/80 leading-relaxed">
+                  Unggah atau pilih gambar poster brosur umrah di bawah ini. AI Vision akan otomatis mendeteksi & membaca seluruh jadwal keberangkatan dari brosur!
+                </p>
+
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="URL Gambar Brosur..."
+                    value={brochureImageUrl}
+                    onChange={(e) => setBrochureImageUrl(e.target.value)}
+                    className="bg-white border-purple-200 text-xs h-8 rounded-xl"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openMediaPicker((url) => setBrochureImageUrl(Array.isArray(url) ? url[0] : url))}
+                    className="h-8 text-xs font-bold shrink-0 rounded-xl border-purple-300 text-purple-900 hover:bg-purple-100"
+                  >
+                    Pilih Brosur
+                  </Button>
+                </div>
+
+                {brochureImageUrl && (
+                  <div className="relative aspect-video rounded-xl overflow-hidden border bg-white shadow-xs my-1">
+                    <img src={brochureImageUrl} alt="Preview Brosur" className="w-full h-full object-contain" />
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  disabled={isExtractingBrochure || !brochureImageUrl.trim()}
+                  onClick={handleExtractBrochureSchedule}
+                  className="w-full h-9 text-xs font-extrabold bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-2 shadow-md"
+                >
+                  {isExtractingBrochure ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4 text-amber-300" />}
+                  <span>Ekstrak Jadwal dari Gambar Brosur AI</span>
+                </Button>
+              </div>
+            )}
 
             {/* List of Departure Schedule Items */}
             <div className="space-y-3 border-t pt-3">
