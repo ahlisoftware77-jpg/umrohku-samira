@@ -309,7 +309,11 @@ export default function DepartureScheduleSection({ data, agent, showAll = false 
             size="lg"
             className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-base px-8 h-12 rounded-full shadow-xl gap-2.5 transition-all hover:scale-105"
           >
-            <a href="/jadwal" target="_blank" rel="noopener noreferrer">
+            <a 
+              href={agent?.slug ? `/${agent.slug}/jadwal` : (data?.tenantId ? `/${data.tenantId}/jadwal` : 'jadwal')} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
               <span>Lihat Selengkapnya Seluruh Informasi Jadwal Keberangkatan</span>
               <ArrowRight className="w-5 h-5" />
             </a>
