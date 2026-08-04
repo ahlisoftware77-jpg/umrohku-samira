@@ -131,6 +131,7 @@ export default function SuperAdminPage() {
   const [cldCloudName, setCldCloudName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_cloud_name') || '' : ''));
   const [cldUploadPreset, setCldUploadPreset] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_upload_preset') || 'ml_default' : 'ml_default'));
   const [geminiApiKey, setGeminiApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : ''));
+  const [geminiApiKeyMode, setGeminiApiKeyMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
   const [isGeminiKeyVisible, setIsGeminiKeyVisible] = useState(false);
 
   // Security PIN & API Key Masking state
@@ -1252,9 +1253,15 @@ service cloud.firestore {
             if (cn) setCldCloudName(cn);
             if (up) setCldUploadPreset(up);
           }
-          if (sysData.gemini?.apiKey) {
-            setGeminiApiKey(sysData.gemini.apiKey);
-            if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key', sysData.gemini.apiKey);
+          if (sysData.gemini) {
+            if (sysData.gemini.apiKey) {
+              setGeminiApiKey(sysData.gemini.apiKey);
+              if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key', sysData.gemini.apiKey);
+            }
+            if (sysData.gemini.mode) {
+              setGeminiApiKeyMode(sysData.gemini.mode);
+              if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key_mode', sysData.gemini.mode);
+            }
           }
         }
       } catch (sysErr) {
@@ -2832,6 +2839,7 @@ service cloud.firestore {
         localStorage.setItem('fb_messaging_sender_id', fbMessagingSenderId);
         localStorage.setItem('fb_app_id', fbAppId);
         localStorage.setItem('gemini_api_key', geminiApiKey);
+        localStorage.setItem('gemini_api_key_mode', geminiApiKeyMode);
       }
 
       // 2. Try saving to Firestore in background if rules permit
@@ -2851,6 +2859,7 @@ service cloud.firestore {
           },
           gemini: {
             apiKey: geminiApiKey,
+            mode: geminiApiKeyMode,
           },
           updatedAt: new Date(),
         }, { merge: true });
@@ -5366,6 +5375,50 @@ NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
                         placeholder="AIzaSy..." 
                         className="font-mono text-xs border-purple-200 focus-visible:ring-purple-500"
                       />
+                    </div>
+
+                    {/* Mode Selection: Admin Global vs Custom Tenant Input */}
+                    <div className="space-y-1.5 pt-1">
+                      <Label className="text-xs font-bold text-slate-700">Mode Distribusi Kunci API ke Dashboard Mitra:</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGeminiApiKeyMode('global');
+                            if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key_mode', 'global');
+                          }}
+                          className={`p-3 rounded-2xl border text-left transition-all ${
+                            geminiApiKeyMode === 'global' ? 'bg-purple-100/80 border-purple-400 text-purple-950 font-bold shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0" />
+                            <span className="text-xs">Gunakan Kunci API Admin (Gratis untuk Mitra)</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1 leading-normal">
+                            Seluruh mitra langsung menikmati fitur AI menggunakan Kunci API Admin di atas tanpa perlu mengisi API Key sendiri.
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGeminiApiKeyMode('custom');
+                            if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key_mode', 'custom');
+                          }}
+                          className={`p-3 rounded-2xl border text-left transition-all ${
+                            geminiApiKeyMode === 'custom' ? 'bg-purple-100/80 border-purple-400 text-purple-950 font-bold shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <KeyRound className="h-4 w-4 text-amber-600 shrink-0" />
+                            <span className="text-xs">Alihkan ke Input API Key Sendiri</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1 leading-normal">
+                            Mitra akan diahlikan untuk memasukkan Gemini API Key pribadi mereka masing-masing di Dashboard Mitra.
+                          </p>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="p-3.5 bg-purple-50/70 border border-purple-200/80 rounded-2xl text-[11px] text-purple-950 leading-relaxed space-y-1.5">

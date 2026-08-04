@@ -133,10 +133,31 @@ export default function TenantDashboardPage() {
   const [aiSelectedTone, setAiSelectedTone] = useState<'persuasive' | 'islamic' | 'exclusive'>('persuasive');
   const [aiCsQuestion, setAiCsQuestion] = useState('Berapa DP & syarat pendaftaran paket umrah?');
   const [aiResultText, setAiResultText] = useState('');
-  const [isAiGenerating, setIsAiGenerating] = useState(false);
-  const [aiError, setAiError] = useState('');
-  const [customGeminiKey, setCustomGeminiKey] = useState('');
+  const [customGeminiKey, setCustomGeminiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('tenant_gemini_api_key') || '' : ''));
+  const [adminGeminiKey, setAdminGeminiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : ''));
+  const [geminiConfigMode, setGeminiConfigMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
+  const [usePersonalKey, setUsePersonalKey] = useState(false);
   const [copiedAiResult, setCopiedAiResult] = useState(false);
+
+  // Load Cloud System Config for Gemini AI
+  useEffect(() => {
+    const loadGeminiConfig = async () => {
+      try {
+        const sysSnap = await getDoc(doc(db, 'systemSettings', 'global'));
+        if (sysSnap.exists()) {
+          const sysData = sysSnap.data();
+          if (sysData.gemini?.apiKey) setAdminGeminiKey(sysData.gemini.apiKey);
+          if (sysData.gemini?.mode) {
+            setGeminiConfigMode(sysData.gemini.mode);
+            if (sysData.gemini.mode === 'custom') {
+              setUsePersonalKey(true);
+            }
+          }
+        }
+      } catch (e) {}
+    };
+    loadGeminiConfig();
+  }, []);
 
   const handleExecuteGeminiAi = async (mode: 'audit' | 'ads' | 'cs') => {
     setIsAiGenerating(true);
@@ -144,21 +165,20 @@ export default function TenantDashboardPage() {
     setAiResultText('');
 
     try {
-      let apiKey = customGeminiKey.trim() || 
-                   (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '') ||
-                   process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+      let apiKey = '';
 
-      if (!apiKey) {
-        try {
-          const sysSnap = await getDoc(doc(db, 'systemSettings', 'global'));
-          if (sysSnap.exists()) {
-            apiKey = sysSnap.data()?.gemini?.apiKey || '';
-          }
-        } catch (e) {}
+      if (usePersonalKey || geminiConfigMode === 'custom') {
+        apiKey = customGeminiKey.trim() || (typeof window !== 'undefined' ? localStorage.getItem('tenant_gemini_api_key') || '' : '');
       }
 
       if (!apiKey) {
-        setAiError('Gemini API Key belum diatur. Masukkan API Key Anda di bawah ini atau minta Super Admin mengaturnya di Portal /supa.');
+        apiKey = adminGeminiKey.trim() || 
+                 (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '') ||
+                 process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+      }
+
+      if (!apiKey) {
+        setAiError('Gemini API Key belum diisi. Masukkan API Key Anda di bawah ini atau minta Super Admin membagikan API Key di Portal /supa.');
         setIsAiGenerating(false);
         return;
       }
@@ -1978,6 +1998,51 @@ Ketentuan Balasan:
                 ✕
               </button>
             </CardHeader>
+
+            {/* API Key Source Mode Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 border rounded-2xl text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-700">Sumber Kunci API:</span>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                  usePersonalKey || geminiConfigMode === 'custom' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-purple-100 text-purple-800 border border-purple-300'
+                }`}>
+                  {usePersonalKey || geminiConfigMode === 'custom' ? '🔑 API Key Pribadi Mitra' : '🌐 API Key Admin Global'}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setUsePersonalKey(!usePersonalKey)}
+                className="text-[11px] font-bold text-purple-600 hover:underline flex items-center gap-1 shrink-0"
+              >
+                {usePersonalKey ? 'Gunakan API Key Admin' : 'Ganti ke API Key Sendiri'}
+              </button>
+            </div>
+
+            {/* Input Field for Personal Key if selected or required by Admin */}
+            {(usePersonalKey || geminiConfigMode === 'custom') && (
+              <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <Label className="font-bold text-amber-900 flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5 text-amber-600" /> Masukkan Google Gemini API Key Anda:
+                  </Label>
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-[10px] text-amber-700 font-bold underline hover:text-amber-900">
+                    Dapatkan Key Gratis ↗
+                  </a>
+                </div>
+                <Input
+                  type="password"
+                  value={customGeminiKey}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomGeminiKey(val);
+                    if (typeof window !== 'undefined') localStorage.setItem('tenant_gemini_api_key', val);
+                  }}
+                  placeholder="AIzaSy..."
+                  className="bg-white font-mono text-xs border-amber-300 focus-visible:ring-amber-500"
+                />
+              </div>
+            )}
 
             {/* AI Mode Selector Tabs */}
             <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border">
