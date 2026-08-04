@@ -156,7 +156,7 @@ Tugas Anda:
 
         {/* Main Departure Schedule List Component */}
         <div className="pt-8">
-          <DepartureScheduleSection />
+          <DepartureScheduleSection showAll={true} />
         </div>
       </main>
 

@@ -15,7 +15,8 @@ import {
   Building2,
   PhoneCall,
   Download,
-  AlertCircle
+  AlertCircle,
+  ChevronDown
 } from 'lucide-react';
 import { Agent } from '@/lib/agents';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ export interface DepartureScheduleItem {
 interface DepartureScheduleSectionProps {
   data?: Record<string, any>;
   agent?: Agent;
+  showAll?: boolean;
 }
 
 export const DEFAULT_SCHEDULES: DepartureScheduleItem[] = [
@@ -102,7 +104,7 @@ export const DEFAULT_SCHEDULES: DepartureScheduleItem[] = [
   }
 ];
 
-export default function DepartureScheduleSection({ data, agent }: DepartureScheduleSectionProps) {
+export default function DepartureScheduleSection({ data, agent, showAll = false }: DepartureScheduleSectionProps) {
   const badgeText = data?.badgeText || '✈️ JADWAL KEBERANGKATAN RESMI';
   const title = data?.title || 'Jadwal Informasi Keberangkatan Umrah';
   const description = data?.description || 'Pilih tanggal keberangkatan impian Anda bersama Samira Travel. Jadwal terkonfirmasi pasti dengan visa & penerbangan direct:';
@@ -113,6 +115,7 @@ export default function DepartureScheduleSection({ data, agent }: DepartureSched
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [isExpanded, setIsExpanded] = useState<boolean>(showAll);
 
   const filteredSchedules = schedulesList.filter(item => {
     const matchesSearch = item.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -123,6 +126,9 @@ export default function DepartureScheduleSection({ data, agent }: DepartureSched
     
     return matchesSearch && matchesStatus;
   });
+
+  const displayedSchedules = isExpanded ? filteredSchedules : filteredSchedules.slice(0, 3);
+  const remainingCount = filteredSchedules.length - 3;
 
   return (
     <section id="jadwal" className="py-16 md:py-24 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
@@ -200,7 +206,7 @@ export default function DepartureScheduleSection({ data, agent }: DepartureSched
         </div>
 
         {/* Schedule List Cards */}
-        {filteredSchedules.length === 0 ? (
+        {displayedSchedules.length === 0 ? (
           <div className="p-8 text-center bg-white rounded-3xl border shadow-sm space-y-2">
             <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
             <p className="text-sm font-bold text-slate-800">Tidak ada jadwal yang cocok dengan kata kunci pencarian Anda.</p>
@@ -208,7 +214,7 @@ export default function DepartureScheduleSection({ data, agent }: DepartureSched
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredSchedules.map((item, idx) => {
+            {displayedSchedules.map((item, idx) => {
               const waUrl = agent?.whatsapp 
                 ? `https://api.whatsapp.com/send?phone=${agent.whatsapp}&text=${encodeURIComponent(`Halo, saya berminat mendaftar Seat Umrah jadwal tanggal *${item.date}* (${item.packageName}). Apakah seat masih tersedia?`)}`
                 : '';
@@ -296,8 +302,19 @@ export default function DepartureScheduleSection({ data, agent }: DepartureSched
           </div>
         )}
 
-        {/* Link to Full Schedule Page */}
-        <div className="mt-10 text-center">
+        {/* Action Buttons: Expand or Open Dedicated Schedule Page */}
+        <div className="mt-10 text-center flex flex-col sm:flex-row items-center justify-center gap-3">
+          {!isExpanded && remainingCount > 0 && (
+            <Button
+              type="button"
+              onClick={() => setIsExpanded(true)}
+              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm px-6 h-11 rounded-full shadow-lg gap-2"
+            >
+              <span>Lihat Selengkapnya ({remainingCount} Jadwal Lagi)</span>
+              <ChevronDown className="w-4 h-4" />
+            </Button>
+          )}
+
           <Button
             asChild
             variant="outline"
@@ -305,7 +322,7 @@ export default function DepartureScheduleSection({ data, agent }: DepartureSched
             className="border-2 border-primary text-primary hover:bg-primary hover:text-white font-black text-xs sm:text-sm px-8 h-11 rounded-full shadow-sm gap-2 transition-all"
           >
             <a href="/jadwal">
-              <span>Lihat Seluruh Informasi Jadwal Keberangkatan Lengkap</span>
+              <span>Buka Halaman Jadwal Lengkap</span>
               <ArrowRight className="w-4 h-4" />
             </a>
           </Button>
