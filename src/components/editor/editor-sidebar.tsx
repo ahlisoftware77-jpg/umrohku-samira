@@ -426,7 +426,7 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
                   value={activeSectionContent.primaryBtnUrl || ''} 
                   onChange={(e) => handleFieldChange('primaryBtnUrl', e.target.value)}
                 />
-              </div>   </div>
+              </div>
 
             {/* Transition Effect Selection */}
             <div className="space-y-2 border-t pt-3 mt-3">
