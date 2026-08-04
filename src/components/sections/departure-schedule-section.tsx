@@ -302,28 +302,16 @@ export default function DepartureScheduleSection({ data, agent, showAll = false 
           </div>
         )}
 
-        {/* Action Buttons: Expand or Open Dedicated Schedule Page */}
-        <div className="mt-10 text-center flex flex-col sm:flex-row items-center justify-center gap-3">
-          {!isExpanded && remainingCount > 0 && (
-            <Button
-              type="button"
-              onClick={() => setIsExpanded(true)}
-              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm px-6 h-11 rounded-full shadow-lg gap-2"
-            >
-              <span>Lihat Selengkapnya ({remainingCount} Jadwal Lagi)</span>
-              <ChevronDown className="w-4 h-4" />
-            </Button>
-          )}
-
+        {/* Action Button: Open Full Schedule Page in New Tab */}
+        <div className="mt-10 text-center">
           <Button
             asChild
-            variant="outline"
             size="lg"
-            className="border-2 border-primary text-primary hover:bg-primary hover:text-white font-black text-xs sm:text-sm px-8 h-11 rounded-full shadow-sm gap-2 transition-all"
+            className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-base px-8 h-12 rounded-full shadow-xl gap-2.5 transition-all hover:scale-105"
           >
-            <a href="/jadwal">
-              <span>Buka Halaman Jadwal Lengkap</span>
-              <ArrowRight className="w-4 h-4" />
+            <a href="/jadwal" target="_blank" rel="noopener noreferrer">
+              <span>Lihat Selengkapnya Seluruh Informasi Jadwal Keberangkatan</span>
+              <ArrowRight className="w-5 h-5" />
             </a>
           </Button>
         </div>
