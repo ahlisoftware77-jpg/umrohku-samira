@@ -2511,7 +2511,7 @@ Format Output:
                   </Button>
                 </div>
 
-                <div className="bg-slate-950 text-slate-100 p-4 rounded-2xl text-xs font-sans whitespace-pre-wrap leading-relaxed max-h-[320px] overflow-y-auto border border-slate-800 select-all shadow-inner">
+                <div className="bg-slate-950 text-slate-100 p-4 rounded-2xl text-xs font-sans whitespace-pre-wrap leading-relaxed max-h-[320px] overflow-y-auto border border-slate-800 select-text shadow-inner">
                   {aiResultText}
                 </div>
               </div>
