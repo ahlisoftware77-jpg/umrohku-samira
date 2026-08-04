@@ -14,6 +14,26 @@ export default function PublicSchedulePage() {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState<string>('');
+  const [scheduleSectionData, setScheduleSectionData] = useState<Record<string, any> | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedContents = localStorage.getItem('cms_contents');
+      const savedSections = localStorage.getItem('cms_sections');
+      if (savedContents && savedSections) {
+        try {
+          const parsedContents = JSON.parse(savedContents);
+          const parsedSections = JSON.parse(savedSections);
+          if (Array.isArray(parsedSections)) {
+            const schedSec = parsedSections.find((s: any) => s.type === 'departure_schedule' || s.type === 'departure-schedule');
+            if (schedSec && parsedContents[schedSec.sectionId]) {
+              setScheduleSectionData(parsedContents[schedSec.sectionId]);
+            }
+          }
+        } catch (e) {}
+      }
+    }
+  }, []);
 
   const getActiveAiCluster = (): AiProviderConfig[] => {
     let activeCluster: AiProviderConfig[] = [];
@@ -156,7 +176,7 @@ Tugas Anda:
 
         {/* Main Departure Schedule List Component */}
         <div className="pt-8">
-          <DepartureScheduleSection showAll={true} />
+          <DepartureScheduleSection data={scheduleSectionData || undefined} showAll={true} />
         </div>
       </main>
 

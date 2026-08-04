@@ -26,28 +26,59 @@ export default function TenantSchedulePage({ params }: PageProps) {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState<string>('');
 
-  // Fetch tenant's custom departure schedule section content from Firestore
+  // Fetch tenant's custom departure schedule section content from Firestore & localStorage
   useEffect(() => {
     async function loadTenantScheduleSection() {
       if (!tenantSlug) return;
       try {
-        const sectionsRef = collection(db, 'sections');
-        const q = query(
-          sectionsRef, 
-          where('tenantId', '==', tenantSlug.toLowerCase()),
-          where('type', 'in', ['departure_schedule', 'departure-schedule'])
-        );
-        const snap = await getDocs(q);
-        
-        if (!snap.empty) {
-          const secDoc = snap.docs[0];
-          const secId = secDoc.id;
-          
-          const contentRef = doc(db, 'contents', secId);
-          const contentSnap = await getDoc(contentRef);
-          if (contentSnap.exists()) {
-            setScheduleSectionData(contentSnap.data());
+        let foundData: Record<string, any> | null = null;
+
+        // A. Check localStorage for local CMS editor preview
+        if (typeof window !== 'undefined') {
+          const savedContents = localStorage.getItem('cms_contents') || localStorage.getItem(`cms_contents_${tenantSlug}`);
+          const savedSections = localStorage.getItem('cms_sections') || localStorage.getItem(`cms_sections_${tenantSlug}`);
+          if (savedContents && savedSections) {
+            try {
+              const parsedContents = JSON.parse(savedContents);
+              const parsedSections = JSON.parse(savedSections);
+              if (Array.isArray(parsedSections)) {
+                const schedSec = parsedSections.find((s: any) => s.type === 'departure_schedule' || s.type === 'departure-schedule');
+                if (schedSec && parsedContents[schedSec.sectionId]) {
+                  foundData = parsedContents[schedSec.sectionId];
+                }
+              }
+            } catch (e) {}
           }
+        }
+
+        // B. Query Firestore if not found in localStorage
+        if (!foundData) {
+          const possibleIds = Array.from(new Set([tenantSlug.toLowerCase(), tenantSlug])).filter(Boolean);
+          const sectionsRef = collection(db, 'sections');
+
+          for (const tid of possibleIds) {
+            const qSec = query(sectionsRef, where('tenantId', '==', tid));
+            const snap = await getDocs(qSec);
+            if (!snap.empty) {
+              const targetDoc = snap.docs.find(d => {
+                const type = d.data().type;
+                return type === 'departure_schedule' || type === 'departure-schedule';
+              });
+
+              if (targetDoc) {
+                const secId = targetDoc.id;
+                const contentSnap = await getDoc(doc(db, 'contents', secId));
+                if (contentSnap.exists()) {
+                  foundData = contentSnap.data();
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (foundData) {
+          setScheduleSectionData(foundData);
         }
       } catch (err) {
         console.warn('Could not load tenant schedule section content:', err);
