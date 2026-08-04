@@ -123,6 +123,8 @@ export default function TenantDashboardPage() {
 
   // Subscription Renewal Modal State
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [showExpiryWarningModal, setShowExpiryWarningModal] = useState(false);
+
   // Gemini AI Assistant State & Handler
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiActiveTab, setAiActiveTab] = useState<'audit' | 'ads' | 'cs'>('ads');
