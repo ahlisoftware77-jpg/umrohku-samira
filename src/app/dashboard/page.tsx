@@ -144,6 +144,7 @@ export default function TenantDashboardPage() {
   const [geminiConfigMode, setGeminiConfigMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
   const [usePersonalKey, setUsePersonalKey] = useState(false);
   const [copiedAiResult, setCopiedAiResult] = useState(false);
+  const [isAiEnabledByAdmin, setIsAiEnabledByAdmin] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
 
   // Load Cloud System Config for Gemini AI
   useEffect(() => {
@@ -157,6 +158,12 @@ export default function TenantDashboardPage() {
             setGeminiConfigMode(sysData.gemini.mode);
             if (sysData.gemini.mode === 'custom') {
               setUsePersonalKey(true);
+            }
+          }
+          if (sysData.gemini?.enabled !== undefined) {
+            setIsAiEnabledByAdmin(sysData.gemini.enabled);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('gemini_api_enabled', String(sysData.gemini.enabled));
             }
           }
         }
@@ -1370,7 +1377,7 @@ Format Output:
             </Button>
           )}
 
-          {tenantProfile && (
+          {tenantProfile && isAiEnabledByAdmin && (
             <Button
               onClick={() => setIsAiModalOpen(true)}
               variant="outline"
@@ -2077,7 +2084,7 @@ Format Output:
       )}
 
       {/* Floating Gemini AI Assistant Action Bubble */}
-      {user && tenantProfile && (
+      {user && tenantProfile && isAiEnabledByAdmin && (
         <button
           type="button"
           onClick={() => setIsAiModalOpen(true)}

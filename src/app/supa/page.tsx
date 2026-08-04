@@ -133,6 +133,7 @@ export default function SuperAdminPage() {
   const [cldUploadPreset, setCldUploadPreset] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_upload_preset') || 'ml_default' : 'ml_default'));
   const [geminiApiKey, setGeminiApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : ''));
   const [geminiApiKeyMode, setGeminiApiKeyMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
+  const [isGeminiAiEnabled, setIsGeminiAiEnabled] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
   const [isGeminiKeyVisible, setIsGeminiKeyVisible] = useState(false);
 
   // Gemini API Quota Inspector States
@@ -1379,6 +1380,10 @@ service cloud.firestore {
             if (sysData.gemini.mode) {
               setGeminiApiKeyMode(sysData.gemini.mode);
               if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key_mode', sysData.gemini.mode);
+            }
+            if (sysData.gemini.enabled !== undefined) {
+              setIsGeminiAiEnabled(sysData.gemini.enabled);
+              if (typeof window !== 'undefined') localStorage.setItem('gemini_api_enabled', String(sysData.gemini.enabled));
             }
           }
         }
@@ -2958,6 +2963,7 @@ service cloud.firestore {
         localStorage.setItem('fb_app_id', fbAppId);
         localStorage.setItem('gemini_api_key', geminiApiKey);
         localStorage.setItem('gemini_api_key_mode', geminiApiKeyMode);
+        localStorage.setItem('gemini_api_enabled', String(isGeminiAiEnabled));
       }
 
       // 2. Try saving to Firestore in background if rules permit
@@ -2978,6 +2984,7 @@ service cloud.firestore {
           gemini: {
             apiKey: geminiApiKey,
             mode: geminiApiKeyMode,
+            enabled: isGeminiAiEnabled,
           },
           updatedAt: new Date(),
         }, { merge: true });
@@ -5493,6 +5500,41 @@ NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
                         placeholder="AIzaSy..." 
                         className="font-mono text-xs border-purple-200 focus-visible:ring-purple-500"
                       />
+                    </div>
+
+                    {/* Enable / Disable AI Agent Toggle Card */}
+                    <div className="p-3.5 bg-slate-50 border rounded-2xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <Bot className="h-4 w-4 text-purple-600" /> Status Layanan AI Agent (Dashboard Mitra):
+                        </Label>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                          isGeminiAiEnabled ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-red-100 text-red-800 border border-red-300'
+                        }`}>
+                          {isGeminiAiEnabled ? '🟢 Layanan Aktif' : '🔴 Layanan Dinonaktifkan'}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const val = !isGeminiAiEnabled;
+                            setIsGeminiAiEnabled(val);
+                            if (typeof window !== 'undefined') localStorage.setItem('gemini_api_enabled', String(val));
+                          }}
+                          className={`h-8 text-xs font-bold rounded-xl px-4 flex items-center gap-2 transition-all shrink-0 ${
+                            isGeminiAiEnabled ? 'bg-red-600 hover:bg-red-700 text-white shadow-xs' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                          }`}
+                        >
+                          {isGeminiAiEnabled ? '🔴 Nonaktifkan AI Agent' : '🟢 Aktifkan AI Agent'}
+                        </Button>
+                        <p className="text-[11px] text-muted-foreground leading-normal">
+                          {isGeminiAiEnabled 
+                            ? 'Asisten AI Gemini saat ini aktif dan dapat digunakan oleh seluruh mitra.' 
+                            : 'Asisten AI Gemini sedang dinonaktifkan oleh Super Admin. Seluruh tombol & fitur AI di Dashboard Mitra disembunyikan.'}
+                        </p>
+                      </div>
                     </div>
 
                     {/* Mode Selection: Admin Global vs Custom Tenant Input */}
