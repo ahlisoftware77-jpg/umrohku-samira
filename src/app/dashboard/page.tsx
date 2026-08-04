@@ -36,7 +36,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { LogOut, Layout, Plus, Check, ShieldCheck, Trash2, AlertTriangle, KeyRound, UserX, Share2, Copy, ExternalLink, QrCode, Eye, PenLine, Monitor, History, Save, Loader2, MessageCircle, Clock, Sparkles, Wand2, Bot, Send, RefreshCw } from 'lucide-react';
-import { Tenant, LandingPage, Section, Content, SectionType, SYSTEM_PLANS } from '@/types/cms';
+import { Tenant, LandingPage, Section, Content, SectionType, SYSTEM_PLANS, AiProviderConfig } from '@/types/cms';
+import { routeAiRequest } from '@/lib/services/aiRouterService';
 
 function getReadableIdFromEmail(emailAddress: string): string {
   if (!emailAddress) return 'user_' + Date.now();
@@ -351,54 +352,62 @@ Format Output:
 - Sertakan saran caption singkat. Siap dipraktikkan langsung minggu ini.`;
       }
 
-      const modelsToTry = [
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-lite',
-        'gemini-2.5-flash',
-        'gemini-3.5-flash',
-        'gemini-3.6-flash'
-      ];
+      let activeCluster: AiProviderConfig[] = [];
 
-      let lastErrorMessage = '';
-      let isQuotaExceeded = false;
-
-      for (const model of modelsToTry) {
-        try {
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: promptText }] }]
-            })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            const generated = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (generated) {
-              setAiResultText(generated);
-              if (typeof window !== 'undefined') localStorage.setItem('tenant_ai_result_text', generated);
-              return;
-            }
-          } else {
-            const errData = await response.json().catch(() => ({}));
-            const msg = errData.error?.message || response.statusText || '';
-            if (msg.toLowerCase().includes('quota') || response.status === 429) {
-              isQuotaExceeded = true;
-            }
-            lastErrorMessage = msg;
+      // Check if user is using custom personal key input
+      if (apiKey && (usePersonalKey || geminiConfigMode === 'custom')) {
+        activeCluster = [{
+          id: 'prov_personal',
+          name: 'API Key Personal Mitra',
+          providerType: 'gemini',
+          apiKey: apiKey,
+          model: 'gemini-2.0-flash',
+          enabled: true,
+          priority: 1
+        }];
+      } else {
+        // Load 9router Cluster Providers
+        if (typeof window !== 'undefined') {
+          const saved = localStorage.getItem('ai_providers_cluster');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                activeCluster = parsed;
+              }
+            } catch (e) {}
           }
-        } catch (e: any) {
-          lastErrorMessage = e.message || 'Gagal koneksi ke Gemini API';
+        }
+
+        // Fallback to default Gemini key if cluster is empty
+        if (activeCluster.length === 0 && apiKey) {
+          activeCluster = [{
+            id: 'prov_default_gemini',
+            name: 'Google Gemini 2.0 Admin',
+            providerType: 'gemini',
+            apiKey: apiKey,
+            model: 'gemini-2.0-flash',
+            enabled: true,
+            priority: 1
+          }];
         }
       }
 
-      if (isQuotaExceeded || lastErrorMessage.toLowerCase().includes('quota')) {
-        setAiError('⚠️ Kuota harian API Key yang digunakan saat ini telah terlampaui (Quota Exceeded). Silakan masukkan API Key Gemini Anda sendiri di kolom bawah ini.');
-        setUsePersonalKey(true);
-      } else {
-        setAiError(lastErrorMessage || 'Gagal menghubungi server Gemini AI.');
+      try {
+        const result = await routeAiRequest(activeCluster, promptText);
+        if (result.text) {
+          setAiResultText(result.text);
+          if (typeof window !== 'undefined') localStorage.setItem('tenant_ai_result_text', result.text);
+          return;
+        }
+      } catch (routerErr: any) {
+        const msg = routerErr.message || '';
+        if (msg.toLowerCase().includes('quota') || msg.includes('429')) {
+          setAiError('⚠️ Kuota harian API Key yang digunakan saat ini telah terlampaui (Quota Exceeded). Silakan masukkan API Key Anda sendiri di kolom bawah ini.');
+          setUsePersonalKey(true);
+        } else {
+          setAiError(msg || 'Gagal menghubungi server Asisten Marketing AI.');
+        }
       }
     } catch (err: any) {
       console.error('Gemini AI execution error:', err);

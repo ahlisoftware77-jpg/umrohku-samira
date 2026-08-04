@@ -66,10 +66,18 @@ import {
   Link2,
   Sparkles,
   KeyRound,
-  Bot
+  Bot,
+  Plus,
+  Cpu,
+  Zap,
+  Globe2,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { cloudinaryService } from '@/lib/services/cloudinaryService';
-import { Tenant, TenantPlan, TenantStatus, LandingPage, Section, Content, SectionType, SYSTEM_PLANS, BuilderPlan, DatabaseServerConfig, MediaImage } from '@/types/cms';
+import { Tenant, TenantPlan, TenantStatus, LandingPage, Section, Content, SectionType, SYSTEM_PLANS, BuilderPlan, DatabaseServerConfig, MediaImage, AiProviderConfig } from '@/types/cms';
+import { testAiProviderHealth } from '@/lib/services/aiRouterService';
 
 export default function SuperAdminPage() {
   const { user, profile, loading } = useAuthHandler();
@@ -132,10 +140,88 @@ export default function SuperAdminPage() {
 
   const [cldCloudName, setCldCloudName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_cloud_name') || '' : ''));
   const [cldUploadPreset, setCldUploadPreset] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('cld_upload_preset') || 'ml_default' : 'ml_default'));
-  const [geminiApiKey, setGeminiApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : ''));
-  const [geminiApiKeyMode, setGeminiApiKeyMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
-  const [isGeminiAiEnabled, setIsGeminiAiEnabled] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
-  const [isGeminiKeyVisible, setIsGeminiKeyVisible] = useState(false);
+  // 9router Multi-Provider AI Cluster States
+  const defaultInitialProviders: AiProviderConfig[] = [
+    {
+      id: 'prov_gemini_1',
+      name: 'Google Gemini 2.0 Flash',
+      providerType: 'gemini',
+      apiKey: typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '',
+      model: 'gemini-2.0-flash',
+      enabled: true,
+      priority: 1
+    },
+    {
+      id: 'prov_deepseek_1',
+      name: 'DeepSeek V3 (Chat)',
+      providerType: 'deepseek',
+      apiKey: '',
+      model: 'deepseek-chat',
+      enabled: false,
+      priority: 2
+    },
+    {
+      id: 'prov_openai_1',
+      name: 'OpenAI GPT-4o Mini',
+      providerType: 'openai',
+      apiKey: '',
+      model: 'gpt-4o-mini',
+      enabled: false,
+      priority: 3
+    },
+    {
+      id: 'prov_groq_1',
+      name: 'Groq Llama-3.3 70B',
+      providerType: 'groq',
+      apiKey: '',
+      model: 'llama-3.3-70b-versatile',
+      enabled: false,
+      priority: 4
+    }
+  ];
+
+  const [aiProviders, setAiProviders] = useState<AiProviderConfig[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ai_providers_cluster');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return defaultInitialProviders;
+  });
+
+  const [isAddProviderModalOpen, setIsAddProviderModalOpen] = useState(false);
+  const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
+
+  // New Provider Form State
+  const [newProvName, setNewProvName] = useState('');
+  const [newProvType, setNewProvType] = useState<'gemini' | 'openai' | 'deepseek' | 'claude' | 'groq' | 'openrouter' | 'custom'>('gemini');
+  const [newProvApiKey, setNewProvApiKey] = useState('');
+  const [newProvModel, setNewProvModel] = useState('gemini-2.0-flash');
+  const [newProvBaseUrl, setNewProvBaseUrl] = useState('');
+  const [newProvPriority, setNewProvPriority] = useState(1);
+
+  // 9router Health Inspector Results State
+  const [providerHealthResults, setProviderHealthResults] = useState<Record<string, { status: string; message: string; latencyMs?: number }>>({});
+  const [isTestingAllHealth, setIsTestingAllHealth] = useState(false);
+
+  const handleTestAllProviderHealth = async () => {
+    setIsTestingAllHealth(true);
+    const results: Record<string, { status: string; message: string; latencyMs?: number }> = {};
+    for (const prov of aiProviders) {
+      if (!prov.apiKey.trim()) {
+        results[prov.id] = { status: 'invalid', message: '⚠️ API Key Belum Diisi' };
+        continue;
+      }
+      const res = await testAiProviderHealth(prov);
+      results[prov.id] = { status: res.status, message: res.message, latencyMs: res.latencyMs };
+    }
+    setProviderHealthResults(results);
+    setIsTestingAllHealth(false);
+  };
 
   // Gemini API Quota Inspector States
   const [isTestingGeminiQuota, setIsTestingGeminiQuota] = useState(false);
@@ -2961,6 +3047,7 @@ service cloud.firestore {
         localStorage.setItem('gemini_api_key', geminiApiKey);
         localStorage.setItem('gemini_api_key_mode', geminiApiKeyMode);
         localStorage.setItem('gemini_api_enabled', isGeminiAiEnabled ? 'true' : 'false');
+        localStorage.setItem('ai_providers_cluster', JSON.stringify(aiProviders));
       }
 
       // 2. Try saving to Firestore in background if rules permit
@@ -2983,6 +3070,7 @@ service cloud.firestore {
             mode: geminiApiKeyMode,
             enabled: isGeminiAiEnabled,
           },
+          aiProviders: aiProviders,
           updatedAt: new Date(),
         }, { merge: true });
       } catch (dbErr) {
@@ -5456,47 +5544,175 @@ NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
                   </CardContent>
                 </Card>
 
-                {/* Google Gemini AI API Configuration Card */}
-                <Card className="rounded-3xl border shadow-none bg-white p-6 md:col-span-2">
+                {/* 9router Universal Multi-Provider AI Cluster Manager */}
+                <Card className="rounded-3xl border shadow-none bg-white p-6 md:col-span-2 space-y-6">
                   <CardHeader className="px-0 pt-0 pb-4 border-b">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-purple-600 animate-pulse" />
-                        <CardTitle className="text-lg font-headline font-bold text-primary">Google Gemini AI API Key (Analisis Landing Page & Generator Iklan)</CardTitle>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Cpu className="h-6 w-6 text-purple-600 animate-pulse" />
+                          <CardTitle className="text-xl font-headline font-bold text-primary">
+                            9router Universal Multi-Provider AI Cluster
+                          </CardTitle>
+                        </div>
+                        <CardDescription className="text-xs mt-1">
+                          Hubungkan, atur prioritas, dan kelola API Key dari berbagai AI Provider (Google Gemini, DeepSeek, OpenAI, Claude, Groq, OpenRouter, Custom). Jika provider utama limit (429), 9router akan otomatis mengalihkan ke provider berikutnya secara failover.
+                        </CardDescription>
                       </div>
-                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
-                        AI Studio Integration
-                      </span>
-                    </div>
-                    <CardDescription className="text-xs">
-                      Kunci API Google Gemini untuk analisis cerdas landing page, audit efektivitas narasi, dan pembuatan konten postingan iklan media sosial otomatis.
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="px-0 py-4 space-y-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-bold text-slate-700">Gemini API Key</Label>
-                        <button
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
                           type="button"
-                          onClick={() => setIsGeminiKeyVisible(!isGeminiKeyVisible)}
-                          className="text-[11px] font-bold text-purple-600 hover:underline flex items-center gap-1"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleTestAllProviderHealth}
+                          disabled={isTestingAllHealth}
+                          className="h-9 rounded-xl border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-600 hover:text-white font-bold text-xs flex items-center gap-1.5"
                         >
-                          {isGeminiKeyVisible ? <EyeOff className="h-3.5 w-3.5 text-slate-500" /> : <Eye className="h-3.5 w-3.5 text-purple-600" />}
-                          {isGeminiKeyVisible ? 'Sembunyikan Key' : 'Tampilkan Key'}
-                        </button>
+                          {isTestingAllHealth ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5 text-amber-500" />}
+                          {isTestingAllHealth ? 'Mengecek Kesehatan...' : '⚡ Uji Kesehatan All Nodes'}
+                        </Button>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            setEditingProviderId(null);
+                            setNewProvName('');
+                            setNewProvType('gemini');
+                            setNewProvApiKey('');
+                            setNewProvModel('gemini-2.0-flash');
+                            setNewProvBaseUrl('');
+                            setNewProvPriority(aiProviders.length + 1);
+                            setIsAddProviderModalOpen(true);
+                          }}
+                          className="h-9 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                        >
+                          <Plus className="h-4 w-4" /> Tambah Provider AI
+                        </Button>
                       </div>
-                      <Input 
-                        type={isGeminiKeyVisible ? 'text' : 'password'}
-                        value={geminiApiKey} 
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setGeminiApiKey(val);
-                          if (typeof window !== 'undefined') localStorage.setItem('gemini_api_key', val);
-                        }} 
-                        placeholder="AIzaSy..." 
-                        className="font-mono text-xs border-purple-200 focus-visible:ring-purple-500"
-                      />
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="px-0 py-0 space-y-4">
+                    {/* Providers Cluster Grid Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {aiProviders.map((prov) => {
+                        const health = providerHealthResults[prov.id];
+                        return (
+                          <div
+                            key={prov.id}
+                            className={`p-4 rounded-2xl border transition-all space-y-3 relative overflow-hidden ${
+                              prov.enabled ? 'bg-slate-900 text-slate-100 border-slate-800 shadow-md' : 'bg-slate-100 text-slate-600 border-slate-200 opacity-75'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-purple-950 text-purple-300 border border-purple-800">
+                                  #{prov.priority} {prov.providerType.toUpperCase()}
+                                </span>
+                                <h4 className="font-bold text-sm text-white truncate max-w-[160px] sm:max-w-[200px]">
+                                  {prov.name}
+                                </h4>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = aiProviders.map(p => p.id === prov.id ? { ...p, enabled: !p.enabled } : p);
+                                  setAiProviders(updated);
+                                  if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
+                                }}
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold transition-all border ${
+                                  prov.enabled ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-slate-200 text-slate-600 border-slate-300'
+                                }`}
+                              >
+                                {prov.enabled ? '🟢 AKTIF' : '⚪ NONAKTIF'}
+                              </button>
+                            </div>
+
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                                <span>Target Model: <strong className="text-amber-300 font-mono">{prov.model}</strong></span>
+                                {prov.baseUrl && <span className="text-[10px] truncate max-w-[120px]" title={prov.baseUrl}>BaseURL Set</span>}
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-400 shrink-0">API Key:</span>
+                                <input
+                                  type="password"
+                                  readOnly
+                                  value={prov.apiKey ? prov.apiKey : '(Belum Diisi)'}
+                                  className="bg-slate-950 text-slate-300 font-mono text-[11px] px-2 py-1 rounded-md border border-slate-800 w-full"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Node Health Diagnostic Inspector Indicator */}
+                            {health && (
+                              <div className={`p-2 rounded-xl text-[11px] font-semibold border flex items-center justify-between ${
+                                health.status === 'ok' ? 'bg-emerald-950/90 text-emerald-200 border-emerald-800' :
+                                health.status === 'quota' ? 'bg-red-950/90 text-red-200 border-red-800' :
+                                'bg-amber-950/90 text-amber-200 border-amber-800'
+                              }`}>
+                                <span>{health.message}</span>
+                                {health.latencyMs && <span className="font-mono text-[10px] text-emerald-400">{health.latencyMs}ms</span>}
+                              </div>
+                            )}
+
+                            {/* Node Card Actions */}
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const res = await testAiProviderHealth(prov);
+                                  setProviderHealthResults(prev => ({
+                                    ...prev,
+                                    [prov.id]: { status: res.status, message: res.message, latencyMs: res.latencyMs }
+                                  }));
+                                }}
+                                className="text-[10px] font-bold text-purple-300 hover:text-purple-100 underline"
+                              >
+                                Test Health Node
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingProviderId(prov.id);
+                                  setNewProvName(prov.name);
+                                  setNewProvType(prov.providerType);
+                                  setNewProvApiKey(prov.apiKey);
+                                  setNewProvModel(prov.model);
+                                  setNewProvBaseUrl(prov.baseUrl || '');
+                                  setNewProvPriority(prov.priority || 1);
+                                  setIsAddProviderModalOpen(true);
+                                }}
+                                className="text-[10px] font-bold text-amber-300 hover:text-amber-100 underline"
+                              >
+                                Edit Node
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (aiProviders.length <= 1) {
+                                    alert('Minimal harus ada 1 Provider AI.');
+                                    return;
+                                  }
+                                  if (!confirm(`Hapus node '${prov.name}' dari 9router Cluster?`)) return;
+                                  const updated = aiProviders.filter(p => p.id !== prov.id);
+                                  setAiProviders(updated);
+                                  if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
+                                }}
+                                className="text-[10px] font-bold text-red-400 hover:text-red-200 underline"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {/* Master Enable/Disable Toggle for AI Agent Menu */}
@@ -6670,6 +6886,173 @@ NEXT_PUBLIC_GEMINI_API_KEY=${geminiApiKey}`;
                 </div>
               </form>
             </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal Dialog Tambah/Edit Provider AI 9router Cluster */}
+      {isAddProviderModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg shadow-2xl rounded-3xl bg-white border-none overflow-hidden space-y-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <Cpu className="h-5 w-5 text-purple-600" />
+                <CardTitle className="text-lg font-headline font-bold text-primary">
+                  {editingProviderId ? 'Edit Node Provider AI' : 'Tambah Node Provider AI Baru'}
+                </CardTitle>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddProviderModalOpen(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newProvName.trim() || !newProvApiKey.trim()) {
+                  alert('Harap isi Nama Provider dan API Key!');
+                  return;
+                }
+
+                const targetId = editingProviderId || `prov_${Date.now()}`;
+                const providerObj: AiProviderConfig = {
+                  id: targetId,
+                  name: newProvName.trim(),
+                  providerType: newProvType,
+                  apiKey: newProvApiKey.trim(),
+                  model: newProvModel.trim() || (newProvType === 'gemini' ? 'gemini-2.0-flash' : newProvType === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini'),
+                  baseUrl: newProvBaseUrl.trim() || undefined,
+                  enabled: true,
+                  priority: Number(newProvPriority) || 1
+                };
+
+                let updated: AiProviderConfig[] = [];
+                if (editingProviderId) {
+                  updated = aiProviders.map(p => p.id === editingProviderId ? providerObj : p);
+                } else {
+                  updated = [...aiProviders, providerObj];
+                }
+
+                updated.sort((a, b) => a.priority - b.priority);
+                setAiProviders(updated);
+                if (typeof window !== 'undefined') localStorage.setItem('ai_providers_cluster', JSON.stringify(updated));
+
+                setIsAddProviderModalOpen(false);
+                alert(`✅ Node Provider '${providerObj.name}' berhasil disimpan ke 9router Cluster!`);
+              }}
+              className="space-y-4 text-xs"
+            >
+              <div className="space-y-1">
+                <Label className="font-bold text-slate-700">Nama Provider AI (Identifikasi Node):</Label>
+                <Input
+                  type="text"
+                  required
+                  value={newProvName}
+                  onChange={(e) => setNewProvName(e.target.value)}
+                  placeholder="Contoh: Google Gemini 2.0 / DeepSeek V3 / OpenAI GPT-4o"
+                  className="bg-slate-50 border-slate-300"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="font-bold text-slate-700">Jenis Provider AI Protocol:</Label>
+                  <select
+                    value={newProvType}
+                    onChange={(e) => {
+                      const t = e.target.value as any;
+                      setNewProvType(t);
+                      if (t === 'gemini') setNewProvModel('gemini-2.0-flash');
+                      if (t === 'deepseek') setNewProvModel('deepseek-chat');
+                      if (t === 'openai') setNewProvModel('gpt-4o-mini');
+                      if (t === 'groq') setNewProvModel('llama-3.3-70b-versatile');
+                      if (t === 'claude') setNewProvModel('claude-3-5-sonnet-20241022');
+                      if (t === 'openrouter') setNewProvModel('deepseek/deepseek-r1:free');
+                    }}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold focus:ring-purple-500"
+                  >
+                    <option value="gemini">Google Gemini AI Studio (REST v1beta)</option>
+                    <option value="deepseek">DeepSeek AI (REST API)</option>
+                    <option value="openai">OpenAI ChatGPT (REST API)</option>
+                    <option value="groq">Groq Llama-3 (Super Fast REST API)</option>
+                    <option value="claude">Anthropic Claude (Messages REST API)</option>
+                    <option value="openrouter">OpenRouter / 9router Universal Gateway</option>
+                    <option value="custom">Custom REST API (OpenAI Compatible)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold text-slate-700">Urutan Prioritas Failover (1 = Utama):</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={newProvPriority}
+                    onChange={(e) => setNewProvPriority(parseInt(e.target.value) || 1)}
+                    className="bg-slate-50 border-slate-300 font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="font-bold text-slate-700">API Key Provider:</Label>
+                <Input
+                  type="password"
+                  required
+                  value={newProvApiKey}
+                  onChange={(e) => setNewProvApiKey(e.target.value)}
+                  placeholder="AIzaSy... / sk-proj-... / sk-..."
+                  className="bg-slate-50 border-slate-300 font-mono text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="font-bold text-slate-700">Target Model Identifier:</Label>
+                <Input
+                  type="text"
+                  required
+                  value={newProvModel}
+                  onChange={(e) => setNewProvModel(e.target.value)}
+                  placeholder="gemini-2.0-flash, deepseek-chat, gpt-4o-mini, llama-3.3-70b-versatile"
+                  className="bg-slate-50 border-slate-300 font-mono text-xs"
+                />
+                <p className="text-[10px] text-slate-500">
+                  Rekomendasi: <code className="bg-slate-200 px-1 py-0.5 rounded">gemini-2.0-flash</code>, <code className="bg-slate-200 px-1 py-0.5 rounded">deepseek-chat</code>, <code className="bg-slate-200 px-1 py-0.5 rounded">gpt-4o-mini</code>, <code className="bg-slate-200 px-1 py-0.5 rounded">llama-3.3-70b-versatile</code>.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="font-bold text-slate-700">Custom Base URL (Opsional / Custom Endpoint):</Label>
+                <Input
+                  type="text"
+                  value={newProvBaseUrl}
+                  onChange={(e) => setNewProvBaseUrl(e.target.value)}
+                  placeholder="Kosongkan jika menggunakan URL bawaan official provider API"
+                  className="bg-slate-50 border-slate-300 font-mono text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddProviderModalOpen(false)}
+                  className="rounded-full text-xs font-bold h-9 px-4"
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  className="rounded-full text-xs font-bold h-9 px-6 bg-purple-600 hover:bg-purple-700 text-white shadow-md"
+                >
+                  Simpan Node AI Provider
+                </Button>
+              </div>
+            </form>
           </Card>
         </div>
       )}

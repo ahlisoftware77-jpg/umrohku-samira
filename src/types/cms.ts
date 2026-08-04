@@ -364,3 +364,15 @@ export interface BuilderPlan {
   features: string[];
   order: number;
 }
+
+export interface AiProviderConfig {
+  id: string;
+  name: string;
+  providerType: 'gemini' | 'openai' | 'deepseek' | 'claude' | 'groq' | 'openrouter' | 'custom';
+  apiKey: string;
+  model: string;
+  baseUrl?: string;
+  enabled: boolean;
+  priority: number;
+  createdAt?: string;
+}
