@@ -136,7 +136,7 @@ export default function TenantDashboardPage() {
   const [aiCsQuestion, setAiCsQuestion] = useState('Berapa DP & syarat pendaftaran paket umrah?');
   const [aiIdeaType, setAiIdeaType] = useState<'calendar_7d' | 'reels_viral'>('calendar_7d');
   const [aiOverridePhone, setAiOverridePhone] = useState('');
-  const [aiResultText, setAiResultText] = useState('');
+  const [aiResultText, setAiResultText] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('tenant_ai_result_text') || '' : ''));
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiError, setAiError] = useState('');
   const [customGeminiKey, setCustomGeminiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('tenant_gemini_api_key') || '' : ''));
@@ -378,6 +378,7 @@ Format Output:
             const generated = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (generated) {
               setAiResultText(generated);
+              if (typeof window !== 'undefined') localStorage.setItem('tenant_ai_result_text', generated);
               return;
             }
           } else {
@@ -2196,7 +2197,7 @@ Format Output:
             <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl border overflow-x-auto">
               <button
                 type="button"
-                onClick={() => { setAiActiveTab('ads'); setAiResultText(''); setAiError(''); }}
+                onClick={() => { setAiActiveTab('ads'); setAiError(''); }}
                 className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
                   aiActiveTab === 'ads' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -2207,7 +2208,7 @@ Format Output:
 
               <button
                 type="button"
-                onClick={() => { setAiActiveTab('followup'); setAiResultText(''); setAiError(''); }}
+                onClick={() => { setAiActiveTab('followup'); setAiError(''); }}
                 className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
                   aiActiveTab === 'followup' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -2218,7 +2219,7 @@ Format Output:
 
               <button
                 type="button"
-                onClick={() => { setAiActiveTab('cs'); setAiResultText(''); setAiError(''); }}
+                onClick={() => { setAiActiveTab('cs'); setAiError(''); }}
                 className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
                   aiActiveTab === 'cs' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -2229,7 +2230,7 @@ Format Output:
 
               <button
                 type="button"
-                onClick={() => { setAiActiveTab('ideas'); setAiResultText(''); setAiError(''); }}
+                onClick={() => { setAiActiveTab('ideas'); setAiError(''); }}
                 className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
                   aiActiveTab === 'ideas' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -2240,7 +2241,7 @@ Format Output:
 
               <button
                 type="button"
-                onClick={() => { setAiActiveTab('audit'); setAiResultText(''); setAiError(''); }}
+                onClick={() => { setAiActiveTab('audit'); setAiError(''); }}
                 className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 ${
                   aiActiveTab === 'audit' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -2495,20 +2496,36 @@ Format Output:
                   <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Sparkles className="h-4 w-4 text-purple-600" /> Hasil Generasi AI Gemini:
                   </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(aiResultText);
-                      setCopiedAiResult(true);
-                      setTimeout(() => setCopiedAiResult(false), 2500);
-                    }}
-                    className="h-7 text-xs font-bold rounded-xl border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white flex items-center gap-1.5"
-                  >
-                    {copiedAiResult ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copiedAiResult ? 'Tersalin!' : 'Salin Hasil AI'}
-                  </Button>
+
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setAiResultText('');
+                        if (typeof window !== 'undefined') localStorage.removeItem('tenant_ai_result_text');
+                      }}
+                      className="h-7 text-xs font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Kosongkan
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(aiResultText);
+                        setCopiedAiResult(true);
+                        setTimeout(() => setCopiedAiResult(false), 2500);
+                      }}
+                      className="h-7 text-xs font-bold rounded-xl border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white flex items-center gap-1.5"
+                    >
+                      {copiedAiResult ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copiedAiResult ? 'Tersalin!' : 'Salin Hasil AI'}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="bg-slate-950 text-slate-100 p-4 rounded-2xl text-xs font-sans whitespace-pre-wrap leading-relaxed max-h-[320px] overflow-y-auto border border-slate-800 select-text shadow-inner">
