@@ -135,6 +135,7 @@ export default function TenantDashboardPage() {
   const [aiCsTopic, setAiCsTopic] = useState<'dp_cost' | 'passport_docs' | 'hotel_flight' | 'price_objection'>('dp_cost');
   const [aiCsQuestion, setAiCsQuestion] = useState('Berapa DP & syarat pendaftaran paket umrah?');
   const [aiIdeaType, setAiIdeaType] = useState<'calendar_7d' | 'reels_viral'>('calendar_7d');
+  const [aiOverridePhone, setAiOverridePhone] = useState('');
   const [aiResultText, setAiResultText] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiError, setAiError] = useState('');
@@ -166,25 +167,61 @@ export default function TenantDashboardPage() {
 
   // Comprehensive Phone Number Detection across all Contact Settings & CMS sections
   const getDetectedContactPhone = (): string => {
-    if (tenantProfile?.phone && tenantProfile.phone.trim().length >= 8) {
-      return formatPhoneNumber(tenantProfile.phone);
-    }
-    if (phone && phone.trim().length >= 8) {
-      return formatPhoneNumber(phone);
-    }
+    // 1. Scan CMS Store contents specifically for Contact Sections (section.type === 'contact' or id containing 'contact')
     try {
-      const storeContents = useCmsStore.getState().contents || {};
-      const allItems = Object.values(storeContents).flat();
-      for (const item of allItems) {
-        const d = (item as any)?.data || {};
-        const foundPhone = d.phone || d.whatsapp || d.contactPhone || d.noWa || d.nomorWa || d.phone_number || d.contact_number;
-        if (foundPhone && typeof foundPhone === 'string' && foundPhone.trim().length >= 8) {
-          return formatPhoneNumber(foundPhone);
+      const storeState = useCmsStore.getState();
+      const sections = storeState?.sections || [];
+      const contentsMap = storeState?.contents || {};
+
+      // 1A. Check sections array for type === 'contact' or id includes 'contact'
+      const contactSection = sections.find(s => s.type === 'contact' || s.id.toLowerCase().includes('contact'));
+      if (contactSection && contentsMap[contactSection.id]) {
+        const secData = contentsMap[contactSection.id];
+        const ph = secData.phone || secData.whatsapp || secData.contactPhone || secData.noWa || secData.nomorWa || secData.phone_number;
+        if (ph && typeof ph === 'string' && ph.trim().length >= 8) {
+          return formatPhoneNumber(ph);
+        }
+      }
+
+      // 1B. Scan all contents map keys for contact section entries or key-value entries
+      for (const [secId, dataObj] of Object.entries(contentsMap)) {
+        if (secId.toLowerCase().includes('contact') || secId.toLowerCase().endsWith('_contact')) {
+          if (dataObj && typeof dataObj === 'object') {
+            const ph = dataObj.phone || dataObj.whatsapp || dataObj.contactPhone || dataObj.noWa || dataObj.nomorWa || dataObj.phone_number;
+            if (ph && typeof ph === 'string' && ph.trim().length >= 8) {
+              return formatPhoneNumber(ph);
+            }
+          }
+        }
+      }
+
+      // 1C. Scan any content object across all sections
+      for (const dataObj of Object.values(contentsMap)) {
+        if (dataObj && typeof dataObj === 'object') {
+          if (dataObj.key === 'phone' || dataObj.key === 'whatsapp' || dataObj.key === 'contactPhone') {
+            if (dataObj.value && typeof dataObj.value === 'string' && dataObj.value.trim().length >= 8) {
+              return formatPhoneNumber(dataObj.value);
+            }
+          }
+          const ph = dataObj.phone || dataObj.whatsapp || dataObj.contactPhone || dataObj.noWa || dataObj.nomorWa || dataObj.phone_number;
+          if (ph && typeof ph === 'string' && ph.trim().length >= 8) {
+            return formatPhoneNumber(ph);
+          }
         }
       }
     } catch (e) {}
 
-    return '628123456789';
+    // 2. Check tenantProfile.phone
+    if (tenantProfile?.phone && tenantProfile.phone.trim().length >= 8) {
+      return formatPhoneNumber(tenantProfile.phone);
+    }
+
+    // 3. Check dashboard form state phone
+    if (phone && phone.trim().length >= 8) {
+      return formatPhoneNumber(phone);
+    }
+
+    return '6283815862300';
   };
 
   const handleExecuteGeminiAi = async (mode: 'audit' | 'ads' | 'cs') => {
@@ -214,7 +251,7 @@ export default function TenantDashboardPage() {
       const tenantName = tenantProfile?.name || 'Mitra Travel Umrah';
       const companyName = tenantProfile?.company || 'Travel Umrah Resmi';
       const subdomain = tenantProfile?.subdomain || 'mitra';
-      const phoneNum = getDetectedContactPhone();
+      const phoneNum = aiOverridePhone.trim() ? formatPhoneNumber(aiOverridePhone) : getDetectedContactPhone();
       const landingPageUrl = `https://umrohku-samira.my.id/${subdomain}`;
       const waLink = `https://wa.me/${phoneNum}`;
 
@@ -2083,18 +2120,22 @@ Format Output:
               </button>
             </CardHeader>
 
-            {/* Auto-Detected Contact Phone Number Banner */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-emerald-50/90 border border-emerald-200/90 rounded-2xl text-xs">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+            {/* Auto-Detected & Custom Contact Phone Number Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 bg-emerald-50/90 border border-emerald-200/90 rounded-2xl text-xs">
+              <div className="flex flex-1 items-center gap-2">
+                <span className="font-bold text-emerald-950 shrink-0 flex items-center gap-1.5">
                   📱 Nomor WhatsApp Kontak:
                 </span>
-                <span className="font-mono font-extrabold text-emerald-800 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-xs">
-                  +{getDetectedContactPhone()}
-                </span>
+                <Input
+                  type="text"
+                  value={aiOverridePhone !== '' ? aiOverridePhone : getDetectedContactPhone()}
+                  onChange={(e) => setAiOverridePhone(e.target.value)}
+                  placeholder="628123456789"
+                  className="bg-white font-mono font-extrabold text-emerald-900 border-emerald-300 h-8 text-xs focus-visible:ring-emerald-500 max-w-[180px]"
+                />
               </div>
-              <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100/80 px-2 py-0.5 rounded-full shrink-0">
-                ✓ Otomatis Terdeteksi dari Pengaturan Kontak
+              <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100/90 px-2.5 py-1 rounded-full shrink-0">
+                {aiOverridePhone ? '✏️ Menggunakan Nomor Kustom' : '✓ Otomatis Terdeteksi dari Seksi Kontak'}
               </span>
             </div>
 
