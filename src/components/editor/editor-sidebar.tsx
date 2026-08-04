@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, onSnapshot } from '@/lib/firestore-tracker';
 import { useCmsStore } from '@/hooks/useCmsStore';
 import { AVAILABLE_FONTS, loadGoogleFont } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
@@ -84,6 +86,26 @@ export default function EditorSidebar() {
     setMapPreviewUrl(initialQuery ? `https://www.google.com/maps?q=${encodeURIComponent(initialQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '');
     setIsMapPickerOpen(true);
   };
+
+  // Real-time Asisten Marketing status from Super Admin Firestore
+  const [isGeminiAiEnabled, setIsGeminiAiEnabled] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
+
+  useEffect(() => {
+    const systemRef = doc(db, 'systemSettings', 'global');
+    const unsub = onSnapshot(systemRef, (sysSnap) => {
+      if (sysSnap.exists()) {
+        const sysData = sysSnap.data();
+        if (sysData.gemini?.enabled !== undefined) {
+          const enabled = sysData.gemini.enabled !== false;
+          setIsGeminiAiEnabled(enabled);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('gemini_api_enabled', enabled ? 'true' : 'false');
+          }
+        }
+      }
+    }, () => {});
+    return () => unsub();
+  }, []);
 
   // AI Section Assistant States
   const [aiCustomInstruction, setAiCustomInstruction] = useState('');
@@ -282,15 +304,17 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
   const renderLabelWithAi = (label: string, fieldKey: string) => (
     <div className="flex items-center justify-between gap-1 w-full mb-1">
       <Label className="font-semibold text-xs text-slate-700">{label}</Label>
-      <button
-        type="button"
-        onClick={() => handleFieldAiAssist(fieldKey, label, activeSectionContent[fieldKey] || '')}
-        className="text-[10px] font-bold text-purple-700 hover:text-purple-900 bg-purple-100/80 hover:bg-purple-200 px-2 py-0.5 rounded-full flex items-center gap-1 transition-all shrink-0 border border-purple-200 cursor-pointer"
-        title={`Dapatkan saran AI untuk ${label}`}
-      >
-        <Sparkles className="h-3 w-3 text-amber-500 animate-pulse" />
-        <span>Saran AI</span>
-      </button>
+      {isGeminiAiEnabled && (
+        <button
+          type="button"
+          onClick={() => handleFieldAiAssist(fieldKey, label, activeSectionContent[fieldKey] || '')}
+          className="text-[10px] font-bold text-purple-700 hover:text-purple-900 bg-purple-100/80 hover:bg-purple-200 px-2 py-0.5 rounded-full flex items-center gap-1 transition-all shrink-0 border border-purple-200 cursor-pointer"
+          title={`Dapatkan saran AI untuk ${label}`}
+        >
+          <Sparkles className="h-3 w-3 text-amber-500 animate-pulse" />
+          <span>Saran AI</span>
+        </button>
+      )}
     </div>
   );
 
@@ -2217,6 +2241,64 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
                 placeholder="https://api.whatsapp.com/send?phone=..."
               />
             </div>
+
+            {/* Banner Card Asisten AI Seksi (Hanya tampil jika Asisten Marketing aktif) */}
+            {isGeminiAiEnabled && (
+              <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-amber-50 border border-purple-200/80 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-purple-900">
+                    <Sparkles className="h-4 w-4 text-purple-600 animate-pulse" />
+                    <span>Asisten AI Seksi: {getSectionLabel(activeSection.type)}</span>
+                  </div>
+                  <span className="text-[10px] font-extrabold bg-purple-200/80 text-purple-900 px-2 py-0.5 rounded-full">
+                    Fitur AI Cerdas
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-purple-800/80 leading-relaxed">
+                  Otomatiskan penyusunan & perbaikan teks deskripsi seksi ini dengan kecerdasan buatan AI.
+                </p>
+
+                <div className="space-y-2">
+                  <Input
+                    type="text"
+                    placeholder="Instruksi khusus AI (opsional, cth: 'Sebut diskon DP 1,5 juta')..."
+                    value={aiCustomInstruction}
+                    onChange={(e) => setAiCustomInstruction(e.target.value)}
+                    className="bg-white/90 border-purple-200 text-xs h-8 placeholder:text-purple-300 rounded-xl"
+                  />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      disabled={isAiSectionGenerating}
+                      onClick={() => handleGenerateSectionAi(activeSection.type, false)}
+                      className="w-full h-8 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-1.5 shadow-xs"
+                    >
+                      {isAiSectionGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-amber-300" />}
+                      <span>Generate Teks AI</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isAiSectionGenerating}
+                      onClick={() => handleGenerateSectionAi(activeSection.type, true)}
+                      className="w-full h-8 text-xs font-bold border-purple-300 text-purple-800 hover:bg-purple-100/80 rounded-xl gap-1.5"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 text-purple-600" />
+                      <span>Poles Teks AI</span>
+                    </Button>
+                  </div>
+                </div>
+
+                {aiSectionError && (
+                  <p className="text-[11px] font-bold text-red-600 bg-red-50 p-2 rounded-xl border border-red-200">
+                    {aiSectionError}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         );
     }
@@ -2224,61 +2306,63 @@ Format Output: HANYA kembalikan JSON array valid berisi 3 string (tanpa markdown
 
   return (
     <div className="space-y-4">
-      {/* Banner Card Asisten AI Seksi */}
-      <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-amber-50 border border-purple-200/80 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 font-bold text-xs text-purple-900">
-            <Sparkles className="h-4 w-4 text-purple-600 animate-pulse" />
-            <span>Asisten AI Seksi: {getSectionLabel(activeSection.type)}</span>
+      {/* Banner Card Asisten AI Seksi (Hanya jika Asisten Marketing diaktifkan) */}
+      {isGeminiAiEnabled && (
+        <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-amber-50 border border-purple-200/80 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-bold text-xs text-purple-900">
+              <Sparkles className="h-4 w-4 text-purple-600 animate-pulse" />
+              <span>Asisten AI Seksi: {getSectionLabel(activeSection.type)}</span>
+            </div>
+            <span className="text-[10px] font-extrabold bg-purple-200/80 text-purple-900 px-2 py-0.5 rounded-full">
+              Fitur AI Cerdas
+            </span>
           </div>
-          <span className="text-[10px] font-extrabold bg-purple-200/80 text-purple-900 px-2 py-0.5 rounded-full">
-            Fitur AI Cerdas
-          </span>
-        </div>
 
-        <p className="text-[11px] text-purple-800/80 leading-relaxed">
-          Otomatiskan penyusunan & perbaikan teks deskripsi seksi ini dengan kecerdasan buatan AI.
-        </p>
-
-        <div className="space-y-2">
-          <Input
-            type="text"
-            placeholder="Instruksi khusus AI (opsional, cth: 'Sebut diskon DP 1,5 juta')..."
-            value={aiCustomInstruction}
-            onChange={(e) => setAiCustomInstruction(e.target.value)}
-            className="bg-white/90 border-purple-200 text-xs h-8 placeholder:text-purple-300 rounded-xl"
-          />
-
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              disabled={isAiSectionGenerating}
-              onClick={() => handleGenerateSectionAi(activeSection.type, false)}
-              className="w-full h-8 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-1.5 shadow-xs"
-            >
-              {isAiSectionGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-amber-300" />}
-              <span>Generate Teks AI</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isAiSectionGenerating}
-              onClick={() => handleGenerateSectionAi(activeSection.type, true)}
-              className="w-full h-8 text-xs font-bold border-purple-300 text-purple-800 hover:bg-purple-100/80 rounded-xl gap-1.5"
-            >
-              <RefreshCw className="h-3.5 w-3.5 text-purple-600" />
-              <span>Poles Teks AI</span>
-            </Button>
-          </div>
-        </div>
-
-        {aiSectionError && (
-          <p className="text-[11px] font-bold text-red-600 bg-red-50 p-2 rounded-xl border border-red-200">
-            {aiSectionError}
+          <p className="text-[11px] text-purple-800/80 leading-relaxed">
+            Otomatiskan penyusunan & perbaikan teks deskripsi seksi ini dengan kecerdasan buatan AI.
           </p>
-        )}
-      </div>
+
+          <div className="space-y-2">
+            <Input
+              type="text"
+              placeholder="Instruksi khusus AI (opsional, cth: 'Sebut diskon DP 1,5 juta')..."
+              value={aiCustomInstruction}
+              onChange={(e) => setAiCustomInstruction(e.target.value)}
+              className="bg-white/90 border-purple-200 text-xs h-8 placeholder:text-purple-300 rounded-xl"
+            />
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                disabled={isAiSectionGenerating}
+                onClick={() => handleGenerateSectionAi(activeSection.type, false)}
+                className="w-full h-8 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-1.5 shadow-xs"
+              >
+                {isAiSectionGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-amber-300" />}
+                <span>Generate Teks AI</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isAiSectionGenerating}
+                onClick={() => handleGenerateSectionAi(activeSection.type, true)}
+                className="w-full h-8 text-xs font-bold border-purple-300 text-purple-800 hover:bg-purple-100/80 rounded-xl gap-1.5"
+              >
+                <RefreshCw className="h-3.5 w-3.5 text-purple-600" />
+                <span>Poles Teks AI</span>
+              </Button>
+            </div>
+          </div>
+
+          {aiSectionError && (
+            <p className="text-[11px] font-bold text-red-600 bg-red-50 p-2 rounded-xl border border-red-200">
+              {aiSectionError}
+            </p>
+          )}
+        </div>
+      )}
 
       {renderInnerSectionContent()}
     </div>
