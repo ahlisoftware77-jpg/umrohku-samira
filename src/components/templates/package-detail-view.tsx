@@ -26,6 +26,7 @@ import {
   Award,
   Sparkles,
   ChevronRight,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -856,6 +857,25 @@ export default function PackageDetailView({ packageId, agent: providedAgent }: P
                 <img key={i} src={img} alt={`Brosur ${i + 1}`} className="w-full h-auto rounded-xl sm:rounded-2xl shadow-sm object-contain" />
               ));
             })()}
+          </div>
+
+          {/* Sticky WhatsApp CTA Bar inside Brochure Dialog */}
+          <div className="sticky bottom-0 left-0 right-0 pt-3 pb-1 bg-gradient-to-t from-white via-white/95 to-transparent mt-2">
+            <Button
+              asChild
+              className="w-full py-3 sm:py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all hover:scale-[1.01]"
+            >
+              <a
+                href={`https://api.whatsapp.com/send?phone=${activeWhatsapp}&text=${encodeURIComponent(
+                  `Assalamu'alaikum, konsultan ${agent?.name || 'Samira Travel'}, saya melihat brosur paket ${customPackageData?.title || pkg.title}. Bisakah minta penjelasan lebih detail mengenai jadwal & pendaftarannya?`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="w-5 h-5 text-white animate-pulse shrink-0" />
+                <span>Konsultasi & Tanya Detail via WhatsApp</span>
+              </a>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
