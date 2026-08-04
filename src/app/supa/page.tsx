@@ -64,7 +64,8 @@ import {
   Square,
   Calendar,
   Link2,
-  Sparkles
+  Sparkles,
+  KeyRound
 } from 'lucide-react';
 import { cloudinaryService } from '@/lib/services/cloudinaryService';
 import { Tenant, TenantPlan, TenantStatus, LandingPage, Section, Content, SectionType, SYSTEM_PLANS, BuilderPlan, DatabaseServerConfig, MediaImage } from '@/types/cms';
