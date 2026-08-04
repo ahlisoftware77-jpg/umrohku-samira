@@ -22,6 +22,8 @@ import GallerySection from '@/components/sections/gallery-section';
 import WhyChooseUs from '@/components/sections/why-choose-us';
 import AirlinesSection from '@/components/sections/airlines-section';
 import AdPopupModal from '@/components/sections/ad-popup-modal';
+import FaqSection from '@/components/sections/faq-section';
+import SocialMediaSection from '@/components/sections/social-media-section';
 import { Agent } from '@/lib/agents';
 import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Trash2, EyeOff } from 'lucide-react';
@@ -112,36 +114,50 @@ export default function EditorCanvas() {
       case 'portfolio':
       case 'katalog':
       case 'catalog':
+      case 'product-knowledge':
+      case 'product_knowledge':
         return <ProductKnowledgeSection agent={agentCompat} data={data} />;
       case 'faq':
-        return <HotelExplanation data={data} />;
+        return <FaqSection agent={agentCompat} data={data} />;
       case 'testimonial':
         return <Testimonials agent={agentCompat} data={data} />;
       case 'cta':
+      case 'emotional-cta':
+      case 'emotional_cta':
         return <EmotionalCta agent={agentCompat} data={data} />;
       case 'contact':
         return <ContactSection agent={agentCompat} data={data} />;
       case 'why-samira':
+      case 'why_samira':
         return <WhySamira agent={agentCompat} />;
       case 'why-umrah':
+      case 'why_umrah':
         return <WhyUmrah data={data} />;
       case 'financial-solution':
+      case 'financial_solution':
+      case 'finance':
         return <FinancialSolution agent={agentCompat} data={data} />;
-      case 'emotional-cta':
-        return <EmotionalCta agent={agentCompat} data={data} />;
       case 'muri-awards':
+      case 'muri_awards':
+      case 'muri':
         return <MuriAwards data={data} />;
       case 'registration-flow':
+      case 'registration_flow':
+      case 'flow':
         return <RegistrationFlow data={data} />;
       case 'hotel-explanation':
+      case 'hotel_explanation':
         return <HotelExplanation data={data} />;
-      case 'product-knowledge':
-        return <ProductKnowledgeSection agent={agentCompat} data={data} />;
+      case 'social-media':
+      case 'social_media':
+        return <SocialMediaSection data={data} />;
       case 'airlines':
         return <AirlinesSection agent={agentCompat} data={data} />;
       case 'ad_popup':
+      case 'ad-popup':
         return <AdPopupModal agent={agentCompat} data={data} isPreview={true} />;
       case 'final-cta':
+      case 'final_cta':
         return <FinalCta agent={agentCompat} data={data} />;
       default:
         return (

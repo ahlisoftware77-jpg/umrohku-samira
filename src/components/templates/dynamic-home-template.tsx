@@ -119,32 +119,47 @@ export default function DynamicHomeTemplate({
       case 'portfolio':
       case 'katalog':
       case 'catalog':
+      case 'product-knowledge':
+      case 'product_knowledge':
         return <ProductKnowledgeSection key={section.sectionId} agent={agentCompat} data={data} />;
       case 'faq':
         return <FaqSection key={section.sectionId} agent={agentCompat} data={data} />;
       case 'hotel_explanation':
+      case 'hotel-explanation':
         return <HotelExplanation key={section.sectionId} data={data} />;
       case 'testimonial':
         return <Testimonials key={section.sectionId} agent={agentCompat} data={data} />;
       case 'cta':
+      case 'emotional-cta':
+      case 'emotional_cta':
         return <EmotionalCta key={section.sectionId} agent={agentCompat} data={data} />;
       case 'contact':
         return <ContactSection key={section.sectionId} agent={agentCompat} data={data} />; // Flow pendaftaran
       case 'why_umrah':
-        return <WhyUmrah key={section.sectionId} />;
+      case 'why-umrah':
+        return <WhyUmrah key={section.sectionId} data={data} />;
       case 'why_samira':
+      case 'why-samira':
         return <WhySamira key={section.sectionId} agent={agentCompat} />;
       case 'finance':
+      case 'financial-solution':
+      case 'financial_solution':
         return <FinancialSolution key={section.sectionId} agent={agentCompat} data={data} />;
       case 'muri':
-        return <MuriAwards key={section.sectionId} />;
+      case 'muri-awards':
+      case 'muri_awards':
+        return <MuriAwards key={section.sectionId} data={data} />;
       case 'flow':
+      case 'registration-flow':
+      case 'registration_flow':
         return <RegistrationFlow key={section.sectionId} data={data} />;
       case 'social_media':
+      case 'social-media':
         return <SocialMediaSection key={section.sectionId} data={data} />;
       case 'airlines':
         return <AirlinesSection key={section.sectionId} agent={agentCompat} data={data} />;
       case 'ad_popup':
+      case 'ad-popup':
         return <AdPopupModal key={section.sectionId} agent={agentCompat} data={data} />;
       default:
         return null;
