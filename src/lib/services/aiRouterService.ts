@@ -34,31 +34,50 @@ export async function executeSingleAiProvider(
     throw new Error(`API Key untuk provider '${provider.name}' belum diisi.`);
   }
 
-  // 1. Google Gemini Provider
+  // 1. Google Gemini Provider with Multi-Model Auto-Failover
   if (type === 'gemini') {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-    });
+    const modelsToTry = Array.from(new Set([
+      model,
+      'gemini-2.0-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-3.5-flash',
+      'gemini-3.6-flash',
+      'gemini-1.5-flash'
+    ]));
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const msg = data.error?.message || res.statusText || 'Gemini API Error';
-      throw new Error(`[Gemini Error ${res.status}] ${msg}`);
+    let geminiErr = '';
+
+    for (const m of modelsToTry) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            return {
+              text,
+              providerName: provider.name,
+              providerType: type,
+              modelUsed: m,
+              latencyMs: Date.now() - startTime
+            };
+          }
+        } else {
+          const msg = data.error?.message || res.statusText || 'Gemini API Error';
+          geminiErr = msg;
+        }
+      } catch (e: any) {
+        geminiErr = e.message || 'Koneksi Gemini API terputus';
+      }
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error('Respon Gemini kosong.');
-
-    return {
-      text,
-      providerName: provider.name,
-      providerType: type,
-      modelUsed: model,
-      latencyMs: Date.now() - startTime
-    };
+    throw new Error(`[Gemini All Models Exceeded] ${geminiErr}`);
   }
 
   // 2. Anthropic Claude Provider
