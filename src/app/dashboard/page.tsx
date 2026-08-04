@@ -142,9 +142,9 @@ export default function TenantDashboardPage() {
   const [customGeminiKey, setCustomGeminiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('tenant_gemini_api_key') || '' : ''));
   const [adminGeminiKey, setAdminGeminiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : ''));
   const [geminiConfigMode, setGeminiConfigMode] = useState<'global' | 'custom'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key_mode') as any) || 'global' : 'global'));
+  const [isGeminiAiEnabled, setIsGeminiAiEnabled] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
   const [usePersonalKey, setUsePersonalKey] = useState(false);
   const [copiedAiResult, setCopiedAiResult] = useState(false);
-  const [isAiEnabledByAdmin, setIsAiEnabledByAdmin] = useState<boolean>(() => (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_enabled') !== 'false' : true));
 
   // Load Cloud System Config for Gemini AI
   useEffect(() => {
@@ -161,9 +161,10 @@ export default function TenantDashboardPage() {
             }
           }
           if (sysData.gemini?.enabled !== undefined) {
-            setIsAiEnabledByAdmin(sysData.gemini.enabled);
+            const enabled = sysData.gemini.enabled !== false;
+            setIsGeminiAiEnabled(enabled);
             if (typeof window !== 'undefined') {
-              localStorage.setItem('gemini_api_enabled', String(sysData.gemini.enabled));
+              localStorage.setItem('gemini_api_enabled', enabled ? 'true' : 'false');
             }
           }
         }
@@ -1377,7 +1378,7 @@ Format Output:
             </Button>
           )}
 
-          {tenantProfile && isAiEnabledByAdmin && (
+          {tenantProfile && (
             <Button
               onClick={() => setIsAiModalOpen(true)}
               variant="outline"
@@ -2084,7 +2085,7 @@ Format Output:
       )}
 
       {/* Floating Gemini AI Assistant Action Bubble */}
-      {user && tenantProfile && isAiEnabledByAdmin && (
+      {user && tenantProfile && isGeminiAiEnabled && (
         <button
           type="button"
           onClick={() => setIsAiModalOpen(true)}
@@ -2103,7 +2104,7 @@ Format Output:
       {/* ==========================================
           MODAL DIALOG ASISTEN GEMINI AI DASHBOARD
           ========================================== */}
-      {isAiModalOpen && (
+      {isAiModalOpen && isGeminiAiEnabled && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 animate-in fade-in duration-200">
           <Card className="w-full max-w-2xl shadow-2xl rounded-3xl bg-white border-none p-4 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             {/* Header */}
