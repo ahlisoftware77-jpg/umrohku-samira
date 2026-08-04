@@ -239,37 +239,53 @@ Ketentuan Balasan:
 - Mengajak jamaah untuk melanjutkan konsultasi via telpon/WA atau melihat brosur di website ${landingPageUrl}. Siap disalin dan dikirim via WhatsApp.`;
       }
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }]
-        })
-      });
+      const modelsToTry = [
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-2.0-flash-lite',
+        'gemini-2.0-flash'
+      ];
 
-      if (!response.ok) {
-        const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-        const fbRes = await fetch(fallbackEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-        });
-        
-        if (!fbRes.ok) {
-          const errData = await fbRes.json();
-          throw new Error(errData.error?.message || 'Gagal menghubungi server Gemini AI.');
+      let lastErrorMessage = '';
+      let isQuotaExceeded = false;
+
+      for (const model of modelsToTry) {
+        try {
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptText }] }]
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const generated = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (generated) {
+              setAiResultText(generated);
+              return;
+            }
+          } else {
+            const errData = await response.json().catch(() => ({}));
+            const msg = errData.error?.message || response.statusText || '';
+            if (msg.toLowerCase().includes('quota') || response.status === 429) {
+              isQuotaExceeded = true;
+            }
+            lastErrorMessage = msg;
+          }
+        } catch (e: any) {
+          lastErrorMessage = e.message || 'Gagal koneksi ke Gemini API';
         }
-
-        const fbData = await fbRes.json();
-        const generated = fbData.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal menghasilkan teks.';
-        setAiResultText(generated);
-        return;
       }
 
-      const data = await response.json();
-      const generated = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Gagal menghasilkan teks.';
-      setAiResultText(generated);
+      if (isQuotaExceeded || lastErrorMessage.toLowerCase().includes('quota')) {
+        setAiError('⚠️ Kuota harian API Key yang digunakan saat ini telah terlampaui (Quota Exceeded). Silakan masukkan API Key Gemini Anda sendiri di kolom bawah ini.');
+        setUsePersonalKey(true);
+      } else {
+        setAiError(lastErrorMessage || 'Gagal menghubungi server Gemini AI.');
+      }
     } catch (err: any) {
       console.error('Gemini AI execution error:', err);
       setAiError(err.message || 'Terjadi kesalahan saat memproses permintaan AI.');
