@@ -39,7 +39,7 @@ interface DepartureScheduleSectionProps {
   agent?: Agent;
 }
 
-const DEFAULT_SCHEDULES: DepartureScheduleItem[] = [
+export const DEFAULT_SCHEDULES: DepartureScheduleItem[] = [
   {
     id: '1',
     date: '15 September 2026',
