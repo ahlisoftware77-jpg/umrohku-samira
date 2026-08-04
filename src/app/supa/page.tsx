@@ -1486,12 +1486,12 @@ service cloud.firestore {
         if (sysSnap.exists()) {
           const sysData = sysSnap.data();
           if (sysData.firebase) {
-            setFbApiKey(sysData.firebase.apiKey || '');
-            setFbAuthDomain(sysData.firebase.authDomain || '');
-            setFbProjectId(sysData.firebase.projectId || '');
-            setFbStorageBucket(sysData.firebase.storageBucket || '');
-            setFbMessagingSenderId(sysData.firebase.messagingSenderId || '');
-            setFbAppId(sysData.firebase.appId || '');
+            if (sysData.firebase.apiKey) setFbApiKey(sysData.firebase.apiKey);
+            if (sysData.firebase.authDomain) setFbAuthDomain(sysData.firebase.authDomain);
+            if (sysData.firebase.projectId) setFbProjectId(sysData.firebase.projectId);
+            if (sysData.firebase.storageBucket) setFbStorageBucket(sysData.firebase.storageBucket);
+            if (sysData.firebase.messagingSenderId) setFbMessagingSenderId(sysData.firebase.messagingSenderId);
+            if (sysData.firebase.appId) setFbAppId(sysData.firebase.appId);
           }
           if (sysData.cloudinary) {
             const cn = sysData.cloudinary.cloudName || '';
@@ -3096,40 +3096,56 @@ service cloud.firestore {
         localStorage.setItem('fb_storage_bucket', fbStorageBucket);
         localStorage.setItem('fb_messaging_sender_id', fbMessagingSenderId);
         localStorage.setItem('fb_app_id', fbAppId);
-        localStorage.setItem('gemini_api_key', geminiApiKey);
+        if (geminiApiKey) localStorage.setItem('gemini_api_key', geminiApiKey);
         localStorage.setItem('gemini_api_key_mode', geminiApiKeyMode);
         localStorage.setItem('gemini_api_enabled', isGeminiAiEnabled ? 'true' : 'false');
         localStorage.setItem('ai_providers_cluster', JSON.stringify(aiProviders));
+        localStorage.setItem('ai_generate_limit', String(aiGenerateLimit));
       }
 
-      // 2. Try saving to Firestore in background if rules permit
+      // 2. Build Firestore payload — only include non-empty fields to prevent overwriting with blanks
+      const firestorePayload: Record<string, any> = {
+        firebase: {
+          apiKey: fbApiKey,
+          authDomain: fbAuthDomain,
+          projectId: fbProjectId,
+          storageBucket: fbStorageBucket,
+          messagingSenderId: fbMessagingSenderId,
+          appId: fbAppId,
+        },
+        cloudinary: {
+          cloudName: cldCloudName,
+          uploadPreset: cldUploadPreset,
+        },
+        gemini: {
+          mode: geminiApiKeyMode,
+          enabled: isGeminiAiEnabled,
+        },
+        aiGenerateLimit: aiGenerateLimit,
+        updatedAt: new Date(),
+      };
+
+      // Only write gemini apiKey if user actually entered one (prevent clearing saved key)
+      if (geminiApiKey) {
+        firestorePayload.gemini.apiKey = geminiApiKey;
+      }
+
+      // Only write aiProviders if at least one has a non-empty apiKey (prevent overwriting with empty defaults)
+      const hasRealProviderKeys = aiProviders.some(p => p.apiKey && p.apiKey.trim().length > 5);
+      if (hasRealProviderKeys) {
+        firestorePayload.aiProviders = aiProviders;
+      }
+
+      // 3. Save to Firestore
       try {
-        await setDoc(doc(db, 'systemSettings', 'global'), {
-          firebase: {
-            apiKey: fbApiKey,
-            authDomain: fbAuthDomain,
-            projectId: fbProjectId,
-            storageBucket: fbStorageBucket,
-            messagingSenderId: fbMessagingSenderId,
-            appId: fbAppId,
-          },
-          cloudinary: {
-            cloudName: cldCloudName,
-            uploadPreset: cldUploadPreset,
-          },
-          gemini: {
-            apiKey: geminiApiKey,
-            mode: geminiApiKeyMode,
-            enabled: isGeminiAiEnabled,
-          },
-          aiProviders: aiProviders,
-          updatedAt: new Date(),
-        }, { merge: true });
+        await setDoc(doc(db, 'systemSettings', 'global'), firestorePayload, { merge: true });
+        console.log('✅ Firestore systemSettings/global saved successfully');
       } catch (dbErr) {
-        console.log('Saved to LocalStorage (Firestore rules restricted cloud write).');
+        console.error('❌ Firestore write failed:', dbErr);
+        alert('⚠️ Tersimpan di browser lokal, tapi gagal simpan ke database cloud. Periksa koneksi internet.');
       }
 
-      alert('Pengaturan API Firebase, Cloudinary, & Google Gemini berhasil disimpan!');
+      alert('Pengaturan API Firebase, Cloudinary, & Gemini berhasil disimpan!');
     } catch (err: any) {
       console.error(err);
       alert('Gagal menyimpan pengaturan API.');
