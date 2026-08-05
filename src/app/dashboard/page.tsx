@@ -201,15 +201,26 @@ export default function TenantDashboardPage() {
     return () => unsub();
   }, [user?.uid]);
 
+  // Subscribe to React CMS store state for reactive updates
+  const cmsSections = useCmsStore((s) => s.sections);
+  const cmsContents = useCmsStore((s) => s.contents);
+
   // Comprehensive Phone Number Detection across all Contact Settings & CMS sections
   const getDetectedContactPhone = (): string => {
-    // 1. Scan CMS Store contents specifically for Contact Sections (section.type === 'contact' or id containing 'contact')
-    try {
-      const storeState = useCmsStore.getState();
-      const sections = storeState?.sections || [];
-      const contentsMap = storeState?.contents || {};
+    // 1. Check tenant profile & auth profile first (DB Tenant Data)
+    if (tenantProfile?.phone && tenantProfile.phone.trim().length >= 8) {
+      return formatPhoneNumber(tenantProfile.phone);
+    }
+    if (profile?.phone && profile.phone.trim().length >= 8) {
+      return formatPhoneNumber(profile.phone);
+    }
 
-      // 1A. Check sections array for type === 'contact' or id includes 'contact'
+    // 2. Scan CMS Store contents specifically for Contact Sections (section.type === 'contact' or id containing 'contact')
+    try {
+      const sections = cmsSections || [];
+      const contentsMap = cmsContents || {};
+
+      // 2A. Check sections array for type === 'contact' or id includes 'contact'
       const contactSection = sections.find(s => s.type === 'contact' || s.id.toLowerCase().includes('contact'));
       if (contactSection && contentsMap[contactSection.id]) {
         const secData = contentsMap[contactSection.id];
@@ -219,7 +230,7 @@ export default function TenantDashboardPage() {
         }
       }
 
-      // 1B. Scan all contents map keys for contact section entries or key-value entries
+      // 2B. Scan all contents map keys for contact section entries or key-value entries
       for (const [secId, dataObj] of Object.entries(contentsMap)) {
         if (secId.toLowerCase().includes('contact') || secId.toLowerCase().endsWith('_contact')) {
           if (dataObj && typeof dataObj === 'object') {
@@ -231,7 +242,7 @@ export default function TenantDashboardPage() {
         }
       }
 
-      // 1C. Scan any content object across all sections
+      // 2C. Scan any content object across all sections
       for (const dataObj of Object.values(contentsMap)) {
         if (dataObj && typeof dataObj === 'object') {
           if (dataObj.key === 'phone' || dataObj.key === 'whatsapp' || dataObj.key === 'contactPhone') {
@@ -246,11 +257,6 @@ export default function TenantDashboardPage() {
         }
       }
     } catch (e) {}
-
-    // 2. Check tenantProfile.phone
-    if (tenantProfile?.phone && tenantProfile.phone.trim().length >= 8) {
-      return formatPhoneNumber(tenantProfile.phone);
-    }
 
     // 3. Check dashboard form state phone
     if (phone && phone.trim().length >= 8) {
