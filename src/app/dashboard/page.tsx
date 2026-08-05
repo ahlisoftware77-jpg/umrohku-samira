@@ -158,9 +158,7 @@ export default function TenantDashboardPage() {
         if (sysData.gemini?.apiKey) setAdminGeminiKey(sysData.gemini.apiKey);
         if (sysData.gemini?.mode) {
           setGeminiConfigMode(sysData.gemini.mode);
-          if (sysData.gemini.mode === 'custom') {
-            setUsePersonalKey(true);
-          }
+          setUsePersonalKey(sysData.gemini.mode === 'custom');
         }
         if (sysData.gemini?.enabled !== undefined) {
           const enabled = sysData.gemini.enabled !== false;
@@ -302,18 +300,59 @@ export default function TenantDashboardPage() {
 
       let apiKey = '';
 
+      let activeCluster: AiProviderConfig[] = [];
+
       if (usePersonalKey || geminiConfigMode === 'custom') {
         apiKey = customGeminiKey.trim() || (typeof window !== 'undefined' ? localStorage.getItem('tenant_gemini_api_key') || '' : '');
+        if (apiKey) {
+          activeCluster = [{
+            id: 'prov_personal',
+            name: 'API Key Personal Mitra',
+            providerType: 'gemini',
+            apiKey: apiKey,
+            model: 'gemini-2.0-flash',
+            enabled: true,
+            priority: 1
+          }];
+        }
       }
 
-      if (!apiKey) {
-        apiKey = adminGeminiKey.trim() || 
-                 (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '') ||
-                 process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+      if (activeCluster.length === 0) {
+        // Load 9router Cluster Providers from LocalStorage
+        if (typeof window !== 'undefined') {
+          const saved = localStorage.getItem('ai_providers_cluster');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                activeCluster = parsed.filter((p: any) => p.enabled && p.apiKey && p.apiKey.trim().length > 0);
+              }
+            } catch (e) {}
+          }
+        }
+
+        if (!apiKey) {
+          apiKey = adminGeminiKey.trim() || 
+                   (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || '' : '') ||
+                   process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+        }
+
+        // Fallback if cluster empty
+        if (activeCluster.length === 0 && apiKey) {
+          activeCluster = [{
+            id: 'prov_default_gemini',
+            name: 'Google Gemini 2.0 Admin',
+            providerType: 'gemini',
+            apiKey: apiKey,
+            model: 'gemini-2.0-flash',
+            enabled: true,
+            priority: 1
+          }];
+        }
       }
 
-      if (!apiKey) {
-        setAiError('Gemini API Key belum diisi. Masukkan API Key Anda di bawah ini atau minta Super Admin membagikan API Key di Portal /supa.');
+      if (activeCluster.length === 0) {
+        setAiError('Belum ada API Key Asisten Marketing yang aktif. Silakan hubungi Super Admin di Portal /supa.');
         setIsAiGenerating(false);
         return;
       }
@@ -411,47 +450,6 @@ Format Output:
 - Berikan judul konten yang menarik (Hook).
 - Berikan ringkasan pesan utama & jenis format (Foto / Video Reels / Carousel).
 - Sertakan saran caption singkat. Siap dipraktikkan langsung minggu ini.`;
-      }
-
-      let activeCluster: AiProviderConfig[] = [];
-
-      // Check if user is using custom personal key input
-      if (apiKey && (usePersonalKey || geminiConfigMode === 'custom')) {
-        activeCluster = [{
-          id: 'prov_personal',
-          name: 'API Key Personal Mitra',
-          providerType: 'gemini',
-          apiKey: apiKey,
-          model: 'gemini-2.0-flash',
-          enabled: true,
-          priority: 1
-        }];
-      } else {
-        // Load 9router Cluster Providers
-        if (typeof window !== 'undefined') {
-          const saved = localStorage.getItem('ai_providers_cluster');
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                activeCluster = parsed;
-              }
-            } catch (e) {}
-          }
-        }
-
-        // Fallback to default Gemini key if cluster is empty
-        if (activeCluster.length === 0 && apiKey) {
-          activeCluster = [{
-            id: 'prov_default_gemini',
-            name: 'Google Gemini 2.0 Admin',
-            providerType: 'gemini',
-            apiKey: apiKey,
-            model: 'gemini-2.0-flash',
-            enabled: true,
-            priority: 1
-          }];
-        }
       }
 
       try {
